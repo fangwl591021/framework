@@ -89,3 +89,12 @@ Architecture Owner：Tony；Approval／Implementation／Verification 分別為 P
 - Module ID：`referral-engine`。
 - Configuration：Pending Window、Invitation Expiration、Eligibility 與 Admin Approval 都需 Tenant-scoped versioned configuration。
 - Shop Scope：Optional invitation／eligibility context；Active Referral Relationship 仍以 Tenant 為 Boundary。
+## Exact Contract Field Index
+
+- Public Queries：見本 Contract 的 Queries section；所有 Query 均只讀。
+- Published Domain Events：見 Domain Events 的 Published 清單。
+- Consumed Domain Events：見 Domain Events 的 Consumed 清單。
+- Testing Requirements：Unit、Contract、Tenant／Shop Boundary、Permission、Idempotency／Retry、Correction、Audit、Operational；目前全部 Not Started。
+- Approval Status：Contract Proposed。
+- Implementation Status：Not Implemented。
+- Verification Status：Not Verified。

@@ -99,3 +99,12 @@ Architecture Owner：Tony；Approval Pending；Implementation Not Implemented；
 
 - Module ID：`redemption-engine`。
 - Forbidden Responsibilities：Camera Scanner、Login、Point Ledger internal write、Payment、Coupon Rule internal logic、Merchant UI。
+## Exact Contract Field Index
+
+- Public Queries：見本 Contract 的 Queries section；所有 Query 均只讀。
+- Published Domain Events：見 Domain Events 的 Published 清單。
+- Consumed Domain Events：見 Domain Events 的 Consumed 清單。
+- Testing Requirements：Unit、Contract、Tenant／Shop Boundary、Permission、Idempotency／Retry、Correction、Audit、Operational；目前全部 Not Started。
+- Approval Status：Contract Proposed。
+- Implementation Status：Not Implemented。
+- Verification Status：Not Verified。

@@ -96,3 +96,12 @@ Architecture Owner：Tony；Approval Pending；Implementation Not Implemented；
 - Permissions：Link creation、evaluation、correction、reversal 均由 Backend 驗證。
 - Tenant Scope：Share Link、Touch、Conversion、Record 必須同 Tenant。
 - Forbidden Responsibilities：Referral、Payment、Commission、Inventory、Point Ledger。
+## Exact Contract Field Index
+
+- Public Queries：見本 Contract 的 Queries section；所有 Query 均只讀。
+- Published Domain Events：見 Domain Events 的 Published 清單。
+- Consumed Domain Events：見 Domain Events 的 Consumed 清單。
+- Testing Requirements：Unit、Contract、Tenant／Shop Boundary、Permission、Idempotency／Retry、Correction、Audit、Operational；目前全部 Not Started。
+- Approval Status：Contract Proposed。
+- Implementation Status：Not Implemented。
+- Verification Status：Not Verified。
