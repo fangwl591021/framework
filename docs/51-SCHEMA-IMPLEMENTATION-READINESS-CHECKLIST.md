@@ -85,6 +85,16 @@
 - [D1 Capacity and Retention Plan](62-D1-CAPACITY-RETENTION-PLAN.md)
 - [Physical Schema Review Checklist](63-PHYSICAL-SCHEMA-REVIEW-CHECKLIST.md)
 
+## Sprint 7 Architecture Review Status
+
+- [x] Gate 1 — Cross-Tenant Foreign Key：PASS。
+- [x] Gate 2 — Active-only Uniqueness：PASS。
+- [x] Gate 3 — Point Ledger Concurrency：PASS。
+- [ ] Main Sync 後完整差異回歸已完成並由最終 Architecture Review 接受。
+- [ ] Schema／Migration 已取得執行批准。
+
+Gate PASS 只批准 Proposal Architecture Boundary；PR #6 仍為 Draft／Not Executed／Not Verified，不代表 Schema Approved for Execution。
+
 所有 Proposal／Checklist 項目仍需審查，不因文件存在而視為完成。
 
 ## Sprint 6 Exit Statement

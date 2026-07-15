@@ -71,7 +71,7 @@
 - [ ] Durable Object只有在 conflict／retry／contention／latency／burst evidence後作 optional optimization，不是 correctness dependency。
 - [ ] Gate 3 故障矩陣覆蓋雙併發、lease takeover、stale owner、partial failure、reverse replay、drift與hot account。
 - [ ] A01–A06 Negative Evidence覆蓋Projection zero-row／Version／Watermark／Balance mismatch與Reverse amount／reverse-of-reverse，且每案取得DB abort與整批rollback證據。
-- [x] Gate 3 第二輪 Architecture Owner Review NO-GO 已記錄；DB Assertion Proposal修正仍待最終Review，PR維持Draft／Not Approved／Not Executed／Not Verified。
+- [x] Gate 3 最終 Architecture Owner Review PASS 已記錄；此狀態只批准 Proposal Architecture Boundary，PR仍維持Draft／Not Executed／Not Verified，尚未批准執行。
 
 ## Index and Query Evidence
 

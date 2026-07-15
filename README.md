@@ -1,5 +1,17 @@
 # Platform Core Framework
 
+## Start Here
+
+[Architecture Handbook](ARCHITECTURE-HANDBOOK.md) 是 Framework 的最高層理解與導航入口；它提供摘要與閱讀路徑，不取代 Accepted ADR、正式 Boundary 或 Module Contract。
+
+| 讀者 | 入口 |
+| --- | --- |
+| Architecture Owner | [Decision Status／Open Decisions](docs/handbook/13-DECISION-STATUS-MAP.md) |
+| Engineer | [Architecture Layers／Module Map](docs/handbook/03-ARCHITECTURE-LAYERS.md) |
+| Codex | [AI and Codex Working Guide](docs/handbook/10-AI-CODEX-WORKING-GUIDE.md) |
+| Business Partner | [Executive Overview](docs/handbook/01-EXECUTIVE-OVERVIEW.md) |
+| New Team Member | [Reading Paths](docs/handbook/14-READING-PATHS.md) |
+
 Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義跨專案一致的架構語言、模組邊界、開發標準與治理原則。
 
 ## Repository Status

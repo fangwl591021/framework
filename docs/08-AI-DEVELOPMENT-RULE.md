@@ -25,6 +25,10 @@ AI、Codex 與 Implementer 可以：
 
 角色與批准權見 [Architecture Ownership](18-ARCHITECTURE-OWNERSHIP.md)。
 
+## Mandatory Handbook Reading
+
+大型任務開始前，AI／Codex 必須先閱讀 [Architecture Handbook](../ARCHITECTURE-HANDBOOK.md) 與 [AI／Codex Working Guide](handbook/10-AI-CODEX-WORKING-GUIDE.md)，再閱讀 relevant Accepted ADR、Module Contract、Registry 與 Data Boundary。Handbook 只作導航，不得取代正式文件。
+
 ## 強制作業規則
 
 1. **先做 Preflight**：確認 Scope、禁止事項、驗收、Repository、Branch 與 Commit。
