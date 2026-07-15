@@ -31,3 +31,9 @@
 - No Execution Approval。
 
 A01～A06 亦仍為 Not Executed／Not Verified。此決策只可由新的 Evidence Registry、三 Gate 結論與具名 Authority 記錄更新；合併本 Package 不會自動改變決策。
+
+## QA Governance Blocker
+
+[QA Governance Foundation](../qa-governance/README.md) 目前為 Proposed，尚未 Approved。[Migration Test Plan Mapping](../qa-governance/14-MIGRATION-TEST-PLAN-MAPPING.md) 僅建立審查追溯，不是 Test Plan Approval、Test Execution 或 Evidence Verification。
+
+因此 PR #9 仍維持 NO-GO，Test Plan Approved = No；目前決策仍為 **NO-GO — Execution Not Yet Approved**。

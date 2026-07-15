@@ -254,3 +254,9 @@ Framework RC1 是以 `6dd23c30dd496a4892660c71b33349c2695ecb67` 為來源的 Arc
 - [Current Go／No-Go Decision](docs/migration-package/11-GO-NOGO-DECISION.md)
 
 目前狀態：Package Designed = Proposed；Local／Isolated D1 尚未測試；Architecture／Security／Execution Approval 均未取得；決策為 **NO-GO — Execution Not Yet Approved**。Test design、approval、execution 與 verification 必須分開記錄。
+
+## QA Governance Foundation
+
+[QA Governance Foundation](docs/qa-governance/README.md) 定義測試案例、Fixture／Seed、Expected Result、Evidence、Coverage、併發重播、Recovery／Reconciliation、效能、安全隔離、執行生命週期與批准 Gate 的共同標準。
+
+目前 QA Governance Designed = Proposed；QA Governance Approved、Test Library Implemented、Tests Executed 與 Evidence Verified 均為 No。PR #9 的 Migration Test Plan Approval 仍維持 NO-GO，必須先依 QA Governance 標準完成對應與審查，不會因本文件合併自動升級。

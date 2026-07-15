@@ -24,3 +24,14 @@
 Gate 2 已選定 status-based Partial Unique Index 與 canonical scope key；Gate 3 已選定同步 Authoritative Projection Guard、generation fencing 與 Single Full Reverse。這些架構邊界在 RC1 Freeze 下不再是方案選擇題，但其 D1 實測、效能與 Runtime 行為仍未驗證。
 
 Approved Migration Package 開始測試前，Internal ID Generator、Physical Time Storage、Audit／Idempotency Retention、Attribution Touch Archive 與 D1 Topology 仍是阻塞或明確限制。最新限制見 [RC1 Known Limitations](../releases/RC1-KNOWN-LIMITATIONS.md)，執行決策見 [Go／No-Go Decision](../migration-package/11-GO-NOGO-DECISION.md)。
+
+## QA Governance 待決策
+
+在 QA Governance Approved 或 PR #9 Test Plan Approved 前，仍需獨立決定：
+
+- Security Reviewer 與 QA Reviewer 的具名指派。
+- Evidence Store、存取控制與 Retention 期限。
+- Local／Isolated D1 Test Operator 與環境清理責任。
+- Test Execution、Migration Execution 與例外處理的授權者。
+
+這些決策不得由 Tony 的 Architecture Owner 身分、文件作者或 PR 建立者自動承接。

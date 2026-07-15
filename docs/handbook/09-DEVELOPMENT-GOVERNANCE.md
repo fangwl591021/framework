@@ -44,3 +44,9 @@ Problem
 4. 將差異分類為 Configuration、Policy／Strategy、Extension、Domain Module 或 Platform Core。
 5. 限縮修改，列出風險、測試、未測試與 Production Impact。
 6. Branch／PR Review 後才合併；Breaking Change 需 Tony 與 migration evidence。
+
+## QA Governance Gate
+
+任何 Test Plan Approval 必須先依 [QA Governance Foundation](../qa-governance/README.md) 定義 Test Case、Fixture／Seed、Expected Result、Evidence、Coverage、Execution Lifecycle 與批准責任，並完成 Readiness Checklist。
+
+Governance Design、Test Plan Approval、Test Library Implementation、Test Execution 與 Evidence Verification 是五個獨立狀態。文件合併不得被視為測試已完成；PR #9 仍維持 NO-GO，直到其測試計畫完成 QA Governance 映射與獨立核准。

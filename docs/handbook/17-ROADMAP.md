@@ -44,3 +44,15 @@ Framework RC1 Baseline
 | Staging／Production Migration | Future independent stage | Not Authorized |
 
 Promotion 必須依 [Environment Promotion Policy](../migration-package/09-ENVIRONMENT-PROMOTION-POLICY.md) 逐階段完成；目前 [Go／No-Go](../migration-package/11-GO-NOGO-DECISION.md) 為 NO-GO。
+
+## QA Governance 路徑
+
+| Stage | Purpose | Current Status |
+|---|---|---|
+| QA Governance Foundation | 建立共同標準、Template 與 Gate | Proposed |
+| QA Governance Review | 核准標準與具名責任 | Pending |
+| PR #9 Remapping／Review | 依共同標準重審 Migration Test Plan | NO-GO |
+| Test Library Implementation | 建立可執行測試資產 | Not Started／Not Authorized |
+| Local／Isolated Execution | 產生受控證據 | Not Started／Not Authorized |
+
+每一階段都需獨立核准；前一階段完成不會自動提升下一階段狀態。

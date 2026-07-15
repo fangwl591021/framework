@@ -36,3 +36,9 @@ Package Design 被合併，不等於 Test Plan Approved、Tested、Architecture 
 - [Framework RC1](../releases/RC1.md)
 - [Physical D1 Schema Overview](../52-PHYSICAL-D1-SCHEMA-OVERVIEW.md)
 - [Documentation-only Migration Draft Safety](../schema/migrations/README.md)
+
+## QA Governance Dependency
+
+Migration Test Plan Approval 必須遵循 [QA Governance Foundation](../qa-governance/README.md)，並以 [Migration Test Plan Mapping](../qa-governance/14-MIGRATION-TEST-PLAN-MAPPING.md) 建立 Review Finding、Test Case、Expected Result、Evidence 與 Approval Gate 的追溯。
+
+目前 QA Governance Designed = Proposed、QA Governance Approved = No、Test Plan Approved = No。PR #9 仍為 NO-GO；本依賴不授權測試執行、SQL、D1、Migration、Runtime 或 Deployment。

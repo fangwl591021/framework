@@ -35,3 +35,12 @@
 - [ ] Product Owner 已核准 Production impact。
 
 目前結論仍為 NO-GO；任何未完成項都不得以 PR 合併狀態取代。
+
+## QA Governance Readiness
+
+- [ ] [QA Governance Foundation](../qa-governance/README.md) 已核准。
+- [ ] Migration Test Plan 已完成 QA Governance Mapping 且沒有未對應 Finding。
+- [ ] Test Case、Fixture／Seed、Expected Result、Evidence 與 Run Manifest 標準已核准。
+- [ ] Concurrency、Recovery／Reconciliation、Performance 與 Security 測試方法已核准。
+- [ ] QA Approval Gates 已由具名 Authority 完成。
+- [ ] Test Plan Approved 已正式更新為 Yes。
