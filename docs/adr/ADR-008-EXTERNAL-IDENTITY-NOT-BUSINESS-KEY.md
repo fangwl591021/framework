@@ -1,4 +1,4 @@
-# ADR-008: External Identity Is Not a Business Key
+# ADR-008: Do Not Use External Provider Identity as the Business Primary Key
 
 ## 基本資料
 
@@ -43,7 +43,7 @@ LINE UID、Google／Apple Subject、Email 或 Mobile 容易被專案直接用作
 
 ## 最終決策
 
-所有外部 Identity 只存在 Identity Mapping Boundary，解析為 Platform User 後，再解析 Tenant Membership 或 Shop Membership。Domain Module 使用穩定 Business Reference，不使用 LINE UID、Subject、Email、Mobile 或其與 Shop ID 的組合作為 Business Primary Key。
+LINE UID、Google Subject、Apple Subject、Facebook User ID、WhatsApp Identity、Email、Mobile 等 External Provider Identity 只存在 Identity Mapping Boundary。解析為 Platform User 後，再解析 Tenant Membership 或 Shop Membership；Domain Module 使用 Platform User、Tenant Membership 或自身 Module Entity ID 作穩定 Business Reference。Provider 變更不得造成 Point、Referral、Order 或 CRM 失聯，也不得以 `LINE UID + Shop ID` 取代完整身份與會員模型。
 
 ## 決策理由
 

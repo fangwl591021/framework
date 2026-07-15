@@ -1,4 +1,4 @@
-# ADR-006: Use Tenant-scoped Point Accounts
+# ADR-006: Scope Point Accounts to Tenant Membership
 
 ## 基本資料
 
@@ -43,7 +43,7 @@
 
 ## 最終決策
 
-Point Account 必須 Tenant-scoped，以 Tenant Membership 與 Point Program 為必要參考，Shop Scope 選用。未有明確 Tenant Policy 時不跨 Shop。Balance 由 Point Transaction Ledger 推導；不得直接更新 Balance。
+Point Account 至少屬於 Tenant Membership，並以 Point Program 區分；可依 Shop Policy 進一步設定 Optional Shop Scope。不得建立沒有 Tenant Scope 的一般客戶 Point Account，不同 Tenant 點數預設不可互通。未有明確 Tenant Policy 時不跨 Shop。所有 Balance 變化都必須有 Point Transaction；Balance 由 Ledger 推導，不得直接更新。
 
 ## 決策理由
 

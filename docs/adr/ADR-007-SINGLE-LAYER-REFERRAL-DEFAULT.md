@@ -1,4 +1,4 @@
-# ADR-007: Use Single-layer Referral by Default
+# ADR-007: Use Single-Layer Referral as the Default Policy
 
 ## 基本資料
 
@@ -43,7 +43,7 @@ Framework 需要安全、可重用且不預設多層獎勵的 Referral 基準。
 
 ## 最終決策
 
-Framework 預設採 Tenant-scoped、Single-layer Direct Referral。每個 Membership 同時最多一個 Active Direct Referrer，使用 First Valid Referrer、No Self、No Cycle、No Normal Overwrite。多層 Reward 必須另有明確 Domain Design 與 Accepted ADR。
+Framework 預設只支援 Tenant-scoped、Single-Layer Direct Referral。每個 Membership 同時最多一個 Active Direct Referrer，使用 First Valid Referrer、No Self、No Cycle、No Normal Overwrite。被介紹者再分享給他人，不會自動讓上層取得收益。不得在 Referral Core 預埋未啟用的多層分潤邏輯；未來若有合法且明確需求，必須使用獨立 Extension、Domain Design 與新 Accepted ADR 評估。
 
 ## 決策理由
 

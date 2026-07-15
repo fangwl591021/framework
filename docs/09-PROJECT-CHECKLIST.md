@@ -135,3 +135,14 @@
 - [ ] Lifecycle、Invariant、Historical Correction、Idempotency 與 Audit 已寫入 Contract。
 - [ ] Duplicate、Merge、Split 與 Legacy Migration 不依模糊 PII 自動判定。
 - [ ] [Scenario Validation Matrix](33-SCENARIO-VALIDATION-MATRIX.md) 的適用案例均有結果與證據。
+
+## 17. Detailed Membership and Attribution Review
+
+- [ ] 未使用 Provider Identity 作任何業務 Aggregate Primary Key。
+- [ ] 已定義 Tenant Membership 唯一性與 Shop Scope。
+- [ ] 已定義 Point Program、Point Ledger、Balance Insufficient Policy 與 D1 Source of Truth。
+- [ ] 已定義 Referral Candidate、Identity Resolution、Membership Created、Referral Confirmed 的建立時機。
+- [ ] Referral 與 Attribution 已分離，並明確定義 Attribution Window、Model 與 Rule Version。
+- [ ] Attendance、Point、Referral、Attribution Command 均具 Idempotency Boundary。
+- [ ] Duplicate、Claim、Merge、Split、Migration 與 Historical Correction 有正式計畫。
+- [ ] 已完成附件指定的 Scenario Matrix，包括 QR 未授權、OCR Claim 與 Promoter Qualification 變更。

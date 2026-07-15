@@ -137,10 +137,10 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [ADR-002](docs/adr/ADR-002-D1-SOURCE-OF-TRUTH-KV-CACHE.md) | Use D1 as Source of Truth and KV as Optional Cache | Accepted |
 | [ADR-003](docs/adr/ADR-003-MODULAR-MONOLITH-WORKER.md) | Begin with a Modular Monolith Cloudflare Worker | Accepted |
 | [ADR-004](docs/adr/ADR-004-TENANT-BRAND-SHOP-HIERARCHY.md) | Adopt an Optional Tenant–Brand–Shop Hierarchy | Accepted |
-| [ADR-005](docs/adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md) | Separate Referral Relationship from Attribution | Accepted |
-| [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Use Tenant-scoped Point Accounts | Accepted |
-| [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Use Single-layer Referral by Default | Accepted |
-| [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | External Identity Is Not a Business Key | Accepted |
+| [ADR-005](docs/adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md) | Separate Referral Relationship from Transaction Attribution | Accepted |
+| [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Scope Point Accounts to Tenant Membership | Accepted |
+| [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Use Single-Layer Referral as the Default Policy | Accepted |
+| [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | Do Not Use External Provider Identity as the Business Primary Key | Accepted |
 
 ### Template Index
 
