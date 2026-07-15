@@ -90,10 +90,10 @@
 - [x] Gate 1 — Cross-Tenant Foreign Key：PASS。
 - [x] Gate 2 — Active-only Uniqueness：PASS。
 - [x] Gate 3 — Point Ledger Concurrency：PASS。
-- [ ] Main Sync 後完整差異回歸已完成並由最終 Architecture Review 接受。
+- [x] Main Sync 後完整差異回歸已完成並由最終 Architecture Review 接受。
 - [ ] Schema／Migration 已取得執行批准。
 
-Gate PASS 只批准 Proposal Architecture Boundary；PR #6 仍為 Draft／Not Executed／Not Verified，不代表 Schema Approved for Execution。
+Gate PASS 只批准 Proposal Architecture Boundary；PR #6 已合併，但 Schema／Migration 仍為 Not Executed／Not Verified，且未取得 Execution Approval。
 
 所有 Proposal／Checklist 項目仍需審查，不因文件存在而視為完成。
 
@@ -102,3 +102,19 @@ Gate PASS 只批准 Proposal Architecture Boundary；PR #6 仍為 Draft／Not Ex
 Sprint 6 只在 Logical Model、Integrity Matrix、Retention Questions 與 Readiness Gate 完整且互相一致時完成。完成 Sprint 6 不等於 Schema Approved、Migration Ready、Runtime Implemented 或 Production Verified。
 
 相關文件：[D1 Logical Data Model](44-D1-LOGICAL-DATA-MODEL.md)、[Data Integrity and Retention Matrix](50-DATA-INTEGRITY-RETENTION-MATRIX.md)、[Project Checklist](09-PROJECT-CHECKLIST.md)。
+
+## Approved Migration Package Handoff
+
+Physical Schema Proposal 已在 RC1 baseline 通過 Architecture Review Gates 1～3，但仍是 Not Executed／Not Verified。後續只能依 [Approved Migration Package](migration-package/README.md) 進入獨立 Test Design Review。
+
+- [ ] Package Designed 已核准。
+- [ ] Test Plan Approved。
+- [ ] Local D1 Tested。
+- [ ] Isolated D1 Tested。
+- [ ] Architecture Approved for Migration Package。
+- [ ] Security Approved。
+- [ ] Execution Approved。
+- [ ] Migration Executed。
+- [ ] Post-Migration Verified。
+
+目前全部不得由 Gate 1～3 的 PASS 推導；執行狀態維持 NO-GO。

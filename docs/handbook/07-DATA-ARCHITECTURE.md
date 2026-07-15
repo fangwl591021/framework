@@ -1,20 +1,18 @@
 # Data Architecture
 
-> `main` 正式基準：Sprint 6 Logical Model · No Physical Schema on main
+> `main` 正式基準：Framework RC1 · Logical Model · Physical Schema Proposal
 
 ## Current Status
 
 ```text
-Logical Model exists.
-Physical Schema is not yet approved on main.
-
-Physical D1 Schema Proposal: Architecture Gates Passed.
-Not Executed. Not Verified.
-Draft PR #6 Pending Final Review.
-Do not treat it as approved baseline until merged.
+Logical Model: On main.
+Physical D1 Schema Proposal: On main; Architecture Gates 1–3 Passed.
+Schema Execution: Not Executed.
+D1 Verification: Not Verified.
+Migration Execution Approval: Not Granted.
 ```
 
-[Draft PR #6](https://github.com/fangwl591021/framework/pull/6) 的三項 Architecture Gate 已通過，目前仍為 Open／Draft／Not Executed／Not Verified／Not Merged，等待最終審查。Handbook 只提供待審查入口，不複製或批准該 PR 的 Physical Table、Column、Constraint、Index 或 Migration Proposal。
+PR #6 已合併，但其核准範圍只限 Physical Schema Proposal 的 Architecture Boundary，不代表 SQL、D1 或 Migration 可執行。下一階段由 [Approved Migration Package](../migration-package/README.md) 分別管理 Test、Security 與 Execution Gate；目前決策仍為 NO-GO。
 
 ## Logical Data Principles
 

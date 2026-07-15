@@ -5,7 +5,7 @@
 ## Status
 
 - Design Status: Proposed
-- Schema Status: Not Approved
+- Schema Status: Architecture-reviewed Proposal；Execution Not Approved
 - Migration Status: Not Executed
 - Runtime Status: Not Implemented
 - Verification Status: Not Verified
@@ -111,4 +111,19 @@ Runtime Implemented
 Production Verified
 ```
 
-SQL 仍是 Proposal Only／Do Not Execute。未完成 Checklist 不得建立 Approved Migration Package。
+SQL 仍是 Proposal Only／Do Not Execute。Approved Migration Package Design 可被提出，但其 Architecture／Security／Execution Gate 未完成前不得執行。
+
+## Approved Migration Package Boundary
+
+三項 Physical Schema Architecture Gate 的 PASS 已納入 Framework RC1。下一階段只允許設計 [Migration Package](migration-package/README.md) 的 phase order、測試、evidence、rollback、reconciliation 與 approval；不授權 SQL、D1 或 Migration 執行。
+
+- Package Designed: Proposed
+- Tested on Local D1: No
+- Tested on Isolated D1: No
+- Architecture Approved for Package: No
+- Security Approved: No
+- Execution Approved: No
+- Migration Executed: No
+- Post-Migration Verified: No
+
+目前決策：[NO-GO — Execution Not Yet Approved](migration-package/11-GO-NOGO-DECISION.md)。
