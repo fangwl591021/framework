@@ -2,52 +2,64 @@
 
 ## 目的
 
-AI 是開發協作者，不是跳過架構、審查與驗收的捷徑。AI 產出的所有變更都必須遵守 Platform Core 的模組邊界與品質標準。
+AI、Codex 與工程師使用相同的 Preflight、Read-only Audit、分層、修改與驗收規則。AI 是開發協作者，不是跳過架構、審查與證據的捷徑。
 
-## 強制流程
+## 強制作業規則
 
-### 1. 先分析
+1. **先做 Preflight**：確認任務範圍、禁止事項與驗收條件。
+2. **確認 Repository、Branch、Commit**：比對 local、origin 與 remote；不一致時停止寫入。
+3. **先做 Read-only Audit**：辨識現況、依賴、資料與未完成變更後才設計。
+4. **不可憑檔名猜測架構**：必須追查實際入口、Interface、資料流與部署表面。
+5. **不可 Copy/Paste 舊專案**：舊功能只能依 [Legacy Asset Extraction](17-LEGACY-ASSET-EXTRACTION.md) 分析。
+6. **未確認資料邊界前不得建立 Schema**：先定義 Platform User、Tenant Membership、Owned Data 與 Permission。
+7. **未確認 Module Contract 前不得寫 API**：先定義 Responsibility、Input、Output、錯誤、版本與 Tenant Scope。
+8. **不得修改 Platform Core 解決單一客戶問題**：先評估 Configuration、Policy、Strategy 或 Extension。
+9. **必須列出修改檔案**：區分新增、更新與刪除，避免夾帶無關變更。
+10. **必須列出測試與未測試項目**：不得用「應該可用」代替證據。
+11. **必須列出是否部署**：未部署時明確寫 `Deployment Performed: No`。
+12. **必須列出是否碰觸正式資料**：未存取時明確寫 `Production Data Accessed: No`。
+13. **必須列出風險與下一步**：區分已決定事項與待確認問題。
+14. **不確定時停止寫入**：仍應完成可行的唯讀分析，說明阻塞與需要的證據。
+15. **大型任務分 Sprint**：不得一次重寫整個 Framework 或同時混入架構、程式、Schema 與部署。
 
-- 確認 Repository、Branch、環境與任務範圍。
-- 讀取現有文件、模組邊界與未完成變更。
-- 說明需求、風險、依賴與不可修改項目。
-- 找出哪些是 Core、Module、Adapter、Extension 或 Project 責任。
+## 標準工作順序
 
-### 2. 再設計
+```text
+Preflight
+→ Read-only Audit
+→ Boundary Analysis
+→ Design
+→ User／ADR Approval（需要時）
+→ Scoped Change
+→ Validation
+→ Diff Review
+→ Branch／Pull Request
+→ Completion Report
+```
 
-- 先定義責任、介面、資料擁有者與驗收條件。
-- 評估是否能用既有公開契約完成，不直接侵入 Core。
-- 將工作拆成可獨立驗證的小變更。
-- 在設計確認前，不開始大範圍 Coding。
+## AI Coding 邊界
 
-### 3. 最後 Coding
-
-- 只修改已確認範圍。
-- 同步建立或更新測試與文件。
-- 執行與風險相稱的驗證。
-- 提交前檢查 Diff，確保沒有秘密、個資或無關變更。
-
-## AI Coding 規則
-
-- 禁止為單一需求直接修改 Core 內部行為。
-- 所有新增能力必須 Module 化，外部整合必須 Adapter 化。
+- 新能力先判斷 Platform Core、Domain Module、Adapter、Extension 或 Application／Tenant Configuration。
 - 禁止建立大型單體檔案或超大型單一 Worker。
-- 單一檔案應保持單一責任與合理大小；當多個領域、流程或依賴混合時必須拆分。
-- 禁止 Copy/Paste 整個既有功能到新專案。
-- 禁止臆測未提供的 Schema、Secret、ID、環境或商業規則。
-- 禁止用註解、空殼或假資料宣稱功能已完成。
-- 禁止在未驗證實際目標環境時宣稱部署或 UI 已成功。
-- 發現工作樹已有變更時必須先辨識來源並保留，不得覆蓋。
-- 破壞性操作、跨專案寫入與 Production 變更必須取得明確授權。
+- 禁止臆測未提供的 Schema、Secret、ID、Tenant、環境或商業規則。
+- 禁止以註解、空殼、假資料或文件宣稱程式已完成。
+- 禁止在未驗證實際環境時宣稱部署、資料遷移或 UI 成功。
+- 發現工作樹已有變更時必須辨識並保留，不得覆蓋或混入提交。
+- 破壞性操作、跨 Repository 寫入與 Production 變更必須取得明確授權。
 
-## 合理檔案大小
+## 檔案與模組治理
 
-不設定能取代判斷的唯一行數上限。審查時應以責任數量、依賴數量、測試難度與變更風險判斷；若檔案無法被快速理解、獨立測試或安全修改，即應拆分。
+- 單一檔案應保持單一責任與合理大小，使用 [Development Standard](03-DEVELOPMENT-STANDARD.md) 的審查門檻。
+- 不得為追求檔案小而產生無意義碎片化。
+- Module 間不得直接操作彼此 Owned Data 或 Import private function。
+- Adapter 不得決定商業規則；Extension 不得修改 Platform Core private 實作。
 
-## 完成標準
+## 完成回報最低內容
 
-- 需求與驗收條件逐項對應。
-- 模組邊界、權限與 Tenant Scope 已驗證。
-- 測試與靜態檢查通過，或清楚記錄尚未完成項目。
-- 文件與程式行為一致。
-- 最終報告區分「已完成」、「已驗證」與「尚未驗證」。
+- Preflight 結果與初始 Commit
+- 新增、更新、刪除檔案清單
+- Architecture Decisions 與未決事項
+- 測試、格式、連結、命名與 Git Diff 驗證
+- Code／Schema／Deployment／Production Data 狀態
+- Working Branch、Commit、Push 與 Pull Request 結果
+- Risks、Open Questions 與下一 Sprint 建議
