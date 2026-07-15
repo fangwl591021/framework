@@ -174,3 +174,18 @@
 - [ ] Access Pattern、容量、競爭與 Index Candidate 留待 evidence-based Physical Design。
 - [ ] 未建立 SQL、D1 Table、Column Type、Index Syntax、Migration、Runtime 或部署。
 - [ ] Physical Schema 工作開始前已通過 [Schema Implementation Readiness Checklist](51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST.md)。
+
+## 20. Sprint 7 Physical D1 Schema Proposal Gate
+
+- [ ] 每張 Table 有 Logical Model mapping、Owner Module、Tenant Scope、PII 與 history rule。
+- [ ] PK、FK、composite tenant FK、Unique、CHECK 與 application-only invariant 已審查。
+- [ ] Table plural snake_case、FK 以 _id 結尾、UTC time naming 與 Tenant Scope 一致。
+- [ ] Point Ledger 只含正式 Entry；Failed Point Intent 不建立 row；Balance 可重建。
+- [ ] Audit 不複製 Domain Record／完整 Payload；KV 不是 Source of Truth。
+- [ ] 每個 Index Candidate 對應 Query ID、composite order、cursor、write cost 與 evidence status。
+- [ ] Identity、Membership、Point、Referral、Attribution、Attendance、Redemption transaction boundary 已審查。
+- [ ] Migration 採 additive／bounded backfill／constraint scan／forward fix／rollback 分類。
+- [ ] Reconciliation 涵蓋 projection drift、active uniqueness、scope、orphan、merge chain 與 Stored Result。
+- [ ] Capacity、Retention、Archive、D1 topology options 與官方 limits 已列入未決決策。
+- [ ] SQL Header、SQL location、documentation-only migration path 與 no-execute rule 已驗證。
+- [ ] Schema Status 仍為 Not Approved；Migration Not Executed；Runtime Not Implemented；Production Not Deployed。

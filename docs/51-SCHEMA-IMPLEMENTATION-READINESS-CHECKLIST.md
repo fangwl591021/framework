@@ -66,6 +66,23 @@
 - [ ] Implementation Status 仍維持 Not Implemented，直到程式與 Migration 實際完成。
 - [ ] Production Verification 仍維持 Not Verified，直到指定環境有可重現證據。
 
+## Sprint 7 Proposal Links
+
+- [Physical D1 Schema Overview](52-PHYSICAL-D1-SCHEMA-OVERVIEW.md)
+- [Identity and Membership Physical Schema](53-IDENTITY-MEMBERSHIP-PHYSICAL-SCHEMA.md)
+- [Point Ledger Physical Schema](54-POINT-LEDGER-PHYSICAL-SCHEMA.md)
+- [Referral and Attribution Physical Schema](55-REFERRAL-ATTRIBUTION-PHYSICAL-SCHEMA.md)
+- [Attendance and Redemption Physical Schema](56-ATTENDANCE-REDEMPTION-PHYSICAL-SCHEMA.md)
+- [Audit and Idempotency Physical Schema](57-AUDIT-IDEMPOTENCY-PHYSICAL-SCHEMA.md)
+- [Index and Query Evidence](58-INDEX-QUERY-EVIDENCE.md)
+- [Transaction Boundary Proposal](59-TRANSACTION-BOUNDARY-PROPOSAL.md)
+- [Migration and Rollback Strategy](60-MIGRATION-ROLLBACK-STRATEGY.md)
+- [Reconciliation and Backfill Strategy](61-RECONCILIATION-BACKFILL-STRATEGY.md)
+- [D1 Capacity and Retention Plan](62-D1-CAPACITY-RETENTION-PLAN.md)
+- [Physical Schema Review Checklist](63-PHYSICAL-SCHEMA-REVIEW-CHECKLIST.md)
+
+所有 Proposal／Checklist 項目仍需審查，不因文件存在而視為完成。
+
 ## Sprint 6 Exit Statement
 
 Sprint 6 只在 Logical Model、Integrity Matrix、Retention Questions 與 Readiness Gate 完整且互相一致時完成。完成 Sprint 6 不等於 Schema Approved、Migration Ready、Runtime Implemented 或 Production Verified。
