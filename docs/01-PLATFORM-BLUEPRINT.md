@@ -1,5 +1,7 @@
 # Platform Blueprint
 
+> 首次閱讀請先由 [Architecture Handbook](../ARCHITECTURE-HANDBOOK.md) 建立整體 Mental Model，再依本 Blueprint、Accepted ADR 與 relevant Module Contract 深入正式邊界。
+
 ## 高層架構
 
 Platform Core Framework 使用五層架構。穩定依賴由 Application 朝 Platform Core 前進；外部平台透過 Adapter 接入；Tenant 或產業差異留在 Configuration、Policy、Strategy 或 Extension。

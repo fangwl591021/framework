@@ -1,0 +1,20 @@
+# Open Decisions
+
+> 本文件只集中未決問題，不替 Tony 定案；Current Status 均不是 Accepted
+
+| Decision | Why It Matters | Current Status | Options | Blocking Sprint | Owner | ADR Required |
+| --- | --- | --- | --- | --- | --- | --- |
+| Internal ID Generator | Collision、暴露、索引與分散建立 | Open；Physical review | UUID／ULID／CUID2／其他 opaque ID | Approved Migration Package | Architecture Owner／Platform Architect | Yes if baseline storage decision |
+| Physical Time Storage | 排序、精度、時區與 migration | Open；Logical Model only on main | Integer epoch／canonical UTC text | Approved Migration Package | Platform Architect | Possibly |
+| Active-only Uniqueness | Membership、Account、Referral、Attribution 單一有效紀錄 | Open | Partial／marker／generation／transaction guard | Schema Review Corrections | Platform Architect／Domain Owners | Possibly |
+| Point Projection Atomicity | Balance read-after-write、drift、hot account | Open | Same local transaction／async rebuild／serialized coordinator | Point Runtime | Point Owner／Platform Architect | Yes if new boundary |
+| Partial Reverse | 資產、Receipt 與 reconciliation 語意 | Open；default not defined | Full only／bounded partial／separate compensation | Point／Redemption Experimental | Architecture Owner／Finance Owner | Yes |
+| Shared／Dedicated D1 | Isolation、容量、成本與 tenant mobility | Open | Shared／tenant group／large-tenant dedicated | Runtime Foundation | Architecture Owner／Platform Architect | Yes |
+| Audit Retention | 法規、incident、storage、legal hold | Open | Risk-tiered periods／archive | Audit Candidate Design | Security／Privacy Owner | Yes |
+| Idempotency Retention | Replay／dispute window 與 storage growth | Open | Operation risk tiers／archive | Idempotency Candidate Design | Domain／Security Owners | Possibly |
+| Attribution Touch Archive | 高寫入、privacy、window evidence | Open | Delete after policy／anonymize／archive | Attribution Experimental | Attribution／Privacy Owner | Possibly |
+| Feature Flag Provider | Evaluation order、cache、emergency control | Open | D1／KV-backed／external provider candidate | Runtime Foundation | Platform Architect | Yes |
+| High-risk Merge SLA | Duplicate Identity incident 與人工審查時效 | Open | Risk-tiered SLA／manual queue | Identity Runtime | Identity／Security Owner | Possibly |
+| Location Evidence Retention | Privacy、attendance dispute、storage | Open | Minimal summary／short retention／restricted archive | Attendance Experimental | Privacy／Attendance Owner | Possibly |
+
+上述 `Blocking Sprint` 只表示最晚需要決策的候選階段，不代表該 Sprint 已批准。部分問題來自 [Schema Readiness Gate](../51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST.md)、[Core Candidates](../21-CORE-CROSSCUTTING-CANDIDATES.md) 與五個 Candidate Contracts。

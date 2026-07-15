@@ -174,3 +174,12 @@
 - [ ] Access Pattern、容量、競爭與 Index Candidate 留待 evidence-based Physical Design。
 - [ ] 未建立 SQL、D1 Table、Column Type、Index Syntax、Migration、Runtime 或部署。
 - [ ] Physical Schema 工作開始前已通過 [Schema Implementation Readiness Checklist](51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST.md)。
+
+## 20. Architecture Handbook Reading Gate
+
+- [ ] 已完成與角色相符的 [Handbook Reading Path](handbook/14-READING-PATHS.md)。
+- [ ] 已閱讀 [Architecture Handbook](../ARCHITECTURE-HANDBOOK.md)，並再查閱 relevant 正式文件，而非只依 Handbook 摘要。
+- [ ] 每個重大 Decision 都引用正式 ADR，且確認其狀態是 `Accepted` 或 `Proposed`。
+- [ ] 已分別確認 Decision、Contract、Lifecycle、Implementation 與 Verification 狀態，不互相推導。
+- [ ] Candidate Source、Candidate Module 與 Platform Core Candidate 未被描述為 Stable、Implemented 或 Production Ready。
+- [ ] AI／Codex 已閱讀 [Working Guide](handbook/10-AI-CODEX-WORKING-GUIDE.md) 並完成 Repository／Branch／HEAD／Workspace Preflight。
