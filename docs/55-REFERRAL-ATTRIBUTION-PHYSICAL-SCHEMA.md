@@ -19,10 +19,10 @@
 
 ### `referral_relationships`
 
-`id`、`tenant_id`、`member_membership_id`、`referrer_membership_id`、`status`、`active_marker`、`source`、`confirmed_at`、`replaced_by_relationship_id`、timestamps、`audit_reference`。
+`id`、`tenant_id`、`member_membership_id`、`referrer_membership_id`、`status`、`source`、`confirmed_at`、`replaced_by_relationship_id`、timestamps、`audit_reference`。
 
 - CHECK 防 self-referral；composite FK 防 cross-tenant。
-- UNIQUE `(tenant_id, member_membership_id, active_marker)` 候選維護單一 active direct referrer。
+- Partial Unique Index `(tenant_id, member_membership_id) WHERE status='active'` 維護單一 active direct referrer；replaced／revoked／corrected history 不進 index。
 - Cycle 無法靠單列 CHECK 完整驗證，屬 transaction graph validation；correction 保存 replacement chain。
 
 ## Attribution
@@ -45,9 +45,9 @@
 
 ### `attribution_records`
 
-保存 conversion、promoter、winning touch、policy／version、window、decision reason、status、active marker、decided／reversed time、correction reference 與 audit reference。
+保存 conversion、promoter、winning touch、policy／version、window、decision reason、status、decided／reversed time、correction reference 與 audit reference。
 
-- UNIQUE tenant＋conversion＋active marker 候選確保單一 active decision。
+- Partial Unique Index `(tenant_id, conversion_id) WHERE status IN ('active','unattributed')` 確保單一有效 decision；corrected／reversed history 不進 index。
 - winning touch、promoter、conversion 必須同 Tenant；由 composite FK／transaction validation。
 - `Unattributed` 可有 null promoter／touch；不得猜測或建立 Referral。
 - Correction 建立新 record 並關聯舊 record，不 UPDATE 歷史 decision。

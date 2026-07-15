@@ -64,15 +64,12 @@ CREATE TABLE identity_mappings (
   provider_context TEXT NOT NULL,
   verification_status TEXT NOT NULL CHECK (verification_status IN ('verified', 'revoked', 'conflict')),
   status TEXT NOT NULL CHECK (status IN ('active', 'revoked', 'conflict')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   linked_at INTEGER NOT NULL,
   last_verified_at INTEGER,
   revoked_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (platform_user_id) REFERENCES platform_users(id) ON DELETE RESTRICT,
-
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  FOREIGN KEY (platform_user_id) REFERENCES platform_users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE tenant_memberships (
@@ -80,7 +77,6 @@ CREATE TABLE tenant_memberships (
   tenant_id TEXT NOT NULL,
   platform_user_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'merged', 'closed')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   join_source TEXT NOT NULL,
   joined_at INTEGER NOT NULL,
   suspended_at INTEGER,
@@ -93,7 +89,6 @@ CREATE TABLE tenant_memberships (
   FOREIGN KEY (platform_user_id) REFERENCES platform_users(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, merged_into_membership_id)
     REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL)),
   CHECK (merged_into_membership_id IS NULL OR merged_into_membership_id <> id)
 );
 
@@ -103,16 +98,13 @@ CREATE TABLE shop_memberships (
   tenant_membership_id TEXT NOT NULL,
   shop_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'revoked')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   joined_at INTEGER NOT NULL,
   revoked_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
-  UNIQUE (tenant_membership_id, shop_id, active_marker),
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE permissions (
@@ -165,6 +157,7 @@ CREATE TABLE role_assignments (
   role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
   tenant_id TEXT,
   tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
+  assignment_scope_key TEXT NOT NULL CHECK (length(assignment_scope_key) > 0),
   brand_id TEXT,
   shop_id TEXT,
   subject_type TEXT NOT NULL CHECK (subject_type IN ('platform_user', 'tenant_membership', 'integration_service')),
@@ -172,7 +165,6 @@ CREATE TABLE role_assignments (
   role_id TEXT NOT NULL,
   scope_type TEXT NOT NULL CHECK (scope_type IN ('platform', 'tenant', 'brand', 'shop', 'own_record', 'assigned_records')),
   status TEXT NOT NULL CHECK (status IN ('active', 'revoked', 'expired')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   effective_at INTEGER NOT NULL,
   expires_at INTEGER,
   revoked_at INTEGER,
@@ -183,25 +175,35 @@ CREATE TABLE role_assignments (
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_scope_key, role_id) REFERENCES roles(tenant_scope_key, id) ON DELETE RESTRICT,
-  UNIQUE (subject_type, subject_reference, role_id, scope_type, tenant_scope_key, brand_id, shop_id, active_marker),
   CHECK (
     (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
     (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
   ),
   CHECK (
-    (scope_type = 'platform' AND role_scope_type = 'core_template' AND tenant_id IS NULL AND brand_id IS NULL AND shop_id IS NULL) OR
-    (scope_type IN ('tenant', 'own_record', 'assigned_records') AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL) OR
-    (scope_type = 'brand' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NOT NULL AND shop_id IS NULL) OR
-    (scope_type = 'shop' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NOT NULL)
-  ),
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+    (scope_type = 'platform' AND role_scope_type = 'core_template' AND tenant_id IS NULL AND brand_id IS NULL AND shop_id IS NULL AND assignment_scope_key = 'platform') OR
+    (scope_type = 'tenant' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL AND assignment_scope_key = 'tenant:' || tenant_id) OR
+    (scope_type = 'own_record' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL AND assignment_scope_key = 'own_record:' || tenant_id) OR
+    (scope_type = 'assigned_records' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL AND assignment_scope_key = 'assigned_records:' || tenant_id) OR
+    (scope_type = 'brand' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NOT NULL AND shop_id IS NULL AND assignment_scope_key = 'brand:' || tenant_id || ':' || brand_id) OR
+    (scope_type = 'shop' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NOT NULL AND assignment_scope_key = 'shop:' || tenant_id || ':' || shop_id)
+  )
 );
 
 CREATE UNIQUE INDEX uq_identity_mappings_active
-  ON identity_mappings(provider, provider_context, provider_subject_hash, active_marker);
+  ON identity_mappings(provider, provider_context, provider_subject_hash)
+  WHERE status = 'active';
 
 CREATE UNIQUE INDEX uq_tenant_memberships_active
-  ON tenant_memberships(tenant_id, platform_user_id, active_marker);
+  ON tenant_memberships(tenant_id, platform_user_id)
+  WHERE status = 'active';
+
+CREATE UNIQUE INDEX uq_shop_memberships_active
+  ON shop_memberships(tenant_id, tenant_membership_id, shop_id)
+  WHERE status = 'active';
+
+CREATE UNIQUE INDEX uq_role_assignments_active
+  ON role_assignments(subject_type, subject_reference, role_id, assignment_scope_key)
+  WHERE status = 'active';
 
 CREATE INDEX idx_shop_memberships_member
   ON shop_memberships(tenant_id, tenant_membership_id, status, id);
@@ -315,7 +317,6 @@ CREATE TABLE point_accounts (
   shop_id TEXT,
   scope_key TEXT NOT NULL CHECK (length(scope_key) > 0),
   status TEXT NOT NULL CHECK (status IN ('active', 'frozen', 'closed')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   frozen_at INTEGER,
@@ -324,8 +325,7 @@ CREATE TABLE point_accounts (
 
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_program_id) REFERENCES point_programs(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE point_transactions (
@@ -370,8 +370,13 @@ CREATE TABLE point_balance_projections (
   FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_point_accounts_active
-  ON point_accounts(tenant_membership_id, point_program_id, scope_key, active_marker);
+CREATE UNIQUE INDEX uq_point_accounts_tenant_active
+  ON point_accounts(tenant_id, tenant_membership_id, point_program_id)
+  WHERE status = 'active' AND shop_id IS NULL;
+
+CREATE UNIQUE INDEX uq_point_accounts_shop_active
+  ON point_accounts(tenant_id, tenant_membership_id, point_program_id, shop_id)
+  WHERE status = 'active' AND shop_id IS NOT NULL;
 
 CREATE INDEX idx_point_transactions_account_time
   ON point_transactions(tenant_id, point_account_id, occurred_at DESC, id DESC);
@@ -403,7 +408,6 @@ CREATE TABLE referral_relationships (
   member_membership_id TEXT NOT NULL,
   referrer_membership_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'replaced', 'revoked', 'corrected')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   source TEXT NOT NULL,
   confirmed_at INTEGER NOT NULL,
   replaced_by_relationship_id TEXT,
@@ -416,8 +420,7 @@ CREATE TABLE referral_relationships (
   FOREIGN KEY (tenant_id, member_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, referrer_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, replaced_by_relationship_id) REFERENCES referral_relationships(tenant_id, id) ON DELETE RESTRICT,
-  CHECK (member_membership_id <> referrer_membership_id),
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  CHECK (member_membership_id <> referrer_membership_id)
 );
 
 CREATE TABLE share_links (
@@ -485,7 +488,6 @@ CREATE TABLE attribution_records (
   window_seconds INTEGER NOT NULL CHECK (window_seconds >= 0),
   decision_reason TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'unattributed', 'corrected', 'reversed')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   decided_at INTEGER NOT NULL,
   corrected_by_record_id TEXT,
   reversed_at INTEGER,
@@ -496,18 +498,20 @@ CREATE TABLE attribution_records (
   FOREIGN KEY (tenant_id, promoter_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, winning_touch_id) REFERENCES attribution_touches(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attribution_records(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status IN ('active', 'unattributed') AND active_marker = 'active') OR (status IN ('corrected', 'reversed') AND active_marker IS NULL)),
+
   CHECK ((status = 'unattributed' AND promoter_membership_id IS NULL) OR status <> 'unattributed')
 );
 
 CREATE UNIQUE INDEX uq_referral_relationships_active
-  ON referral_relationships(tenant_id, member_membership_id, active_marker);
+  ON referral_relationships(tenant_id, member_membership_id)
+  WHERE status = 'active';
 
 CREATE UNIQUE INDEX uq_share_links_token
   ON share_links(tenant_id, token_hash);
 
 CREATE UNIQUE INDEX uq_attribution_records_active
-  ON attribution_records(tenant_id, conversion_id, active_marker);
+  ON attribution_records(tenant_id, conversion_id)
+  WHERE status IN ('active', 'unattributed');
 
 CREATE INDEX idx_referral_relationships_history
   ON referral_relationships(tenant_id, member_membership_id, confirmed_at DESC, id DESC);
@@ -584,7 +588,6 @@ CREATE TABLE attendance_records (
   tenant_membership_id TEXT NOT NULL,
   source_attempt_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('confirmed', 'corrected', 'revoked')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   confirmed_at INTEGER NOT NULL,
   corrected_by_record_id TEXT,
   revoked_at INTEGER,
@@ -596,8 +599,7 @@ CREATE TABLE attendance_records (
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, event_id, event_session_id, source_attempt_id)
     REFERENCES attendance_attempts(tenant_id, event_id, event_session_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'confirmed' AND active_marker = 'active') OR (status <> 'confirmed' AND active_marker IS NULL))
+  FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE redemption_intents (
@@ -654,7 +656,8 @@ CREATE TABLE redemption_results (
 );
 
 CREATE UNIQUE INDEX uq_attendance_records_active
-  ON attendance_records(tenant_id, event_session_id, tenant_membership_id, active_marker);
+  ON attendance_records(tenant_id, event_session_id, tenant_membership_id)
+  WHERE status = 'confirmed';
 
 CREATE UNIQUE INDEX uq_redemption_intents_business_ref
   ON redemption_intents(tenant_id, business_reference);

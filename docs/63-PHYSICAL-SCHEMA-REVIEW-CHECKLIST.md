@@ -1,6 +1,6 @@
 # Physical Schema Review Checklist
 
-> Architecture Owner Gate · All Items Initially Unchecked
+> Architecture Owner Gate · Review Results Recorded Explicitly
 
 ## Status
 
@@ -40,7 +40,22 @@
 - [ ] Audit 的 Platform／Tenant／Brand／Shop 合法 nullable 組合、Tenant FK 與 optional Brand–Shop hierarchy 已審查。
 - [ ] Attendance 的 Event／Session／Source Attempt hierarchy 使用同一 Composite FK path。
 - [ ] 所有 nullable Composite FK 均有必要 CHECK、獨立 parent FK 或明確 application invariant。
-- [ ] Gate 1 第二輪 Architecture Owner Review 結果已記錄；未通過前維持 Draft／Not Approved。
+- [x] Gate 1 第二輪 Architecture Owner Review PASS 已記錄；此狀態不批准 Schema，PR 仍維持 Draft／Not Approved。
+
+## Gate 2 — Active-only Uniqueness
+
+- [ ] Active-only Domain Record 全部使用 status-based Partial Unique Index，不再使用 `active_marker`。
+- [ ] Identity Mapping、Tenant Membership、Shop Membership 的 effective key 全為 NOT NULL 且由 Partial Unique Index選出 Winner。
+- [ ] Role Assignment 使用非 NULL canonical `assignment_scope_key`；nullable Brand／Shop 不直接參與一般 Active UNIQUE。
+- [ ] Point Account 依 `shop_id IS NULL／IS NOT NULL` 使用兩個 Partial Unique Index；`scope_key` 不是唯一性真相。
+- [ ] Referral、Attribution、Attendance 的 effective status predicate 與 Contract 語意一致。
+- [ ] Create Active 直接 Insert，由 Unique Conflict 決定 Winner，不採 check-then-insert。
+- [ ] Replace／Correct 在單一 local transaction 關閉舊 Winner並建立新 Winner；任一步驟失敗整筆 rollback。
+- [ ] Revoke 明確允許 zero-active，且不與 Replace／Correct 混用。
+- [ ] Historical row 不可直接恢復為 effective；若 Contract 允許恢復，仍建立新版本並走唯一 Winner 流程。
+- [ ] Concurrent conflict 有 Stored Result、Retry Policy、Audit、Idempotency 與 Reconciliation owner。
+- [ ] Drift detection 覆蓋 active count `> 1`、非預期 `0`、scope-key mismatch 與非法 lifecycle transition。
+- [ ] Gate 2 第二輪 Architecture Owner Review 結果已記錄；未通過前維持 Draft／Not Approved。
 
 ## Index and Query Evidence
 

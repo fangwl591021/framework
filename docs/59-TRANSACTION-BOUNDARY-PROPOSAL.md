@@ -13,6 +13,45 @@
 
 D1 在單一 database 內可提供 local SQL transaction semantics；本 Proposal 不假設跨 database、Module、Queue、Provider 或 Notification 的分散式 transaction。實作 API 與 atomic claim 方法仍未決定。
 
+## Active-only Lifecycle Standard
+
+Active-only Domain Record 統一使用 status-based Partial Unique Index；不使用 `active_marker`，也不讓 nullable business scope 欄位直接參與一般 UNIQUE。Idempotency 的 scope-separated partial indexes是不同用途，不代表 lifecycle state。
+
+| Record | Effective Status | Unique Winner Key |
+| --- | --- | --- |
+| Identity Mapping | `active` | provider＋context＋subject hash |
+| Tenant Membership | `active` | tenant＋platform user |
+| Shop Membership | `active` | tenant＋membership＋shop |
+| Role Assignment | `active` | subject＋role＋non-null assignment scope key |
+| Point Account | `active` | tenant＋membership＋program；依 shop NULL／NOT NULL 分開 |
+| Referral Relationship | `active` | tenant＋member |
+| Attribution Record | `active`／`unattributed` | tenant＋conversion |
+| Attendance Record | `confirmed` | tenant＋session＋membership |
+
+### Create Active
+
+- 不使用「先查是否存在，再 Insert」作唯一性保證。
+- Command 在完成 scope、permission、fingerprint 與 eligibility 驗證後直接 Insert effective row；Partial Unique Index 選出唯一 Winner。
+- Unique Conflict 的 loser 不建立第二個效果，保存安全 Conflict Stored Result；相同 Idempotency Key 依原結果回傳。
+
+### Replace／Correct Active
+
+- 關閉舊 effective row與建立新 effective row必須在同一 local transaction。
+- Transaction 內先驗證 old row仍是目前 Winner，再把它轉成 replaced／corrected／revoked 等合法歷史 status，接著 Insert 新 effective row。
+- 任一步驟失敗整筆 rollback；既有 Winner 恢復，因此不留下 double-active，也不因中途失敗留下非預期 zero-active。
+- Concurrent Replacement 只有一個 transaction 能提交；loser 回明確 Conflict／Already Replaced Result，依 Contract 決定是否用相同 key重讀或重新提出新 Intent。
+
+### Revoke Active
+
+- Revoke 是明確允許 zero-active 的獨立 Command，不和 Replace／Correct 混用。
+- Revoke 只把目前 Winner 轉為 revoked／closed／expired 等歷史 status；必須保存 Actor、Reason、Audit 與 Stored Result。
+
+### History and Repair
+
+- Historical row 不得直接 UPDATE 回 effective status；若 Contract 明確允許恢復，也必須建立新版本並走相同唯一 Winner 流程。
+- Reconciliation 偵測 effective count `> 1`、Replace／Correct 後非預期 `0`、非法 status transition 與 scope-key drift。
+- Repair 不直接改歷史 row成 Active；由 Owner Command、Idempotency、Audit 與必要人工核准建立新版本。
+
 ## Candidate Boundaries
 
 ### Identity Linking
@@ -83,7 +122,7 @@ Claim Conversion Decision → Load Valid Touch Window／Policy
 → Insert Active Decision or Unattributed → Store Result → Audit
 ```
 
-Correction 先驗證 approval，再建立新 record／停用 active marker；不改 Referral。
+Correction 先驗證 approval，再於同一 local transaction 關閉舊 effective record並建立新 record；不改 Referral。
 
 ### Attendance Confirmation
 

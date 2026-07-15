@@ -27,7 +27,6 @@ CREATE TABLE point_accounts (
   shop_id TEXT,
   scope_key TEXT NOT NULL CHECK (length(scope_key) > 0),
   status TEXT NOT NULL CHECK (status IN ('active', 'frozen', 'closed')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   frozen_at INTEGER,
@@ -36,8 +35,7 @@ CREATE TABLE point_accounts (
 
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_program_id) REFERENCES point_programs(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE point_transactions (
@@ -82,8 +80,13 @@ CREATE TABLE point_balance_projections (
   FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_point_accounts_active
-  ON point_accounts(tenant_membership_id, point_program_id, scope_key, active_marker);
+CREATE UNIQUE INDEX uq_point_accounts_tenant_active
+  ON point_accounts(tenant_id, tenant_membership_id, point_program_id)
+  WHERE status = 'active' AND shop_id IS NULL;
+
+CREATE UNIQUE INDEX uq_point_accounts_shop_active
+  ON point_accounts(tenant_id, tenant_membership_id, point_program_id, shop_id)
+  WHERE status = 'active' AND shop_id IS NOT NULL;
 
 CREATE INDEX idx_point_transactions_account_time
   ON point_transactions(tenant_id, point_account_id, occurred_at DESC, id DESC);

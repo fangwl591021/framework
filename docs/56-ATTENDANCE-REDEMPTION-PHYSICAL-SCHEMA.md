@@ -29,7 +29,7 @@
 
 ### `attendance_records`
 
-只保存正式 `confirmed`、`corrected`、`revoked` result；UNIQUE tenant＋session＋membership＋active marker 候選防重。Correction／revoke 建立歷史 chain，不 delete。Point Grant 是跨 Module Command，不強制同一 transaction。
+只保存正式 `confirmed`、`corrected`、`revoked` result；Partial Unique Index `(tenant_id, event_session_id, tenant_membership_id) WHERE status='confirmed'` 選出唯一有效紀錄。Correction／revoke 建立歷史 chain，不 delete；轉換依共通 local transaction lifecycle。Point Grant 是跨 Module Command，不強制同一 transaction。
 
 ## Redemption
 
@@ -50,6 +50,6 @@
 
 ## Open Decisions
 
-Event reference table 是否保留、attendance active uniqueness、location retention、rejected result vs intent final state、receipt retention、dynamic token threshold 與 cross-database reconciliation 尚未批准。
+Event reference table 是否保留、Attendance Partial Unique Index 的量測與最終批准、location retention、rejected result vs intent final state、receipt retention、dynamic token threshold 與 cross-database reconciliation 尚未批准。
 
 SQL：[004-attendance-redemption.sql](schema/proposals/004-attendance-redemption.sql)。

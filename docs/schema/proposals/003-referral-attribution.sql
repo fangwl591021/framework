@@ -23,7 +23,6 @@ CREATE TABLE referral_relationships (
   member_membership_id TEXT NOT NULL,
   referrer_membership_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'replaced', 'revoked', 'corrected')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   source TEXT NOT NULL,
   confirmed_at INTEGER NOT NULL,
   replaced_by_relationship_id TEXT,
@@ -36,8 +35,7 @@ CREATE TABLE referral_relationships (
   FOREIGN KEY (tenant_id, member_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, referrer_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, replaced_by_relationship_id) REFERENCES referral_relationships(tenant_id, id) ON DELETE RESTRICT,
-  CHECK (member_membership_id <> referrer_membership_id),
-  CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
+  CHECK (member_membership_id <> referrer_membership_id)
 );
 
 CREATE TABLE share_links (
@@ -105,7 +103,6 @@ CREATE TABLE attribution_records (
   window_seconds INTEGER NOT NULL CHECK (window_seconds >= 0),
   decision_reason TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'unattributed', 'corrected', 'reversed')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   decided_at INTEGER NOT NULL,
   corrected_by_record_id TEXT,
   reversed_at INTEGER,
@@ -116,18 +113,20 @@ CREATE TABLE attribution_records (
   FOREIGN KEY (tenant_id, promoter_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, winning_touch_id) REFERENCES attribution_touches(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attribution_records(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status IN ('active', 'unattributed') AND active_marker = 'active') OR (status IN ('corrected', 'reversed') AND active_marker IS NULL)),
+
   CHECK ((status = 'unattributed' AND promoter_membership_id IS NULL) OR status <> 'unattributed')
 );
 
 CREATE UNIQUE INDEX uq_referral_relationships_active
-  ON referral_relationships(tenant_id, member_membership_id, active_marker);
+  ON referral_relationships(tenant_id, member_membership_id)
+  WHERE status = 'active';
 
 CREATE UNIQUE INDEX uq_share_links_token
   ON share_links(tenant_id, token_hash);
 
 CREATE UNIQUE INDEX uq_attribution_records_active
-  ON attribution_records(tenant_id, conversion_id, active_marker);
+  ON attribution_records(tenant_id, conversion_id)
+  WHERE status IN ('active', 'unattributed');
 
 CREATE INDEX idx_referral_relationships_history
   ON referral_relationships(tenant_id, member_membership_id, confirmed_at DESC, id DESC);

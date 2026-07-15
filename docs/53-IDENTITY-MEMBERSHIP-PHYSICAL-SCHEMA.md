@@ -19,9 +19,9 @@
 
 ### `identity_mappings`
 
-候選欄位：`id`、`platform_user_id`、`provider`、`provider_subject_hash`、`provider_context`、`verification_status`、`status`、`active_marker`、`linked_at`、`last_verified_at`、`revoked_at`、timestamps。
+候選欄位：`id`、`platform_user_id`、`provider`、`provider_subject_hash`、`provider_context`、`verification_status`、`status`、`linked_at`、`last_verified_at`、`revoked_at`、timestamps。
 
-- Active uniqueness candidate：`provider + provider_context + provider_subject_hash + active_marker`；active row 使用 `'active'`，inactive row 使用 `NULL`，利用 SQLite UNIQUE 對多個 `NULL` 的語意保留歷史。
+- Active uniqueness candidate：Partial Unique Index `provider + provider_context + provider_subject_hash WHERE status='active'`。歷史 row 以 `revoked`／`conflict` status 保留，不依賴 nullable marker。
 - Provider Subject 預設提出 keyed hash／opaque digest；是否需要可逆原值、key rotation 與 Email／Phone 獨立 verification table 需 Security／Identity ADR。
 - Hash 不取代 Provider 驗證；collision／normalization／context version 仍由 Identity Transaction 驗證。
 
@@ -36,20 +36,20 @@
 
 ### `tenant_memberships`
 
-候選：`id`、`tenant_id`、`platform_user_id`、`status`、`active_marker`、`join_source`、`joined_at`、`suspended_at`、`merged_into_membership_id`、timestamps。
+候選：`id`、`tenant_id`、`platform_user_id`、`status`、`join_source`、`joined_at`、`suspended_at`、`merged_into_membership_id`、timestamps。
 
-Active-only uniqueness proposal：UNIQUE `(tenant_id, platform_user_id, active_marker)`；active row=`'active'`，historical row=`NULL`。這是 Proposal，需驗證 concurrent transition 與 invalid marker repair；若不採 marker，替代方案為 D1 支援度確認後的 partial unique index 或 application transaction guard。
+Active-only uniqueness proposal：Partial Unique Index `(tenant_id, platform_user_id) WHERE status='active'`。Create 直接競爭 Unique Winner；Replace／Merge 依共通 local transaction lifecycle 處理，不先查再 Insert。
 
 Membership Merge 使用 `(tenant_id, merged_into_membership_id) → tenant_memberships(tenant_id, id)`，並保留 `merged_into_membership_id <> id`，因此 DB 拒絕跨 Tenant target 與直接 self-merge。Merge chain 無循環、Source／Target 同一 Platform User（或具有正式 Identity Merge 核准）、Merged Membership 不再作 Active Business Subject，仍是 Membership Engine 在 merge transaction 內驗證的 application-only invariants。
 
 ### `shop_memberships`
 
-直接含 `tenant_id`、`tenant_membership_id`、`shop_id`、`status`、`active_marker` 與 lifecycle timestamps。Composite FK 候選：
+直接含 `tenant_id`、`tenant_membership_id`、`shop_id`、`status` 與 lifecycle timestamps。Composite FK 候選：
 
 - `(tenant_id, tenant_membership_id)` → membership `(tenant_id, id)`
 - `(tenant_id, shop_id)` → shop `(tenant_id, id)`
 
-確保 `shop.tenant_id = tenant_membership.tenant_id`。Active uniqueness candidate：membership＋shop＋marker。
+確保 `shop.tenant_id = tenant_membership.tenant_id`。Active uniqueness candidate：Partial Unique Index `(tenant_id, tenant_membership_id, shop_id) WHERE status='active'`。
 
 ## Role and Permission
 
@@ -58,19 +58,21 @@ Membership Merge 使用 `(tenant_id, merged_into_membership_id) → tenant_membe
 - `roles`、`role_permissions`、`role_assignments` 都保存 `role_scope_type`、`tenant_id`、`tenant_scope_key`。Core Template 固定為 `core_template + tenant_id NULL + tenant_scope_key='platform'`；Tenant-defined Role 固定為 `tenant_defined + tenant_id NOT NULL + tenant_scope_key='tenant:' || tenant_id`。
 - `roles` 提供 `UNIQUE (tenant_scope_key, id)`；Mapping 與 Assignment 使用 `(tenant_scope_key, role_id)` Composite FK。Tenant A 的 Mapping／Assignment 因 scope key 不同，不能引用 Tenant B Role；Platform Assignment 只能引用 Core Template。
 - `role_permissions` 的 Core Mapping 與 Tenant Mapping 使用相同 normalized rule，不能把 optional `tenant_id` 與獨立 `role_id` 任意組合。
-- `role_assignments` 以 CHECK 限定合法 scope 組合：Platform 不得有 Tenant／Brand／Shop；Tenant／Own／Assigned 不得有 Brand／Shop；Brand 必須有同 Tenant Brand；Shop 必須有同 Tenant Shop。為避免 nullable hierarchy 模糊，Role Assignment 的 Shop Scope 不同時保存 Brand。
+- `role_assignments` 新增非 NULL `assignment_scope_key`，並以 CHECK 正規化：Platform=`platform`、Tenant=`tenant:{tenant_id}`、Own=`own_record:{tenant_id}`、Assigned=`assigned_records:{tenant_id}`、Brand=`brand:{tenant_id}:{brand_id}`、Shop=`shop:{tenant_id}:{shop_id}`。nullable `brand_id`／`shop_id` 不再進入一般 Active UNIQUE。
+- Active Assignment 使用 Partial Unique Index `(subject_type, subject_reference, role_id, assignment_scope_key) WHERE status='active'`，由 DB 選出唯一 Winner。
 - `subject_reference` 仍是 polymorphic business reference。Subject 實際存在、Tenant Membership 可用、Integration Service 授權與敏感 command 的即時 permission evaluation，明確列為 application-only invariant，不宣稱由 FK 完整覆蓋。
 
 ## DB-enforced and Application-enforced Invariants
 
 | Rule | DB-enforced candidate | Application-enforced remainder |
 | --- | --- | --- |
-| Provider identity single active owner | UNIQUE＋active marker | normalization、hash collision、recovery |
-| User single active tenant membership | UNIQUE＋active marker | concurrent lifecycle transition |
+| Provider identity single active owner | status-based Partial Unique Index | normalization、hash collision、recovery |
+| User single active tenant membership | status-based Partial Unique Index | local lifecycle transaction、conflict result |
 | Membership Merge same Tenant／not self | Tenant-aware composite FK＋CHECK | no cycle、same Platform User／approved Identity Merge、merged subject inactive |
 | Shop／Membership same Tenant | composite FK | parent lifecycle eligibility |
 | Core／Tenant Role separation | normalized scope CHECK＋composite FK | role policy semantics、template publication |
 | Role Mapping／Assignment same Tenant | `tenant_scope_key + role_id` composite FK | subject polymorphism、current membership eligibility |
+| Role Assignment single active scope | normalized `assignment_scope_key`＋Partial Unique Index | concurrent conflict／retry／audit |
 | Brand／Shop Assignment same Tenant | legal-combination CHECK＋composite FK | policy evaluation、assigned-record resolution |
 
 SQL：[001-core-identity-membership.sql](schema/proposals/001-core-identity-membership.sql)。

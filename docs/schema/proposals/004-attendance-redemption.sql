@@ -68,7 +68,6 @@ CREATE TABLE attendance_records (
   tenant_membership_id TEXT NOT NULL,
   source_attempt_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('confirmed', 'corrected', 'revoked')),
-  active_marker TEXT CHECK (active_marker IS NULL OR active_marker = 'active'),
   confirmed_at INTEGER NOT NULL,
   corrected_by_record_id TEXT,
   revoked_at INTEGER,
@@ -80,8 +79,7 @@ CREATE TABLE attendance_records (
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, event_id, event_session_id, source_attempt_id)
     REFERENCES attendance_attempts(tenant_id, event_id, event_session_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT,
-  CHECK ((status = 'confirmed' AND active_marker = 'active') OR (status <> 'confirmed' AND active_marker IS NULL))
+  FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE redemption_intents (
@@ -138,7 +136,8 @@ CREATE TABLE redemption_results (
 );
 
 CREATE UNIQUE INDEX uq_attendance_records_active
-  ON attendance_records(tenant_id, event_session_id, tenant_membership_id, active_marker);
+  ON attendance_records(tenant_id, event_session_id, tenant_membership_id)
+  WHERE status = 'confirmed';
 
 CREATE UNIQUE INDEX uq_redemption_intents_business_ref
   ON redemption_intents(tenant_id, business_reference);

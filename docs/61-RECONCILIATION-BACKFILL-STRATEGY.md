@@ -16,6 +16,12 @@
 | Subject | Detection Query Concept | Severity | Auto Fix | Manual Review／Audit | Retry／Owner |
 | --- | --- | --- | --- | --- | --- |
 | Point Ledger vs Projection | account ledger sum／watermark ≠ projection | Critical | rebuild projection only | ledger mutation forbidden；audit drift | bounded retry／Point Engine |
+| Identity Mapping active uniqueness | provider context＋subject active count > 1 | Critical | No | identity conflict review | case retry／Identity Center |
+| Tenant Membership active uniqueness | tenant＋user active count > 1 | Critical | No | membership lifecycle review | case retry／Membership Engine |
+| Shop Membership active uniqueness | tenant＋membership＋shop active count > 1 | High | No | membership lifecycle review | case retry／Membership Engine |
+| Role Assignment active uniqueness | subject＋role＋assignment scope active count > 1／scope key mismatch | Critical | No | permission incident／audit | no retry／Permission Engine |
+| Point Account active uniqueness | tenant／shop scope active count > 1 or program mode mismatch | Critical | No | asset ownership review | no retry／Point Engine |
+| Active replacement outcome | Replace／Correct committed with non-expected zero active | Critical | No blind reactivation | inspect transaction／idempotency／audit evidence | same key／Owner Module |
 | Referral active uniqueness | member active count > 1 | High | No | choose valid history with approval | case retry／Referral Engine |
 | Attribution active record | conversion active count > 1 | High | No | policy evidence review | case retry／Attribution Engine |
 | Attendance duplicate | session＋member active count > 1 | High | No | revoke／correct approved record | case retry／Attendance Engine |
@@ -44,3 +50,5 @@
 ## Repair Boundaries
 
 本文件不建立 executable query 或 repair script。Auto fix 只允許可重建 projection／cache；Ledger、Referral、Attribution、Attendance、Redemption、Identity Merge 與 cross-tenant violation 必須走 owner command、audit與必要 approval。
+
+Active-only violation 不得由 repair job 任意挑選 Winner 或把 historical row 直接改回 effective status。Repair queue 只保存 violation reference、scope、detected count、candidate records 與 evidence；最後修正必須走 Owner Module 的 Correct／Replace／Revoke Command、Idempotency、Audit 與必要人工核准。

@@ -21,11 +21,12 @@
 
 ## `point_accounts`
 
-包含 `tenant_id`、`tenant_membership_id`、`point_program_id`、optional `shop_id`、`scope_key`、`status`、`active_marker`、`frozen_at`、`closed_at` 與 timestamps。
+包含 `tenant_id`、`tenant_membership_id`、`point_program_id`、optional `shop_id`、`scope_key`、`status`、`frozen_at`、`closed_at` 與 timestamps。
 
-- `scope_key` 正規化 tenant-shared／shop scope，避免 SQLite UNIQUE 對 `NULL shop_id` 允許多筆；不得使用 fake shop sentinel。
-- UNIQUE candidate：membership＋program＋scope_key＋active_marker。
-- Composite FK 確保 account、membership、program、optional shop 同 Tenant；`scope_key` 與 `shop_id`／program mode 一致性仍需 transaction validation。
+- `scope_key` 可保留作查詢或顯示用的次級 reference，但不是 Active Account 唯一性的最終真相。
+- Tenant-shared Account 使用 Partial Unique Index `(tenant_id, tenant_membership_id, point_program_id) WHERE status='active' AND shop_id IS NULL`。
+- Shop-scoped Account 使用 Partial Unique Index `(tenant_id, tenant_membership_id, point_program_id, shop_id) WHERE status='active' AND shop_id IS NOT NULL`。
+- Composite FK 確保 account、membership、program、optional shop 同 Tenant；program `scope_mode` 與 `shop_id` 的合法組合仍由 transaction validation 與 reconciliation 驗證。
 
 ## `point_transactions`
 
@@ -33,7 +34,7 @@
 
 候選欄位：`id`、`tenant_id`、`point_account_id`、`operation`、`signed_amount INTEGER`、`business_type`、`business_reference`、`rule_version`、`idempotency_record_id`、`original_transaction_id`、`actor_type`、`actor_reference`、`reason_code`、`occurred_at`、`created_at`、`audit_reference`。
 
-` 以 `(tenant_id, idempotency_record_id)` Composite FK 指向 Tenant-scoped Idempotency Record。Point Transaction 不能引用 Platform Scope 或其他 Tenant 的 Stored Result；單欄 ID FK 不視為 Tenant Isolation。
+`idempotency_record_id` 以 `(tenant_id, idempotency_record_id)` Composite FK 指向 Tenant-scoped Idempotency Record。Point Transaction 不能引用 Platform Scope 或其他 Tenant 的 Stored Result；單欄 ID FK 不視為 Tenant Isolation。
 
 - `signed_amount != 0`；禁止 floating point。
 - Grant／Reverse／Adjust 的正負語意由 Contract＋CHECK candidate 共同限制；所有 operation 的符號矩陣需 Tony 批准。
@@ -54,6 +55,6 @@
 
 ## Open Decisions
 
-Internal ID generator、scope key canonical form、partial reverse、single-reverse guard、projection atomicity、hot account serialization、ledger retention／archive 都需 Architecture Owner 決定或要求證據。
+Internal ID generator、scope key 的非權威顯示／查詢格式、partial reverse、single-reverse guard、projection atomicity、hot account serialization、ledger retention／archive 都需 Architecture Owner 決定或要求證據。Active Account 唯一 Winner 不再依賴 scope key。
 
 SQL：[002-point-ledger.sql](schema/proposals/002-point-ledger.sql)。
