@@ -218,3 +218,17 @@
 - [ ] Production Migration 已取得四角色所需的獨立核准。
 
 本 Sprint 僅建立 Design；以上項目不得因文件或 PR 存在而自動勾選。
+
+## QA Governance Checklist
+
+- [ ] QA Governance Foundation 已由具名 Authority 核准。
+- [ ] Test Case、Fixture／Seed、Expected Result 與 Evidence 標準已核准。
+- [ ] Coverage、Concurrency、Recovery、Performance 與 Security 測試範圍已核准。
+- [ ] Test Execution Lifecycle 與 Evidence Review Workflow 已核准。
+- [ ] QA Reviewer、Security Reviewer、Test Operator 與 Execution Approver 已指派。
+- [ ] Migration Test Plan 已完成 QA Governance Mapping。
+- [ ] Test Plan Approved 已正式更新為 Yes。
+- [ ] Test Library 已實作並獨立審查。
+- [ ] Local／Isolated D1 測試已有可驗證 Evidence。
+
+目前以上項目均未因 QA Governance Design 建立而完成；PR #9 仍維持 NO-GO。

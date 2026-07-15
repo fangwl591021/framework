@@ -1,0 +1,21 @@
+# QA Readiness Checklist
+
+- [ ] QA Governance Designed
+- [ ] QA Governance Approved
+- [ ] Test Case Standard Approved
+- [ ] Fixture Standard Approved
+- [ ] Evidence Standard Approved
+- [ ] Coverage Matrix Complete
+- [ ] Security Test Standard Approved
+- [ ] Recovery Test Standard Approved
+- [ ] Module Test Library Designed
+- [x] Migration Test Plan Mapping Created（18 mapped／0 unmapped）
+- [ ] Migration Test Plan Corrections Completed
+- [ ] Migration Test Plan Re-review Ready
+- [ ] Test Plan Approved
+- [ ] Security Reviewer Assigned
+- [ ] Test Operator Assigned
+- [ ] Local Test Execution Authorized
+- [ ] Isolated Test Execution Authorized
+- [ ] Evidence Storage Approved
+- [ ] Retention Approved

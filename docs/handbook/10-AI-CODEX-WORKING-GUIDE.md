@@ -69,3 +69,9 @@ Recommended Next Step
 ```
 
 必須明確寫出 Code、Schema、Migration、Deployment、Production Data 是否有建立、執行或存取。大型任務按 Sprint 分開，不能一次混入架構、Runtime、Schema、Migration 與 Deployment。
+
+## QA Governance Task Rule
+
+涉及測試設計、執行或證據的 AI／Codex 任務，必須先閱讀 [QA Governance Foundation](../qa-governance/README.md)，使用指定 Template，並保留 Test Case、Fixture、Expected Result、Run Manifest、Evidence 與 Approval Decision 的可追溯關係。
+
+AI 不得從文件存在、PR 合併、命令輸出片段或未審查的 Artifact 推定 Passed、Executed、Verified 或 Approved。PR #9 的 Test Plan Approved 仍為 No，除非具名 Authority 依 QA Approval Gates 留下正式決策。
