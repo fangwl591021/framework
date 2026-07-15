@@ -2,95 +2,88 @@
 
 ## 高層架構
 
-Platform Core 以「入口層、治理層、領域引擎層、平台服務層」劃分責任。每個模組透過明確 API 或事件契約協作，不直接讀寫其他模組的內部資料。
+Platform Core Framework 使用五層架構。穩定依賴由 Application 朝 Platform Core 前進；外部平台透過 Adapter 接入；Tenant 或產業差異留在 Configuration、Policy、Strategy 或 Extension。
 
 ```text
-Web / App / LINE / WhatsApp / WeChat / Partner Systems
-                         |
-                    API Gateway
-                         |
-       Identity Center + Permission Engine
-                         |
-                    Tenant Manager
-                         |
- ---------------------------------------------------------
- | CRM | Point | Referral | Attribution | Content | Event |
- | Document | OCR | Notification | Media | AI | Setting   |
- ---------------------------------------------------------
-                         |
-        Cloudflare Platform Services and Data Services
+Application / Tenant Configuration
+                ↓
+             Extension
+                ↓
+          Domain Modules
+                ↓
+          Platform Core
+                ↑
+             Adapters
+                ↑
+     LINE / WhatsApp / Google / AI / OCR
 ```
 
-## 核心能力
+完整分層規則見 [Framework Layers](10-FRAMEWORK-LAYERS.md)，版本與依賴限制見 [Version and Dependency Rules](12-VERSION-DEPENDENCY-RULES.md)。
 
-### Identity Center
+## 五層責任
 
-管理平台身份、外部登入提供者與不同租戶或商店成員身份之間的映射。
+### Platform Core
 
-### Tenant Manager
+提供 Identity、Tenant、Permission、Setting、Audit Log、Feature Flag、Domain Event、Idempotency、Common Error Model 與 Observability 等跨專案底層能力或規範。候選項目仍須通過 `Core Approved`，不得預設已實作。
 
-管理租戶生命週期、租戶邊界、租戶狀態與租戶層級設定。
+### Domain Module
 
-### CRM Engine
+提供 CRM、Member、Point、Referral、Attribution、Event、OCR、Document、Notification 等可獨立組合的領域能力。每個 Domain Module 擁有自己的資料邊界與公開 Interface。
 
-管理可跨通路使用的成員關係、互動紀錄與標籤能力。
+### Adapter
 
-### Point Engine
+處理 LINE、WhatsApp、WeChat、Login Provider、AI、OCR、Storage 等外部格式及供應商差異，不承載核心商業規則。
 
-管理點數帳本、異動規則、餘額計算與可追溯性。
+### Extension
 
-### Referral Engine
+承載特定客戶或產業的特殊流程，僅能透過 Hook、Domain Event、Policy、Strategy、Plugin Interface 或 Configuration 擴充。
 
-管理推薦關係、分享識別與推薦事件，不直接承擔獎勵計算。
+### Application／Tenant Configuration
 
-### Attribution Engine
+Application 組合所需能力；Tenant Configuration 表達模組開關、規則參數、語系、品牌與通道設定，避免為 Tenant 差異修改 Framework。
 
-判定來源、活動、通路與轉換之間的歸因關係。
+## 身份與 Tenant 關係
 
-### Content Engine
+- **Platform User**：代表自然人或平台主體，不直接保存特定 Tenant 的點數、介紹人、會員等級或福利。
+- **Identity Mapping**：將 LINE、Google、Apple、Facebook、WhatsApp、Email、Mobile 等外部身份連結至 Platform User。
+- **Tenant Membership**：代表 Platform User 在單一 Tenant 的會員關係，擁有該 Tenant 的 Point、Referral、CRM 與 Permission 資料。
+- **Shop Membership**：只在 Tenant 內需要 Shop 層關係時建立，不自動擴張成 Tenant 權限。
 
-管理可重用內容、內容版本、發布狀態與多語系內容。
+詳細規則見 [Tenant Data Boundary](15-TENANT-DATA-BOUNDARY.md)。
 
-### Event Engine
+## 通道無關原則
 
-管理活動定義、參與、報名、簽到與活動生命週期。
+- Domain Module 不得以 LINE UID、LIFF 或特定訊息格式作為內部核心契約。
+- Adapter 將外部事件轉成平台命令或 Query，並將平台結果轉回通道格式。
+- 更換 LINE、WhatsApp、Web 或其他通道時，不應改寫 Domain Module 商業規則。
+- 通道身份必須先經 Identity Mapping，不能直接成為 Tenant 業務資料主鍵。
 
-### Document Engine
+## Multi Tenant 資料隔離
 
-管理文件上傳後的生命週期、狀態、版本與處理工作。
+- 所有 Tenant Domain 寫入、查詢、Cache、R2 物件、Queue 與 Domain Event 都必須保留 Tenant Scope。
+- Domain Module 不得直接操作其他 Domain Module 的資料表。
+- Platform User 可跨 Tenant 共用身份，但 Tenant Membership、Point、Referral、CRM、優惠與 Permission 必須隔離。
+- 跨 Tenant 操作必須使用明確 Platform 權限與 Audit Log，不得由一般 Tenant 權限推導。
 
-### OCR Engine
+## 核心能力候選
 
-提供影像或文件文字辨識、結構化結果與信心資訊。
+| 能力 | 初步分層 | 責任摘要 |
+| --- | --- | --- |
+| Identity Center | Platform Core Candidate | 管理 Platform User 與 Identity Mapping |
+| Tenant Manager | Platform Core Candidate | 管理 Tenant 生命週期與邊界 |
+| Permission Engine | Platform Core Candidate | 依主體、資源、操作與範圍授權 |
+| Setting Engine | Platform Core Candidate | 管理 Configuration 繼承與覆寫 |
+| API Gateway | Platform Core 規範 Candidate | 統一驗證、路由、版本、限流與觀測 |
+| CRM／Point／Referral／Attribution | Domain Module Candidate | 管理各自領域與 Owned Data |
+| Content／Event／Document／OCR | Domain Module Candidate | 提供可組合的內容、活動及文件能力 |
+| Notification／Media／AI | Domain Module 或 Platform Service Candidate | 以公開 Interface 提供跨 Application 能力 |
 
-### Notification Engine
+以上皆為架構候選分類，不代表已實作、已通過跨專案驗證或已獲批准。
 
-統一管理跨通路通知意圖、樣板、發送狀態與結果。
+## 強制邊界
 
-### Media Engine
-
-管理圖片、影片與其他媒體資產的儲存、轉換、中繼資料與存取政策。
-
-### AI Engine
-
-統一管理模型能力、Prompt、工具、輸入輸出政策與可觀測性。
-
-### Permission Engine
-
-依平台、租戶、組織與資源範圍執行授權判斷。
-
-### Setting Engine
-
-管理平台、租戶、商店與模組層級的設定，並定義繼承與覆寫順序。
-
-### API Gateway
-
-作為所有外部與內部 API 的統一入口，負責驗證、路由、版本、流量控制與觀測。
-
-## 架構邊界
-
-- Engine 只擁有自己的領域責任與資料規則。
-- 跨 Engine 流程透過 API、事件或工作佇列協調。
-- Identity、Tenant 與 Permission 是所有模組的共同治理基礎。
-- 通路整合不得直接繞過 API Gateway 存取 Engine 內部。
-- 專案層負責組合模組與客製流程，Core 不內建客戶專屬行為。
+- Domain Module 只擁有自己的領域責任與資料。
+- 跨 Domain Module 流程透過公開 Interface、Command、Query、Domain Event 或 Queue 協調。
+- Platform Core 不認識客戶名稱、特定通道實作或商業規則。
+- Adapter 不決定 Point、Referral、Member、優惠或活動規則。
+- Application 負責依賴組合，不能直接修改 Platform Core 私有實作。
