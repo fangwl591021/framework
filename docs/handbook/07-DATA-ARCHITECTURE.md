@@ -8,11 +8,13 @@
 Logical Model exists.
 Physical Schema is not yet approved on main.
 
-Physical D1 Schema Proposal is under Draft PR #6 review.
+Physical D1 Schema Proposal: Architecture Gates Passed.
+Not Executed. Not Verified.
+Draft PR #6 Pending Final Review.
 Do not treat it as approved baseline until merged.
 ```
 
-[Draft PR #6](https://github.com/fangwl591021/framework/pull/6) 目前為 Open／Draft／Not Merged。Handbook 只提供待審查入口，不複製或批准該 PR 的 Physical Table、Column、Constraint、Index 或 Migration Proposal。
+[Draft PR #6](https://github.com/fangwl591021/framework/pull/6) 的三項 Architecture Gate 已通過，目前仍為 Open／Draft／Not Executed／Not Verified／Not Merged，等待最終審查。Handbook 只提供待審查入口，不複製或批准該 PR 的 Physical Table、Column、Constraint、Index 或 Migration Proposal。
 
 ## Logical Data Principles
 

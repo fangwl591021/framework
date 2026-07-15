@@ -183,3 +183,21 @@
 - [ ] 已分別確認 Decision、Contract、Lifecycle、Implementation 與 Verification 狀態，不互相推導。
 - [ ] Candidate Source、Candidate Module 與 Platform Core Candidate 未被描述為 Stable、Implemented 或 Production Ready。
 - [ ] AI／Codex 已閱讀 [Working Guide](handbook/10-AI-CODEX-WORKING-GUIDE.md) 並完成 Repository／Branch／HEAD／Workspace Preflight。
+
+## 21. Sprint 7 Physical D1 Schema Proposal Gate
+
+- [ ] 每張 Table 有 Logical Model mapping、Owner Module、Tenant Scope、PII 與 history rule。
+- [ ] PK、FK、composite tenant FK、Unique、CHECK 與 application-only invariant 已審查。
+- [ ] Gate 1 Cross-Tenant Foreign Key Review 已通過且同步後回歸未退化。
+- [ ] Gate 2 Active-only Uniqueness Review 已通過且同步後回歸未退化。
+- [ ] Gate 3 Point Ledger Concurrency Review 已通過且同步後回歸未退化。
+- [ ] Table plural snake_case、FK 以 _id 結尾、UTC time naming 與 Tenant Scope 一致。
+- [ ] Point Ledger 只含正式 Entry；Failed Point Intent 不建立 row；Balance 可重建。
+- [ ] Audit 不複製 Domain Record／完整 Payload；KV 不是 Source of Truth。
+- [ ] 每個 Index Candidate 對應 Query ID、composite order、cursor、write cost 與 evidence status。
+- [ ] Identity、Membership、Point、Referral、Attribution、Attendance、Redemption transaction boundary 已審查。
+- [ ] Migration 採 additive／bounded backfill／constraint scan／forward fix／rollback 分類。
+- [ ] Reconciliation 涵蓋 projection drift、active uniqueness、scope、orphan、merge chain 與 Stored Result。
+- [ ] Capacity、Retention、Archive、D1 topology options 與官方 limits 已列入未決決策。
+- [ ] SQL Header、SQL location、documentation-only migration path 與 no-execute rule 已驗證。
+- [ ] Schema Status 仍為 Not Approved；Migration Not Executed；Runtime Not Implemented；Production Not Deployed。

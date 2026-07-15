@@ -53,4 +53,4 @@ Accepted 表示 Decision 已批准，不表示其 Runtime／Schema 已存在。
 - Deployment
 - Production Verification
 
-Sprint 7 Physical Proposal 仍在 [Draft PR #6](https://github.com/fangwl591021/framework/pull/6)，未合併、未批准、未執行。
+Sprint 7 Physical Proposal 的 Architecture Gates 已通過，但仍在 [Draft PR #6](https://github.com/fangwl591021/framework/pull/6) 等待最終審查；未合併、未批准執行、Not Executed、Not Verified。

@@ -12,7 +12,7 @@
 | Sprint 4 — Identity／Membership／Attribution | Domain Models、Invariants、ADR | Not Implemented／Not Verified |
 | Sprint 5 — Transaction Engine Contracts | 五個 Candidate Contract、Safety、Scenarios | Not Implemented／Not Verified |
 | Sprint 6 — Logical D1 Data Model | Logical Records、Integrity／Retention、Readiness Gate | No Physical Schema／Not Verified |
-| Sprint 7 — Physical Schema Proposal | [Draft PR #6](https://github.com/fangwl591021/framework/pull/6) | Open／Draft／Not Merged／Not Approved |
+| Sprint 7 — Physical Schema Proposal | [Draft PR #6](https://github.com/fangwl591021/framework/pull/6)；Architecture Gates Passed | Draft Pending Final Review／Not Executed／Not Verified／Not Merged |
 | Architecture Handbook | 本次導航與共同理解入口 | Documentation Only |
 
 ## 後續候選
@@ -21,7 +21,7 @@
 Architecture Owner Review
 → Handbook Correction
 → Merge Handbook
-→ Continue PR #6 Schema Review
+→ Complete PR #6 Final Architecture Review
 → Schema Review Corrections
 → Approved Migration Package
 → Runtime Foundation
