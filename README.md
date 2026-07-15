@@ -11,7 +11,7 @@ No Schema Implemented
 No Production Verification
 ```
 
-目前 Repository 只包含架構與治理文件，尚未建立 Worker、Schema、Migration、API、Module Runtime 或部署設定。列為 Candidate 或 ADR Accepted 的內容，不代表已 Implemented 或 Production Verified。
+目前 Repository 只包含架構、治理與 D1 Logical Design 文件，尚未建立 Worker、Physical Schema、Migration、API、Module Runtime 或部署設定。Logical Record、Constraint Candidate、Candidate Module 或 ADR Accepted 都不代表已 Implemented 或 Production Verified。
 
 ## 目的
 
@@ -148,6 +148,18 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [42-ENGINE-INTEGRATION-MATRIX](docs/42-ENGINE-INTEGRATION-MATRIX.md) | 五個 Engine 的 Command／Query／Event 協作 |
 | [43-TRANSACTION-SCENARIO-MATRIX](docs/43-TRANSACTION-SCENARIO-MATRIX.md) | 20 個交易安全驗收情境 |
 
+### D1 Logical Data Design
+
+| 文件 | 用途 |
+| --- | --- |
+| [44-D1-LOGICAL-DATA-MODEL](docs/44-D1-LOGICAL-DATA-MODEL.md) | D1 logical records、ownership、keys 與 consistency boundary |
+| [45-IDENTITY-MEMBERSHIP-LOGICAL-MODEL](docs/45-IDENTITY-MEMBERSHIP-LOGICAL-MODEL.md) | Identity、Organization、Membership 與 Role Assignment 邏輯關係 |
+| [46-POINT-LEDGER-LOGICAL-MODEL](docs/46-POINT-LEDGER-LOGICAL-MODEL.md) | Point Program、Account、Ledger 與可重建 Balance Projection |
+| [47-REFERRAL-ATTRIBUTION-LOGICAL-MODEL](docs/47-REFERRAL-ATTRIBUTION-LOGICAL-MODEL.md) | Referral、Share、Touch 與 Attribution Decision 邏輯模型 |
+| [48-ATTENDANCE-REDEMPTION-LOGICAL-MODEL](docs/48-ATTENDANCE-REDEMPTION-LOGICAL-MODEL.md) | Attendance／Redemption record 與跨 Module transaction boundary |
+| [49-AUDIT-IDEMPOTENCY-LOGICAL-MODEL](docs/49-AUDIT-IDEMPOTENCY-LOGICAL-MODEL.md) | Audit／Idempotency Candidate 的 logical content 與責任分離 |
+| [50-DATA-INTEGRITY-RETENTION-MATRIX](docs/50-DATA-INTEGRITY-RETENTION-MATRIX.md) | Scope、uniqueness、history、cache 與 retention governance matrix |
+| [51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST](docs/51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST.md) | 未來 Physical D1 Schema Sprint 的進入 Gate |
 ### Engine Registry Entries
 
 | Entry | Status |
