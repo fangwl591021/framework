@@ -100,7 +100,7 @@ Validate current Idempotency owner + generation + fingerprint
 ```
 
 - Grant、正 Adjust、Full Reverse 也必須更新同一 Projection／Version；負 Adjust、Expire、Deduct、Redeem 都必須通過 non-negative guard。
-- 每個預期寫入的 affected row count 必須為 `1`。零筆 guard update代表 Insufficient、Version Conflict、Drift 或 Stale Owner，不是成功；Runtime transaction 必須在任何部分寫入存在時 abort，不得 commit 後補償。
+- 初版使用單一 D1 `batch()`。owner＋generation CAS先把同一 Result Reference暫存為Completed；Projection UPDATE再驗證該 Completed generation、healthy status、expected version與non-negative balance；Ledger Insert以緊接前一個 guard statement的 affected-row evidence作constraint assertion。guard不是精確一筆時 Ledger statement必須失敗，使 Idempotency、Projection與Ledger整批rollback；禁止commit後才檢查或補償。
 - uq_point_transactions_account_version、uq_point_transactions_idempotency_effect 與 business reference uniqueness共同選出唯一 Ledger Winner。若 immediate FK要求先把同 generation Idempotency轉為Completed，該 update與Ledger Insert仍須同 transaction；任何後續失敗都回滾兩者。
 - Insufficient Balance 在無 Domain Effect 的 guarded result transaction 將同 generation標為 Failed Permanent，保存安全 Stored Result，不建立 Ledger。
 - Single Full Reverse 需在 transaction 內載入 eligible Original，驗證 Original 不是 Reverse、同 Tenant／Account、signed amount精確相反；`uq_point_transactions_single_full_reverse` 阻止第二筆 Full Reverse。

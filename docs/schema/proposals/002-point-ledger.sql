@@ -2,6 +2,11 @@
 -- DO NOT EXECUTE
 -- NOT AN APPROVED MIGRATION
 -- NOT TESTED AGAINST D1
+-- Point effect transaction contract:
+-- one D1 batch must CAS the Idempotency generation to completed,
+-- conditionally update the healthy Projection guard, and insert the Ledger row.
+-- A zero-row guard must become a statement constraint error before commit;
+-- inspecting affected rows only after commit is forbidden.
 
 CREATE TABLE point_programs (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),

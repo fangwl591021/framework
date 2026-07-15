@@ -300,6 +300,12 @@ CREATE INDEX idx_audit_records_resource_time
   ON audit_records(tenant_id, resource_type, resource_reference, occurred_at DESC, id DESC);
 
 -- Source proposal: 002-point-ledger.sql
+-- Point effect transaction contract:
+-- one D1 batch must CAS the Idempotency generation to completed,
+-- conditionally update the healthy Projection guard, and insert the Ledger row.
+-- A zero-row guard must become a statement constraint error before commit;
+-- inspecting affected rows only after commit is forbidden.
+
 CREATE TABLE point_programs (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
   tenant_id TEXT NOT NULL,
