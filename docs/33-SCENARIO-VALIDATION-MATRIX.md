@@ -37,3 +37,7 @@
 - Open Policy Decision 只能由 Tenant Business Owner／Tony 在適用範圍內決定，不得由實作者猜測。
 - 未來實作需補 Contract Test、Tenant Boundary Negative Test、Idempotency Test 與 Audit Evidence。
 - Scenario 通過不等於 Production Verified；正式驗證仍需明確 Environment、Commit、Tenant Scope 與 Evidence。
+
+## Sprint 5 Transaction Scenario Extension
+
+交易安全的 20 個 Physical／Online Attendance、Redemption、Point、Referral、Attribution、Permission 與 Retry 案例見 [Transaction Scenario Matrix](43-TRANSACTION-SCENARIO-MATRIX.md)。Sprint 4 Scenario 仍保留作 Domain Boundary 驗證，不被新矩陣取代。

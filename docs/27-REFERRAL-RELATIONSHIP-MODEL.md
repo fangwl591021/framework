@@ -49,3 +49,10 @@ Clicked
 - 一人可有一個有效 Referral Relationship、許多 Attribution Touch、每個 Conversion 一個有效 Attribution Record。
 
 相關決策見 [ADR-005](adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md) 與 [ADR-007](adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md)。
+
+## Sprint 5 Contract and Default Policy
+
+- 正式候選 Contract：[Referral Engine Contract](35-REFERRAL-ENGINE-CONTRACT.md)。
+- Default：First Valid Referrer、Single Layer；Confirmed 後 No Self-Service Change。
+- Admin Correction 需理由、Permission、Approval 與 Audit；Replacement 保留舊關係。
+- 相關決策：[ADR-010](adr/ADR-010-FIRST-VALID-REFERRER.md)、[ADR-012](adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md)。

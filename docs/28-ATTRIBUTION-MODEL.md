@@ -43,3 +43,10 @@ Conversion 是其他 Domain Module 產生、可被歸因的業務完成事實，
 | 先點 Tony，後點 Mary 再購買 | 既有 Referrer 不因 Mary Touch 覆寫 | 依該 Tenant 的 First／Last Touch 與 Window Policy 選 Tony、Mary 或 Unattributed |
 
 這些是概念比較，不宣告所有 Tenant 都採相同商業模型。相關決策見 [ADR-005](adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md)。
+
+## Sprint 5 Contract and Default Policy
+
+- 正式候選 Contract：[Attribution Engine Contract](36-ATTRIBUTION-ENGINE-CONTRACT.md)。
+- Framework Default：First Valid Touch、30-Day Window；Tenant 可選 Last Valid Touch 或 No Attribution。
+- Policy／Window 版本化，不回算既有 Conversion；Commission 仍屬未來 Module。
+- 相關決策：[ADR-011](adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md)、[ADR-012](adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md)。
