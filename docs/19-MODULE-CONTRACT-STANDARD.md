@@ -22,6 +22,14 @@
 | Domain Events Published | 是 | 已發生事實；無則填 None |
 | Domain Events Consumed | 是 | 訂閱的已發生事實；無則填 None |
 | Owned Data | 是 | 可直接建立、修改、刪除的資料概念 |
+| Aggregate Root | 是 | 維護一致性的主要 Entity 與交易邊界 |
+| Identity Reference Type | 是 | Platform User、Tenant Membership、Shop Membership 或 Service Principal |
+| Tenant Scope | 是 | Tenant 必要性、解析方式與 Cross-tenant 禁止規則 |
+| Optional Shop Scope | 是 | Shop 是否適用、如何限縮與 Cross-shop Policy |
+| Business Reference | 是 | 跨 Module 使用的穩定 Reference，不得為外部 Provider Identity |
+| Idempotency Boundary | 是 | Key 所保護的 Command、Tenant、Business Reference 與 Rule Version 範圍 |
+| Rule Version | 是 | 建立歷史結果時使用的 Policy／Rule 版本 |
+| Historical Correction Method | 是 | Reverse、Supersede、Correct、Merge 或 Migration 的保留歷史方法 |
 | Read-only External Data | 是 | 經公開 Query Interface 取得的其他 Module 資料 |
 | Configuration | 是 | 參數、預設值、Scope 與驗證 |
 | Policies | 是 | 可替換決策規則 |
@@ -108,3 +116,7 @@ GetEventAvailability
 - 本文件不建立任何實際 API、Schema、Command Handler 或 Event Bus。
 
 可複製模板見 [Module Contract Template](templates/MODULE-CONTRACT-TEMPLATE.md)。
+
+## Business Reference and Historical Correction
+
+Business Reference 是跨 Module 的穩定識別，必須保留 Tenant Scope，且不得直接使用 LINE UID、Provider Subject、Email 或 Mobile。歷史型資料不得以 Update／Delete 掩蓋已發生事實；Contract 必須明確選擇 Reverse、Supersede、Correct、Merge 或 Migration Transaction，並定義 Audit 與 Idempotency Boundary。

@@ -85,3 +85,20 @@ Tenant
 - LINE UID 不得直接綁定 Shop 業務資料而跳過 Platform User、Identity Mapping 與 Tenant Membership。
 - Shop、Brand 或外部 Login Identity 都不得取代 Platform User。
 - Brand／Shop 的建立、移動、停用與刪除需保留 Permission 與 Audit Log 邊界。
+
+## Domain Ownership and Visibility
+
+| 能力 | Tenant Boundary | Optional Shop Behavior | Manager Visibility |
+| --- | --- | --- | --- |
+| Point | Account 與 Ledger 不跨 Tenant | 未有 Policy 時不跨 Shop；可限縮 Program | Shop Manager 只見授權 Shop；Tenant Admin 依 Permission 檢視 Tenant |
+| Referral | Relationship 不跨 Tenant | Shop 只作來源／適用 Scope，不改變 Tenant Ownership | Shop Manager 只見其 Scope；不得推導其他 Shop 關係 |
+| Attribution | Touch、Conversion Reference、Record 保留 Tenant | Touch 可帶 Shop；選擇需符合 Policy | Manager 只見授權 Campaign／Shop Evidence |
+| Role Assignment | Tenant Role 不得擴張至 Platform／其他 Tenant | Brand／Shop Role 只在指定節點有效 | Manager 不得授予超過自己有效 Scope 的 Role |
+
+Shop Manager 的「可見」不等於資料 Ownership。查詢仍由 Owner Module 提供，並同時驗證 Tenant Membership、Role、Resource、Action 與 Scope。
+
+## Tenant Point Policy and Shop Point Policy
+
+- Tenant Point Policy 決定 Point Program 是否在同 Tenant 多 Shop 共用。
+- Shop Point Policy 只能在 Tenant Policy 授權範圍內限縮 Account、Grant、Redeem 或 Visibility，不得建立 Cross-tenant Point。
+- 沒有明確 Policy 時，Point、Referral、Attribution、Role 與 Manager Visibility 都維持 Shop-scoped／最小範圍，不由 Application 猜測。

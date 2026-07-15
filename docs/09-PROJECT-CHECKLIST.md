@@ -121,3 +121,28 @@
 - [ ] Staging 與 Production Verification Evidence 分開記錄。
 - [ ] 所有例外有 Owner、期限、Approval Reference 與移除計畫。
 - [ ] 發布 Branch、Commit、依賴版本、環境與 Authorized Operator 可追溯。
+
+## 16. Sprint 4 Domain Model Gate
+
+- [ ] Platform User、Tenant Membership、Shop Membership 已分離。
+- [ ] External Identity 只在 Identity Mapping，不作 Business Primary Key。
+- [ ] 同一 Platform User／Tenant 最多一個 Active Tenant Membership。
+- [ ] Point Program、Account、Transaction 與 Rule 已分離，Balance 可由 Ledger 重建。
+- [ ] Referral Relationship、Attribution Touch、Attribution Record 與 Commission 已分離。
+- [ ] Referral 預設 Single-layer、No Self、No Cycle、No Normal Overwrite。
+- [ ] 每個 Conversion 同時最多一個 Active Attribution Record，Correction 保留歷史。
+- [ ] Role Assignment 明確定義 Platform／Tenant／Brand／Shop／Own／Assigned Scope。
+- [ ] Lifecycle、Invariant、Historical Correction、Idempotency 與 Audit 已寫入 Contract。
+- [ ] Duplicate、Merge、Split 與 Legacy Migration 不依模糊 PII 自動判定。
+- [ ] [Scenario Validation Matrix](33-SCENARIO-VALIDATION-MATRIX.md) 的適用案例均有結果與證據。
+
+## 17. Detailed Membership and Attribution Review
+
+- [ ] 未使用 Provider Identity 作任何業務 Aggregate Primary Key。
+- [ ] 已定義 Tenant Membership 唯一性與 Shop Scope。
+- [ ] 已定義 Point Program、Point Ledger、Balance Insufficient Policy 與 D1 Source of Truth。
+- [ ] 已定義 Referral Candidate、Identity Resolution、Membership Created、Referral Confirmed 的建立時機。
+- [ ] Referral 與 Attribution 已分離，並明確定義 Attribution Window、Model 與 Rule Version。
+- [ ] Attendance、Point、Referral、Attribution Command 均具 Idempotency Boundary。
+- [ ] Duplicate、Claim、Merge、Split、Migration 與 Historical Correction 有正式計畫。
+- [ ] 已完成附件指定的 Scenario Matrix，包括 QR 未授權、OCR Claim 與 Promoter Qualification 變更。
