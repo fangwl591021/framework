@@ -77,6 +77,27 @@ Tenant
 
 此分離已由 [ADR-001](adr/ADR-001-PLATFORM-USER-TENANT-MEMBERSHIP.md) 接受。
 
+進一步概念模型見 [Core Domain Model](23-CORE-DOMAIN-MODEL.md)、[Identity Mapping Model](24-IDENTITY-MAPPING-MODEL.md) 與 [Membership Model](25-MEMBERSHIP-MODEL.md)。External Identity 只存在 Identity Mapping Boundary，不得成為 Business Primary Key。
+
+## Membership, Point, Referral and Attribution
+
+```text
+Tenant Membership
+  ├── Optional Shop Membership
+  ├── Point Account → Point Transaction Ledger
+  └── Referral Relationship (long-term, direct)
+
+Share Link → Attribution Touch → Conversion → Attribution Record
+```
+
+- Point Account 以 Tenant Membership、Point Program 與選用 Shop Scope 定位；Balance 由 Ledger 推導。
+- Referral Relationship 預設 Tenant-scoped、Single-layer、First Valid Referrer，普通分享不覆寫。
+- Attribution Touch 可有多筆；每個 Conversion 同時最多一個 Active Attribution Record。
+- Referral、Attribution 與下游 Commission／Reward 分離。
+- Role Assignment 必須同時標示 Actor、Permission、Resource 與 Platform／Tenant／Brand／Shop／Own／Assigned Scope。
+
+詳見 [Point Account Model](26-POINT-ACCOUNT-MODEL.md)、[Referral Relationship Model](27-REFERRAL-RELATIONSHIP-MODEL.md)、[Attribution Model](28-ATTRIBUTION-MODEL.md) 與 [Role and Permission Scope](29-ROLE-PERMISSION-SCOPE.md)。
+
 ## Data Source Decision
 
 D1 作為 Membership、Point、Attendance、Referral、Attribution、Order、Redemption、Approval 與需要一致性 Configuration 的 Source of Truth。KV 只作選用 Cache；不一致時以 D1 為準。詳見 [ADR-002](adr/ADR-002-D1-SOURCE-OF-TRUTH-KV-CACHE.md)。
