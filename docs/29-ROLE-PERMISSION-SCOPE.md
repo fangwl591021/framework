@@ -24,13 +24,16 @@
 
 ## Candidate Roles
 
-- Platform Administrator
+- Platform Admin
 - Architecture Owner
 - Tenant Owner
-- Tenant Administrator
+- Tenant Admin
 - Brand Manager
 - Shop Manager
-- Staff
+- Merchant Staff
+- Sales／Distributor
+- Editor
+- Finance
 - Auditor
 - Member
 - Integration Service
@@ -39,7 +42,9 @@
 
 ## 強制規則
 
+- 登入成功不代表具有任何 Tenant 權限。
 - Backend Command／Query 必須執行 Permission Check，不得只靠 UI 隱藏。
+- Permission 採最小權限；Tenant Admin 不得存取其他 Tenant，Shop Manager 預設不得操作其他 Shop。
 - Tenant Role 不得存取其他 Tenant；Brand／Shop Scope 不得擴張到同 Tenant 其他節點。
 - 高風險動作如 Merge Identity、Adjust Points、Override Referral、Correct Attribution 必須使用明確 Permission 與 Audit。
 - Role Assignment 建立、變更、撤銷與期限到期都保留歷史。

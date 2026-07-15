@@ -1,4 +1,4 @@
-# ADR-005: Separate Referral Relationship from Attribution
+# ADR-005: Separate Referral Relationship from Transaction Attribution
 
 ## 基本資料
 
@@ -43,7 +43,7 @@
 
 ## 最終決策
 
-Referral Relationship、Attribution Touch、Attribution Record 分離。Referral 表示 Tenant Membership 的長期直接推薦關係；Touch 表示行銷互動；每個 Conversion 同時最多一個 Active Attribution Record。Attribution 不改寫 Referral，Commission／Reward 為下游獨立決策。
+Referral Relationship、Attribution Touch、Attribution Record 分離。Referral 表示 Tenant Membership 的長期直接推薦關係；Attribution 表示特定 Conversion 的交易／業績歸屬，兩者可以指向不同人。一般內容點擊不得覆寫 Referral；每個 Conversion 同時最多一個 Active Attribution Record。Attribution Policy 必須版本化，Correction 必須保留歷史；Commission／Reward 為下游獨立決策。
 
 ## 決策理由
 

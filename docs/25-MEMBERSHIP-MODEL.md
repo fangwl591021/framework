@@ -59,3 +59,12 @@ Role Assignment 是 Permission Engine 管理的授權關係，不應為「管理
 - Membership 停用保留歷史，不刪除既有 Point Transaction、Referral 或 Attribution Evidence。
 
 生命週期見 [Lifecycle State Model](31-LIFECYCLE-STATE-MODEL.md)。
+
+## Concept Detail
+
+Tenant Membership 的概念內容至少包括 `membership status`、`joined at`、`source`、`member tier`、`referrer`、`CRM labels`、`tenant roles`、`tenant-specific profile`、`consent` 與 `lifecycle state`。
+
+Shop Membership 的概念內容至少包括 `shop status`、`shop joined at`、`shop roles`、`shop-specific tags`、`staff／merchant relationship` 與 `shop-specific preference`。這些是概念資料，不是 Schema 欄位。
+
+- 禁止為同一自然人在不同 Shop 複製 Platform User。
+- 店家員工、一般會員、Merchant Staff、經銷商或管理者應以 Role Assignment 與 Permission Scope 區分，不建立彼此不相容的身份表。

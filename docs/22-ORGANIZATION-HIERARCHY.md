@@ -96,3 +96,9 @@ Tenant
 | Role Assignment | Tenant Role 不得擴張至 Platform／其他 Tenant | Brand／Shop Role 只在指定節點有效 | Manager 不得授予超過自己有效 Scope 的 Role |
 
 Shop Manager 的「可見」不等於資料 Ownership。查詢仍由 Owner Module 提供，並同時驗證 Tenant Membership、Role、Resource、Action 與 Scope。
+
+## Tenant Point Policy and Shop Point Policy
+
+- Tenant Point Policy 決定 Point Program 是否在同 Tenant 多 Shop 共用。
+- Shop Point Policy 只能在 Tenant Policy 授權範圍內限縮 Account、Grant、Redeem 或 Visibility，不得建立 Cross-tenant Point。
+- 沒有明確 Policy 時，Point、Referral、Attribution、Role 與 Manager Visibility 都維持 Shop-scoped／最小範圍，不由 Application 猜測。

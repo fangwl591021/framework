@@ -50,3 +50,21 @@ Unverified
 - 新增 Provider 只增加 Adapter 與驗證 Policy，不改變核心 Business Reference。
 
 相關決策見 [ADR-008](adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md)。
+
+## Provider／Channel Identity 注意事項
+
+- LINE UID 可能因 LINE Login Channel、Messaging API Channel、Provider 或 Channel Context 不同而不同，不可假設跨 Channel 相同。
+- 加入 LINE OA 不等於已完成 Platform Identity Linking，也不等於已建立 Tenant Membership。
+- LINE Login、LIFF 與 Messaging API Webhook 取得的 Identity 必須透過正式 Binding／Linking Flow 統合，不得只憑外部 UID 猜測同一人。
+- 同一自然人可以有多個 Identity Mapping；每個 Active Mapping 正常情況下只能指向一個有效 Platform User。
+- Email／Mobile 可能重複、變更、格式不同或被重新分配，只能作 Verification Evidence／Mapping，不是永久自然人主鍵。
+
+## Identity Conflict Cases
+
+- Provider Identity 已連結另一個 Platform User。
+- 同一人以不同登入方式建立重複 Platform User。
+- OCR 名片認領與 LINE Login 指向不同身份。
+- 電話相同但證據不足以確認同一人。
+- 使用者要求解除、重新綁定或 Recovery。
+
+上述情況必須進入 Conflict／Manual Review；不得自動合併高風險 Point、Referral、Membership、Order 或 Attribution 資料。
