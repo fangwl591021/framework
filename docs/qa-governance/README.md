@@ -13,6 +13,17 @@ It does not approve Migration execution.
 
 Accepted ADR → Module Contract → Physical／Runtime Design → QA Governance Standard → Approved Test Plan → Executed Test Evidence → Approval Decision。
 
+## Migration Test Plan Status Boundary
+
+| Status | Value | Meaning |
+| --- | --- | --- |
+| Migration Test Plan Mapping Created | Yes | PR #9 的 18 項 Finding 已建立對應關係 |
+| Migration Test Plan Corrections Completed | No | PR #9 尚未依 Mapping 完成修正 |
+| Migration Test Plan Re-review Ready | No | 尚未具備重新提交 Architecture Review 的條件 |
+| Test Plan Approved | No | 未取得 Test Plan Approval |
+
+Mapping 是 traceability artifact，不是修正完成、重新審查準備完成或批准證據。
+
 ## Navigation
 
 - [QA Governance Status](00-QA-GOVERNANCE-STATUS.md)

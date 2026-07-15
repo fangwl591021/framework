@@ -9,12 +9,13 @@
 - [ ] Security Test Standard Approved
 - [ ] Recovery Test Standard Approved
 - [ ] Module Test Library Designed
-- [ ] Migration Test Plan Mapped
+- [x] Migration Test Plan Mapping Created（18 mapped／0 unmapped）
+- [ ] Migration Test Plan Corrections Completed
+- [ ] Migration Test Plan Re-review Ready
+- [ ] Test Plan Approved
 - [ ] Security Reviewer Assigned
 - [ ] Test Operator Assigned
 - [ ] Local Test Execution Authorized
 - [ ] Isolated Test Execution Authorized
 - [ ] Evidence Storage Approved
 - [ ] Retention Approved
-
-本 Sprint 不勾選全部項目。文件存在只代表 Proposed Design，不代表 Approved、Implemented、Executed 或 Verified。

@@ -8,7 +8,10 @@
 | Fixture Standard Approved | No |
 | Evidence Standard Approved | No |
 | Module Test Library Designed | No |
-| Migration Test Plan Mapped | No |
+| Migration Test Plan Mapping Created | Yes |
+| Migration Test Plan Corrections Completed | No |
+| Migration Test Plan Re-review Ready | No |
+| Test Plan Approved | No |
 | Tests Implemented | No |
 | Tests Executed | No |
 | Evidence Reviewed | No |
@@ -16,3 +19,5 @@
 | Execution Approved | No |
 
 以上狀態彼此獨立，不得由 Designed 推導 Approved，也不得由 Implemented 推導 Executed／Passed。
+
+Migration Test Plan Mapping Created = Yes 只表示 PR #9 的 18 項 Finding 已建立 QA Governance 對應關係，且目前為 18 mapped／0 unmapped。它不表示 PR #9 已完成 Test Plan 修正、具備重新審查條件或已取得 Test Plan Approval。

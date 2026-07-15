@@ -71,6 +71,6 @@ PR #6 已合併至 RC1 baseline；三項 Architecture Review Gate 均已通過�
 | Item | Design | Approval | Implementation／Execution | Verification |
 |---|---|---|---|---|
 | QA Governance Foundation | Proposed | Not Approved | Not Implemented／Not Executed | Not Verified |
-| PR #9 Migration Test Plan | Mapped for review | Test Plan Approved = No | Not Executed | Not Verified |
+| PR #9 Migration Test Plan | Mapping Created：Yes（18 mapped／0 unmapped） | Test Plan Approved = No | Corrections Completed = No | Re-review Ready = No |
 
-狀態來源見 [QA Governance Status](../qa-governance/00-QA-GOVERNANCE-STATUS.md) 與 [Migration Test Plan Mapping](../qa-governance/14-MIGRATION-TEST-PLAN-MAPPING.md)。本 Sprint 不改變 PR #9 或 Migration Package 的任何批准與執行狀態。
+狀態來源見 [QA Governance Status](../qa-governance/00-QA-GOVERNANCE-STATUS.md) 與 [Migration Test Plan Mapping](../qa-governance/14-MIGRATION-TEST-PLAN-MAPPING.md)。Mapping Created 只代表追溯關係存在，不代表 Corrections Completed、Re-review Ready 或 Test Plan Approved；本 Sprint 不改變 PR #9 或 Migration Package 的任何批准與執行狀態。
