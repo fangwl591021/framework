@@ -74,3 +74,12 @@ Module Registry：
 本 Sprint 只定義 Markdown metadata 標準，不建立 JSON、資料表、Schema 或 Registry Runtime。
 
 模板見 [Module Registry Entry Template](templates/MODULE-REGISTRY-ENTRY-TEMPLATE.md)。
+
+## Markdown Registry Entry Review Gate
+
+- Entry 必須使用 `docs/registry/<module-id>.md`，並引用有效 Contract Path。
+- Reviewer 比對 Module ID、Lifecycle、Version、Owner、Tenant／Shop Scope、PII、Audit、Idempotency、Dependencies 與 Approval Reference。
+- `Candidate` 必須標示 `Implementation: Not Implemented`、`Production Use: Not Allowed`、Stable Use Cases `None`。
+- Candidate Source 只能標示 Audit 狀態，不得宣稱直接採用、Production Verified 或 Stable。
+- Registry Entry 不得成為 Runtime Registry、Feature Loader、Deployment Manifest 或 Tenant Data Store。
+- Contract 與 Registry 不一致時不得晉升；先修正文件並經 PR Review。

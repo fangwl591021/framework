@@ -146,3 +146,16 @@
 - [ ] Attendance、Point、Referral、Attribution Command 均具 Idempotency Boundary。
 - [ ] Duplicate、Claim、Merge、Split、Migration 與 Historical Correction 有正式計畫。
 - [ ] 已完成附件指定的 Scenario Matrix，包括 QR 未授權、OCR Claim 與 Promoter Qualification 變更。
+
+## 18. Transactional Engine Contract Gate
+
+- [ ] Point Program、Cross-Shop Policy 與 `Reject Entire Transaction` Insufficient Policy 明確。
+- [ ] Referral Confirmation 時機、First Valid Referrer、Confirmed 後 Change Policy 明確。
+- [ ] Attribution Model、Window、Policy Version、Unattributed 與 Promoter Eligibility 明確。
+- [ ] Attendance 已區分 Physical／Online 驗證，且不直接修改 Point Account。
+- [ ] Redemption 已定義 Member／Merchant QR 模式、Merchant Auth、Shop Scope 與 Point Result Reconciliation。
+- [ ] 每個交易有 Business Reference、Idempotency Key／Stored Result、Failure Taxonomy、Retry 與 Audit。
+- [ ] 完成交易使用 Reverse／Correct／Adjust，不使用 Delete。
+- [ ] Notification Failure 不回滾核心交易。
+- [ ] 五個 Registry Entry 與 Contract Lifecycle／Owner／Version／Production Use 一致。
+- [ ] Module Contract 與 20 個 Transaction Scenario 已逐項審查。

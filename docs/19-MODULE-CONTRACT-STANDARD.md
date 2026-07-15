@@ -120,3 +120,18 @@ GetEventAvailability
 ## Business Reference and Historical Correction
 
 Business Reference 是跨 Module 的穩定識別，必須保留 Tenant Scope，且不得直接使用 LINE UID、Provider Subject、Email 或 Mobile。歷史型資料不得以 Update／Delete 掩蓋已發生事實；Contract 必須明確選擇 Reverse、Supersede、Correct、Merge 或 Migration Transaction，並定義 Audit 與 Idempotency Boundary。
+
+## Transactional Contract Addendum
+
+交易型 Module Contract 另需明確聲明：
+
+| Field | Requirement |
+| --- | --- |
+| Transaction Safety | Atomic Intent、Allowed State、Scope Validation、Compensation |
+| Business Reference | 穩定業務來源，不得為 Provider Identity／Timestamp |
+| Correction Path | Cancel、Reject、Reverse、Correct、Adjust 的適用語意 |
+| Reversal Command | Actor、Permission、Original Reference、Resulting State |
+| Failure Taxonomy | Validation、AuthN、AuthZ、Scope、Duplicate、Conflict、Insufficient、Expired、State、Temporary／Permanent |
+| Stored Idempotent Result | Processing、Completed、Failed Retryable、Failed Permanent、Conflict 與 safe response |
+
+每個 Public Command 必須定義 Purpose、Actor、Permission、Tenant／Shop Scope、Business Reference、Idempotency、Success、Failure、Retry、Audit、Correction。詳見 [Transaction Safety](39-TRANSACTION-SAFETY-STANDARD.md)。

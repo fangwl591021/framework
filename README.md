@@ -7,7 +7,7 @@ Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義�
 ```text
 Documentation Stage
 No Runtime Implemented
-No Database Schema Implemented
+No Schema Implemented
 No Production Verification
 ```
 
@@ -59,6 +59,10 @@ No Production Verification
 | [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Accepted | Point Account 採 Tenant Scope | Not Implemented | Not Verified |
 | [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Accepted | Referral 預設採 Single-layer | Not Implemented | Not Verified |
 | [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | Accepted | External Identity 不作 Business Key | Not Implemented | Not Verified |
+| [ADR-009](docs/adr/ADR-009-REJECT-INSUFFICIENT-POINT-BALANCE.md) | Accepted | 餘額不足整筆拒絕 | Not Implemented | Not Verified |
+| [ADR-010](docs/adr/ADR-010-FIRST-VALID-REFERRER.md) | Accepted | First Valid Referrer | Not Implemented | Not Verified |
+| [ADR-011](docs/adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md) | Accepted | First Valid Touch／30-Day Window | Not Implemented | Not Verified |
+| [ADR-012](docs/adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md) | Accepted | 完成交易採 Reverse／Correct，不 Delete | Not Implemented | Not Verified |
 
 ## Module Contract and Registry
 
@@ -129,6 +133,31 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [32-DUPLICATE-MERGE-MIGRATION](docs/32-DUPLICATE-MERGE-MIGRATION.md) | Duplicate、Merge、Split 與 Legacy Migration |
 | [33-SCENARIO-VALIDATION-MATRIX](docs/33-SCENARIO-VALIDATION-MATRIX.md) | Domain Scenario 與未來驗收矩陣 |
 
+### Transactional Engine Contracts
+
+| 文件 | 用途 |
+| --- | --- |
+| [34-POINT-ENGINE-CONTRACT](docs/34-POINT-ENGINE-CONTRACT.md) | Point Program、Account、Ledger 與 Transaction Contract |
+| [35-REFERRAL-ENGINE-CONTRACT](docs/35-REFERRAL-ENGINE-CONTRACT.md) | Single-Layer Referral Contract |
+| [36-ATTRIBUTION-ENGINE-CONTRACT](docs/36-ATTRIBUTION-ENGINE-CONTRACT.md) | Share、Touch、Conversion 與 Decision Contract |
+| [37-ATTENDANCE-ENGINE-CONTRACT](docs/37-ATTENDANCE-ENGINE-CONTRACT.md) | Physical／Online Attendance Contract |
+| [38-REDEMPTION-ENGINE-CONTRACT](docs/38-REDEMPTION-ENGINE-CONTRACT.md) | Merchant-verified Redemption Contract |
+| [39-TRANSACTION-SAFETY-STANDARD](docs/39-TRANSACTION-SAFETY-STANDARD.md) | Atomic Intent、Failure、Compensation 與 Scope |
+| [40-IDEMPOTENCY-STANDARD](docs/40-IDEMPOTENCY-STANDARD.md) | Idempotency Key、Stored Result、Conflict 與候選 Storage |
+| [41-CORRECTION-REVERSAL-STANDARD](docs/41-CORRECTION-REVERSAL-STANDARD.md) | Cancel、Reject、Reverse、Correct、Adjust、Delete 分界 |
+| [42-ENGINE-INTEGRATION-MATRIX](docs/42-ENGINE-INTEGRATION-MATRIX.md) | 五個 Engine 的 Command／Query／Event 協作 |
+| [43-TRANSACTION-SCENARIO-MATRIX](docs/43-TRANSACTION-SCENARIO-MATRIX.md) | 20 個交易安全驗收情境 |
+
+### Engine Registry Entries
+
+| Entry | Status |
+| --- | --- |
+| [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+| [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+| [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+| [attendance-engine](docs/registry/attendance-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+| [redemption-engine](docs/registry/redemption-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+
 ### ADR Index
 
 | ADR | Title | Status |
@@ -141,6 +170,10 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Scope Point Accounts to Tenant Membership | Accepted |
 | [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Use Single-Layer Referral as the Default Policy | Accepted |
 | [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | Do Not Use External Provider Identity as the Business Primary Key | Accepted |
+| [ADR-009](docs/adr/ADR-009-REJECT-INSUFFICIENT-POINT-BALANCE.md) | Reject Point Transactions When Balance Is Insufficient | Accepted |
+| [ADR-010](docs/adr/ADR-010-FIRST-VALID-REFERRER.md) | Use First Valid Referrer as the Default Referral Policy | Accepted |
+| [ADR-011](docs/adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md) | Use First Valid Touch with a 30-Day Default Attribution Window | Accepted |
+| [ADR-012](docs/adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md) | Reverse or Correct Completed Transactions Instead of Deleting Them | Accepted |
 
 ### Template Index
 
