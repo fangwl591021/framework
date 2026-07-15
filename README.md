@@ -6,8 +6,9 @@ Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義�
 
 ```text
 Documentation Stage
-No Framework Runtime Implemented
-No Module Approved for Production
+No Runtime Implemented
+No Database Schema Implemented
+No Production Verification
 ```
 
 目前 Repository 只包含架構與治理文件，尚未建立 Worker、Schema、Migration、API、Module Runtime 或部署設定。列為 Candidate 或 ADR Accepted 的內容，不代表已 Implemented 或 Production Verified。
@@ -54,6 +55,10 @@ No Module Approved for Production
 | [ADR-002](docs/adr/ADR-002-D1-SOURCE-OF-TRUTH-KV-CACHE.md) | Accepted | D1 為 Source of Truth，KV 為選用 Cache | Not Implemented | Not Verified |
 | [ADR-003](docs/adr/ADR-003-MODULAR-MONOLITH-WORKER.md) | Accepted | 初期採 Modular Monolith Worker | Not Implemented | Not Verified |
 | [ADR-004](docs/adr/ADR-004-TENANT-BRAND-SHOP-HIERARCHY.md) | Accepted | Tenant 必要，Brand／Shop 選用 | Not Implemented | Not Verified |
+| [ADR-005](docs/adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md) | Accepted | Referral Relationship 與 Attribution 分離 | Not Implemented | Not Verified |
+| [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Accepted | Point Account 採 Tenant Scope | Not Implemented | Not Verified |
+| [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Accepted | Referral 預設採 Single-layer | Not Implemented | Not Verified |
+| [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | Accepted | External Identity 不作 Business Key | Not Implemented | Not Verified |
 
 ## Module Contract and Registry
 
@@ -108,6 +113,22 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [21-CORE-CROSSCUTTING-CANDIDATES](docs/21-CORE-CROSSCUTTING-CANDIDATES.md) | 四項 Platform Core Candidate 邊界 |
 | [22-ORGANIZATION-HIERARCHY](docs/22-ORGANIZATION-HIERARCHY.md) | Tenant／Brand／Shop 結構與 Scope |
 
+### Domain Models
+
+| 文件 | 用途 |
+| --- | --- |
+| [23-CORE-DOMAIN-MODEL](docs/23-CORE-DOMAIN-MODEL.md) | 核心 Entity、關係與建模語言 |
+| [24-IDENTITY-MAPPING-MODEL](docs/24-IDENTITY-MAPPING-MODEL.md) | 外部 Identity 驗證、連結與衝突 |
+| [25-MEMBERSHIP-MODEL](docs/25-MEMBERSHIP-MODEL.md) | Platform User、Tenant／Shop Membership 邊界 |
+| [26-POINT-ACCOUNT-MODEL](docs/26-POINT-ACCOUNT-MODEL.md) | Point Program、Account、Transaction 與 Ledger |
+| [27-REFERRAL-RELATIONSHIP-MODEL](docs/27-REFERRAL-RELATIONSHIP-MODEL.md) | Tenant-scoped Single-layer Referral |
+| [28-ATTRIBUTION-MODEL](docs/28-ATTRIBUTION-MODEL.md) | Share Link、Touch、Conversion 與 Record |
+| [29-ROLE-PERMISSION-SCOPE](docs/29-ROLE-PERMISSION-SCOPE.md) | Role、Permission、Assignment 與 Scope |
+| [30-DOMAIN-INVARIANTS](docs/30-DOMAIN-INVARIANTS.md) | 跨領域不變條件與 Enforcement 責任 |
+| [31-LIFECYCLE-STATE-MODEL](docs/31-LIFECYCLE-STATE-MODEL.md) | 核心 Aggregate 概念生命週期 |
+| [32-DUPLICATE-MERGE-MIGRATION](docs/32-DUPLICATE-MERGE-MIGRATION.md) | Duplicate、Merge、Split 與 Legacy Migration |
+| [33-SCENARIO-VALIDATION-MATRIX](docs/33-SCENARIO-VALIDATION-MATRIX.md) | Domain Scenario 與未來驗收矩陣 |
+
 ### ADR Index
 
 | ADR | Title | Status |
@@ -116,6 +137,10 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [ADR-002](docs/adr/ADR-002-D1-SOURCE-OF-TRUTH-KV-CACHE.md) | Use D1 as Source of Truth and KV as Optional Cache | Accepted |
 | [ADR-003](docs/adr/ADR-003-MODULAR-MONOLITH-WORKER.md) | Begin with a Modular Monolith Cloudflare Worker | Accepted |
 | [ADR-004](docs/adr/ADR-004-TENANT-BRAND-SHOP-HIERARCHY.md) | Adopt an Optional Tenant–Brand–Shop Hierarchy | Accepted |
+| [ADR-005](docs/adr/ADR-005-REFERRAL-AND-ATTRIBUTION-SEPARATION.md) | Separate Referral Relationship from Attribution | Accepted |
+| [ADR-006](docs/adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md) | Use Tenant-scoped Point Accounts | Accepted |
+| [ADR-007](docs/adr/ADR-007-SINGLE-LAYER-REFERRAL-DEFAULT.md) | Use Single-layer Referral by Default | Accepted |
+| [ADR-008](docs/adr/ADR-008-EXTERNAL-IDENTITY-NOT-BUSINESS-KEY.md) | External Identity Is Not a Business Key | Accepted |
 
 ### Template Index
 

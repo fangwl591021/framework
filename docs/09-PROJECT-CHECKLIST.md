@@ -121,3 +121,17 @@
 - [ ] Staging 與 Production Verification Evidence 分開記錄。
 - [ ] 所有例外有 Owner、期限、Approval Reference 與移除計畫。
 - [ ] 發布 Branch、Commit、依賴版本、環境與 Authorized Operator 可追溯。
+
+## 16. Sprint 4 Domain Model Gate
+
+- [ ] Platform User、Tenant Membership、Shop Membership 已分離。
+- [ ] External Identity 只在 Identity Mapping，不作 Business Primary Key。
+- [ ] 同一 Platform User／Tenant 最多一個 Active Tenant Membership。
+- [ ] Point Program、Account、Transaction 與 Rule 已分離，Balance 可由 Ledger 重建。
+- [ ] Referral Relationship、Attribution Touch、Attribution Record 與 Commission 已分離。
+- [ ] Referral 預設 Single-layer、No Self、No Cycle、No Normal Overwrite。
+- [ ] 每個 Conversion 同時最多一個 Active Attribution Record，Correction 保留歷史。
+- [ ] Role Assignment 明確定義 Platform／Tenant／Brand／Shop／Own／Assigned Scope。
+- [ ] Lifecycle、Invariant、Historical Correction、Idempotency 與 Audit 已寫入 Contract。
+- [ ] Duplicate、Merge、Split 與 Legacy Migration 不依模糊 PII 自動判定。
+- [ ] [Scenario Validation Matrix](33-SCENARIO-VALIDATION-MATRIX.md) 的適用案例均有結果與證據。

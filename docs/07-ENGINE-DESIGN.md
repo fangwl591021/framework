@@ -77,3 +77,59 @@
 - 非同步協作需定義 Domain Event 版本、Idempotency、重試與失敗處理。
 - Adapter、Extension 與 Application 不得繞過公開 Interface。
 - Engine Candidate 需依 [Module Lifecycle](11-MODULE-LIFECYCLE.md) 與 [Module Promotion Standard](14-MODULE-PROMOTION-STANDARD.md) 取得成熟度證據。
+
+## Sprint 4 Core Domain Engine Supplements
+
+### Identity Engine
+
+- Responsibility：解析 Platform User 與受驗證 Identity Mapping。
+- Owned Data：Platform User、Identity Mapping、Identity Conflict。
+- Commands：Link Identity、Unlink Identity、Suspend Identity、Merge Platform Users。
+- Queries：Resolve Platform User、Get Identity Status。
+- Published Events：IdentityLinked、IdentityConflictDetected、PlatformUsersMerged。
+- Forbidden Responsibilities：不得管理 Tenant Membership、Point、Referral 或 Role。
+
+### Membership Engine
+
+- Responsibility：管理 Tenant Membership 與 Shop Membership 生命週期。
+- Owned Data：Tenant Membership、Shop Membership、Membership Source。
+- Commands：Create Membership、Assign Shop Membership、Suspend Membership。
+- Queries：Get Tenant Membership、List Shop Memberships。
+- Published Events：MembershipCreated、ShopMembershipActivated、MembershipSuspended。
+- Forbidden Responsibilities：不得驗證 Provider Token、直接修改 Point Ledger 或授權自己。
+
+### Point Engine
+
+- Responsibility：管理 Tenant-scoped Point Account 與 Transaction Ledger。
+- Owned Data：Point Program、Point Account、Point Transaction。
+- Commands：Grant、Redeem、Expire、Reverse、Adjust Points。
+- Queries：Get Point Balance、List Point Transactions。
+- Published Events：PointsGranted、PointsRedeemed、PointsReversed。
+- Forbidden Responsibilities：不得直接修改 Balance、判定 Referrer 或保存 Provider Identity。
+
+### Referral Engine
+
+- Responsibility：管理 Tenant 內長期 Single-layer Direct Referral。
+- Owned Data：Referral Relationship、Referral Policy Decision。
+- Commands：Assign Referrer、Correct Referral、Revoke Referral。
+- Queries：Get Active Referrer、Get Referral History。
+- Published Events：ReferralConfirmed、ReferralCorrected、ReferralRejected。
+- Forbidden Responsibilities：不得決定 Conversion Attribution、Commission 或 Point Amount。
+
+### Attribution Engine
+
+- Responsibility：保存 Touch 並依版本化 Policy 判定 Conversion Attribution。
+- Owned Data：Share Link、Attribution Touch、Attribution Record。
+- Commands：Record Touch、Decide Attribution、Correct Attribution。
+- Queries：Get Conversion Attribution、List Touches。
+- Published Events：AttributionTouchRecorded、ConversionAttributed、AttributionCorrected。
+- Forbidden Responsibilities：不得覆寫 Referral、擁有 Conversion 或直接發放 Reward。
+
+### Permission Engine
+
+- Responsibility：依 Actor、Action、Resource 與 Scope 判斷授權。
+- Owned Data：Role、Permission、Role Assignment、Scope Policy。
+- Commands：Assign Role、Revoke Role、Expire Assignment。
+- Queries：Authorize Action、List Effective Permissions。
+- Published Events：RoleAssigned、RoleRevoked、PermissionDenied。
+- Forbidden Responsibilities：不得驗證 Login Provider、修改 Membership Business State 或承載客戶流程。

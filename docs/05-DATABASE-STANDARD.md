@@ -50,6 +50,8 @@ Tenant 或 Brand 底下的選用層級，代表門市、分店、據點或線上
 
 Point Account 與 Point Transaction 屬於 Tenant Domain。每次增加、扣除、到期或調整都必須可追溯，不能只保存最終餘額。
 
+概念關係為 `Tenant Membership + Point Program + Optional Shop Scope = Point Account`。Balance 由 Ledger 推導；Reverse 建立反向 Transaction，Adjust 必須有高權限與 Audit。詳見 [Point Account Model](26-POINT-ACCOUNT-MODEL.md)。
+
 ### Event
 
 平台內發生的領域事實，用於 Module 協作、通知、稽核或分析；需具類型、版本、來源、Tenant Scope 與時間。
@@ -57,6 +59,15 @@ Point Account 與 Point Transaction 屬於 Tenant Domain。每次增加、扣除
 ### Relationship
 
 Platform User、Tenant Membership、Shop Membership 或其他資源之間具有方向、類型、Scope 與有效期間的關係。
+
+Referral Relationship 是 Tenant 內的長期直接關係；Attribution Touch 是行銷互動；Attribution Record 是單一 Conversion 的版本化最終判定，三者不可共用一個可覆寫欄位。詳見 [Referral Relationship Model](27-REFERRAL-RELATIONSHIP-MODEL.md) 與 [Attribution Model](28-ATTRIBUTION-MODEL.md)。
+
+## Conceptual Model, Not Schema
+
+- 本 Sprint 所列 `provider_subject`、Status、Reference、Rule Version、Idempotency Key 等都只是概念資料。
+- Aggregate Root、Entity、Value Object、Policy、Event、Command 與 Query 的選擇必須先於 Schema。
+- Lifecycle 狀態不是資料庫 Enum；Correction、Merge、Reverse 與 Migration 必須保留歷史。
+- Schema Proposal 需逐項證明 Owner Module、Tenant Scope、Business Reference、Invariant 與 Migration 方法。
 
 ## Source of Truth
 
