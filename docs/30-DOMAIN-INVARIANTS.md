@@ -59,3 +59,12 @@
 | Role／Permission 必須由 Backend 判斷，UI 隱藏不是安全控制 | Permission Engine | URL／Request Tampering | API／Command Authorization | 高風險拒絕需 Audit | 原 Command 仍需 Key |
 | Tenant Role 不得取得 Platform 或其他 Tenant 權限 | Permission Engine | Cross-tenant breach | Scope Resolver | Assignment 變更需 Audit | Assignment Command 需 Key |
 | Membership 停用後 Role Assignment 不得繼續授權 | Permission Engine | 已離開使用者仍可操作 | Policy + Membership Query | 停用與拒絕可追溯 | 狀態事件消費需去重 |
+
+## Sprint 5 Transaction Invariants
+
+- Point Balance 不足預設整筆 Reject，無成功 Ledger、負餘額或部分成功。
+- Attendance Confirmed 與 Point Granted 是不同 Module 事實，以 Attendance Business Reference 防重。
+- Redemption Token／Scanner 不授予 Permission；Merchant、Tenant、Shop 必須由 Backend 驗證。
+- Conversion Evaluation 同 Policy Version 最多一個目前有效 Attribution Record。
+- 完成交易不得 Delete；Reverse／Correct／Adjust 必須指向 Original 並有 Audit。
+- Notification Failure 不回滾已成功核心交易。

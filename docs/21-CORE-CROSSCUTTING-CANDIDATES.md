@@ -61,3 +61,12 @@ Idempotency 是交易安全能力，不等同於單純 Cache。
 - **Security Concern**：避免洩露內部環境、未公開漏洞、Secret 或客戶資料。
 - **Open Question**：Registry 文件組織、驗證工具與版本發布方式尚待決定。
 - **Promotion Requirements**：metadata Contract、Lifecycle 一致性檢查、Owner 流程、兩個實質差異場景與 Tony 批准。
+
+## Sprint 5 Application to Transactional Engines
+
+| Candidate | Point | Referral | Attribution | Attendance | Redemption |
+| --- | --- | --- | --- | --- | --- |
+| Idempotency | Grant／Deduct／Reverse | Candidate／Confirm／Correct | Touch／Conversion／Evaluate | Attempt／Confirm | Intent／Complete／Reverse |
+| Audit Log | Adjust／Reverse／Freeze | Confirm／Replace／Revoke | Decision／Correct／Reverse | Confirm／Correct／Revoke | Merchant decision／Complete／Reverse |
+
+Idempotency 與 Audit Log 仍為 Platform Core Candidate，Not Implemented、Not Verified。各 Engine Contract 只能定義要求與 Boundary，不得假設已有共同 Runtime、D1 Table、KV Key 或 Durable Object。

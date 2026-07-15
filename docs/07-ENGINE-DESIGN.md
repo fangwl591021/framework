@@ -133,3 +133,15 @@
 - Queries：Authorize Action、List Effective Permissions。
 - Published Events：RoleAssigned、RoleRevoked、PermissionDenied。
 - Forbidden Responsibilities：不得驗證 Login Provider、修改 Membership Business State 或承載客戶流程。
+
+## Sprint 5 Transactional Engine Contracts
+
+| Engine | Contract | Responsibility Summary |
+| --- | --- | --- |
+| Point Engine | [Contract](34-POINT-ENGINE-CONTRACT.md) | Point Program、Account、Ledger、Projection 與安全交易 |
+| Referral Engine | [Contract](35-REFERRAL-ENGINE-CONTRACT.md) | Invitation、Candidate、First Valid Direct Referral 與歷史修正 |
+| Attribution Engine | [Contract](36-ATTRIBUTION-ENGINE-CONTRACT.md) | Share Link、Touch、Conversion Decision、Correction／Reversal |
+| Attendance Engine | [Contract](37-ATTENDANCE-ENGINE-CONTRACT.md) | Physical／Online Attendance 驗證與防重 |
+| Redemption Engine | [Contract](38-REDEMPTION-ENGINE-CONTRACT.md) | Merchant-authenticated Intent、Point 協作、Receipt 與 Reverse |
+
+五個 Contract 皆為 Candidate、Contract Proposed、Not Implemented、Not Verified；不得標示 Stable 或 Production Ready。

@@ -84,3 +84,7 @@
 - Domain Event 重送必須 Idempotent；Migration 必須保留 Legacy Reference、Batch Key 與 Item Key。
 - `Suspended`、`Frozen`、`Left`、`Archived`、`Merged`、`Reversed`、`Corrected` 都不是 Delete。
 - State 是否允許操作，仍需同時驗證 Tenant／Shop Scope、Permission、Policy Version 與 Business Preconditions。
+
+## Sprint 5 Transaction Lifecycle References
+
+交易 Intent 與 Result 的 Cancel、Reject、Reverse、Correct、Adjust 語意依 [Correction and Reversal Standard](41-CORRECTION-REVERSAL-STANDARD.md)。Attendance／Redemption Candidate Contract 不增加資料庫 ENUM；任何新狀態需先定義 Allowed Transition、Permission、Audit、Idempotency 與 Historical Correction。

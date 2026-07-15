@@ -54,3 +54,10 @@ Point Account 永遠屬於單一 Tenant，可選擇進一步綁定 Shop Scope。
 - Coupon、Tier、Referral 或 Commission 不因共用 Point Program 而自動共享。
 
 相關決策見 [ADR-006](adr/ADR-006-TENANT-SCOPED-POINT-ACCOUNTS.md)。
+
+## Sprint 5 Contract and Default Policy
+
+- 正式候選 Contract：[Point Engine Contract](34-POINT-ENGINE-CONTRACT.md)。
+- Cross-Shop Default：`Shop Isolated`；Tenant 可明確採 `Tenant Shared`；Selected Shop Group 只為未來候選。
+- Insufficient Balance Default：整筆拒絕、不負餘額、不部分成功、不建立成功 Transaction；見 [ADR-009](adr/ADR-009-REJECT-INSUFFICIENT-POINT-BALANCE.md)。
+- 完成交易以 Reverse／Correct，不 Delete；見 [ADR-012](adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md)。

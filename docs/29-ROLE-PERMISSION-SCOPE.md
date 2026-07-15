@@ -55,3 +55,9 @@
 ## Separation of Duties
 
 Architecture Decision Approval、Tenant 商業操作、財務型 Point Adjustment 與 Audit Review 應可配置為不同 Permission；高風險 Application 可要求雙人審核，但本 Sprint 不指定 Workflow 實作。
+
+## Sprint 5 Transaction Permissions
+
+- Point Reverse／Adjust、Referral Correction、Attribution Correction／Reverse、Attendance Correct／Revoke、Redemption Reverse 必須使用獨立高風險 Permission。
+- High-risk Identity Merge：Requester 可為 Tenant Admin 或授權 CRM Operator；Approver 為 Platform Admin 或授權 Identity Reviewer，Requester 不得自批。
+- Merchant Staff 權限在每次 Redemption Request 重新驗證；撤銷 Role 後舊 Request 不得沿用舊授權。
