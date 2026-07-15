@@ -48,7 +48,11 @@ CREATE TABLE point_transactions (
   business_reference TEXT NOT NULL,
   rule_version TEXT NOT NULL,
   idempotency_record_id TEXT NOT NULL,
+  idempotency_generation INTEGER NOT NULL CHECK (idempotency_generation > 0),
+  idempotency_status TEXT NOT NULL CHECK (idempotency_status = 'completed'),
   original_transaction_id TEXT,
+  projection_version INTEGER NOT NULL CHECK (projection_version > 0),
+  resulting_balance INTEGER NOT NULL CHECK (resulting_balance >= 0),
   actor_type TEXT NOT NULL,
   actor_reference TEXT,
   reason_code TEXT NOT NULL,
@@ -59,7 +63,8 @@ CREATE TABLE point_transactions (
   UNIQUE (tenant_id, point_account_id, id),
   UNIQUE (tenant_id, business_type, business_reference, operation, rule_version),
   FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, idempotency_record_id, idempotency_generation, idempotency_status)
+    REFERENCES idempotency_records(tenant_id, id, processing_generation, status) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_account_id, original_transaction_id)
     REFERENCES point_transactions(tenant_id, point_account_id, id) ON DELETE RESTRICT,
   CHECK (
@@ -67,17 +72,26 @@ CREATE TABLE point_transactions (
     (operation IN ('deduct', 'redeem', 'expire') AND signed_amount < 0) OR
     (operation IN ('reverse', 'adjust') AND signed_amount <> 0)
   ),
-  CHECK ((operation = 'reverse' AND original_transaction_id IS NOT NULL) OR operation <> 'reverse')
+  CHECK (
+    (operation = 'reverse' AND original_transaction_id IS NOT NULL) OR
+    (operation <> 'reverse' AND original_transaction_id IS NULL)
+  )
 );
 
 CREATE TABLE point_balance_projections (
   point_account_id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
-  balance INTEGER NOT NULL,
+  balance INTEGER NOT NULL CHECK (balance >= 0),
   ledger_watermark TEXT,
-  projection_version INTEGER NOT NULL CHECK (projection_version > 0),
+  projection_version INTEGER NOT NULL DEFAULT 0 CHECK (projection_version >= 0),
+  consistency_status TEXT NOT NULL DEFAULT 'healthy' CHECK (consistency_status IN ('healthy', 'drifted', 'rebuilding')),
+  last_reconciled_at INTEGER,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT,
+  CHECK (
+    (projection_version = 0 AND ledger_watermark IS NULL) OR
+    (projection_version > 0 AND ledger_watermark IS NOT NULL)
+  )
 );
 
 CREATE UNIQUE INDEX uq_point_accounts_tenant_active
@@ -88,6 +102,12 @@ CREATE UNIQUE INDEX uq_point_accounts_shop_active
   ON point_accounts(tenant_id, tenant_membership_id, point_program_id, shop_id)
   WHERE status = 'active' AND shop_id IS NOT NULL;
 
+CREATE UNIQUE INDEX uq_point_transactions_account_version
+  ON point_transactions(tenant_id, point_account_id, projection_version);
+
+CREATE UNIQUE INDEX uq_point_transactions_idempotency_effect
+  ON point_transactions(tenant_id, idempotency_record_id);
+
 CREATE INDEX idx_point_transactions_account_time
   ON point_transactions(tenant_id, point_account_id, occurred_at DESC, id DESC);
 
@@ -96,3 +116,7 @@ CREATE INDEX idx_point_transactions_business_ref
 
 CREATE INDEX idx_point_transactions_original
   ON point_transactions(tenant_id, original_transaction_id);
+
+CREATE UNIQUE INDEX uq_point_transactions_single_full_reverse
+  ON point_transactions(tenant_id, original_transaction_id)
+  WHERE operation = 'reverse';

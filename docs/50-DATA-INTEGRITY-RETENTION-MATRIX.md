@@ -10,7 +10,7 @@
 | Tenant Membership | Membership Engine | Tenant required | User＋Tenant 單一 Active | Suspend／Merge 保留 | D1 為真相 |
 | Shop Membership | Membership Engine | Tenant＋Shop | Membership＋Shop 單一有效關係 | Revoke 保留 | 可重建讀取 Cache |
 | Role Assignment | Permission Engine | Explicit Scope | 同 Assignment Policy 防重 | Grant／Revoke／Expire 保留 | 權限 Cache 需快速失效 |
-| Point Ledger Entry | Point Engine | Tenant＋Account | Business／Idempotency Boundary | Grant／Deduct／Redeem／Expire／Reverse／Adjust | Balance 只由有效 Entry 重建 |
+| Point Ledger Entry | Point Engine | Tenant＋Account | Business／Idempotency Boundary＋Account Version | Grant／Deduct／Redeem／Expire／Single Full Reverse／Adjust | Balance 只由有效 Entry 重建；同 Idempotency Record最多一筆效果 |
 | Referral Relationship | Referral Engine | Tenant required | 每 Membership 單一 Active Direct Referrer | Replace／Correct 保留 | 不作唯一真相 |
 | Attribution Record | Attribution Engine | Tenant＋Conversion | 每 Conversion 單一 Active Decision | Correction 版本化 | Decision Cache 可回源 |
 | Attendance Record | Attendance Engine | Tenant＋Subject | 依 Subject Policy 防重 | Correct／Revoke 保留 | 結果可回源 |
@@ -23,7 +23,7 @@
 | Outcome | Point Ledger Entry | 保存位置 | Balance Impact |
 | --- | --- | --- | --- |
 | Grant／Deduct／Redeem／Expire 已成立 | 建立正式 Entry | Point Ledger＋Idempotency Stored Result＋必要 Audit | 依有效 Entry 推導 |
-| Reverse／Adjust 已成立 | 建立正式 Entry 並關聯 Original／Reason | Point Ledger＋Idempotency Stored Result＋必要 Audit | 正式抵消或調整 |
+| Single Full Reverse／Adjust 已成立 | 建立正式 Entry 並關聯 Original／Reason；同 Original最多一筆 Full Reverse | Point Ledger＋Idempotency Stored Result＋必要 Audit | 正式抵消或調整 |
 | Insufficient Balance | 不建立 | Idempotency Record／Command Result／必要 Audit | 無 |
 | Permission Denied／Scope Violation | 不建立 | Idempotency Record／Command Result／必要 Security Audit／Log | 無 |
 | Duplicate Conflict／Expired／Invalid State／Validation Failure | 不建立 | Idempotency Record／Command Result／依用途 Log | 無 |

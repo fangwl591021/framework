@@ -13,16 +13,34 @@
 
 ## `idempotency_records`
 
-候選欄位：`id`、`scope_type`、optional `tenant_id`、`scope_key`、`operation`、`idempotency_key_hash`、`request_fingerprint`、`status`、`result_code`、`result_reference`、`safe_result_json`、`processing_owner`、`lease_expires_at`、started／completed／expires timestamps、`retry_count`、created／updated timestamps。
+候選欄位：`id`、`scope_type`、optional `tenant_id`、`scope_key`、`operation`、`idempotency_key_hash`、`request_fingerprint`、`status`、`result_code`、`result_reference`、`safe_result_json`、`processing_owner`、`processing_generation`、`lease_expires_at`、started／completed／expires timestamps、`retry_count`、created／updated timestamps。
 
 - Scope 明確分成 `platform` 與 `tenant`。`platform` 必須 `tenant_id IS NULL`；`tenant` 必須 `tenant_id IS NOT NULL`，由 CHECK 保證。
 - `scope_key` 在 Tenant Scope 只是 Tenant 內的次級 namespace，不代表 Tenant Identity。Tenant 唯一性候選為 `tenant_id + scope_key + operation + idempotency_key_hash`；Platform 唯一性候選為 `scope_key + operation + idempotency_key_hash`。兩者使用不同 partial unique index，不共用模糊 namespace。
-- `UNIQUE (tenant_id, id)` 提供 Tenant Domain Composite FK target。Point Transaction、Attendance Attempt、Redemption Intent 以 `(tenant_id, idempotency_record_id)` 參照，Tenant A 不能引用 Tenant B，且非 NULL Tenant child 無法匹配 Platform record。
-- Same key＋same fingerprint：Processing 回處理中、Completed／Permanent Failure 回 Stored Result、Retryable Failure 依 Contract 重試。
-- Same key＋different fingerprint：Conflict，不執行第二次。
+- `UNIQUE (tenant_id, id)` 提供一般 Tenant Domain Composite FK target。Attendance Attempt、Redemption Intent 仍以 `(tenant_id, idempotency_record_id)` 參照；Point Transaction 進一步以 Tenant＋Record＋`processing_generation`＋Completed Status Composite FK 綁定正式效果。Tenant A 不能引用 Tenant B，且非 NULL Tenant child 無法匹配 Platform record。
+- Same key＋same fingerprint：Processing 回處理中；Completed／Failed Permanent／Conflict 回 Stored Result；Failed Retryable 只用相同 key重新 Claim。
+- Same key＋different fingerprint：以 CAS 將結果標示 Conflict，不執行 Domain Effect。
+- `processing_generation` 從 `1` 開始；首次 Claim 或 Lease Takeover 都必須以 compare-and-set 驗證目前 status／owner／generation／expiry。Takeover 成功必須遞增 generation並取得新 lease，不能沿用舊 generation。
+- 所有 Completed、Failed、Conflict 與 Point Domain Commit 都必須帶 owner＋generation條件；stale owner 的 update count 必須為 `0`，且不得建立 Ledger 或覆寫 Stored Result。
+- `processing` 必須具有 owner、未來 lease expiry，且 result／completed欄位為空；Retryable Takeover 進入新 generation時要清除舊安全結果並由 Audit保留歷史。terminal／retryable result必須具有 `result_code` 與 completed timestamp。Completed Result一經提交不可回到 Processing。
+- Point Ledger 另以 `uq_point_transactions_idempotency_effect` 保證同一 Tenant Idempotency Record 最多一筆正式效果；該 Ledger FK 只能引用同 generation 的 Completed Record。
 - `safe_result_json` 只允許安全、版本化、大小受限的回應摘要；完整 request／response payload、PII、token、secret 禁止保存。
 - High-value completed result 的 retention 不得短於 dispute／reconciliation window；實際期間待 Tony／Security／Domain Owner 決定。
-- Processing timeout／lease takeover 需要 atomic claim proposal與故障測試，尚未實作。
+
+## Claim, Takeover and Unknown Outcome
+
+```text
+Absent → Processing(generation=1)
+Processing(current owner) → Completed | Failed Retryable | Failed Permanent | Conflict
+Processing(expired lease) → Processing(generation+1, new owner)
+Failed Retryable → Processing(generation+1, new lease)
+```
+
+- Lease Takeover 只取得重新驗證與嘗試權，不代表前一個 transaction 未提交；新 Owner 必須先查 Stored Result 與 Domain Reference。
+- Commit 成功但 response lost：相同 key讀取 Completed Stored Result；不得產生新 key。
+- Claim 已建立但 Domain 尚未提交：同 generation owner可重試；過期後由新 generation接管，舊 owner所有提交必須失敗。
+- Domain Effect 與 Completed Result 對 Point Command 必須在同一 D1 local transaction；不得留下「Ledger committed、Idempotency processing」的正常成功路徑。
+- 無法證明 outcome 時標記 Unknown／Reconciliation Case，不自動重放高價值 Point Effect；以 Idempotency Unique、Ledger Reference、Account Version 與 Audit Evidence判定。
 
 ## `audit_records`
 

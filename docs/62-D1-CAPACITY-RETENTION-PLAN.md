@@ -35,6 +35,20 @@
 - Aggregation／projection 不取代 source rows；Point Balance 特別只能由有效 Ledger 重建。
 - Large backfill／archive 必須分 batch；實際 batch size 由 target plan limits 與量測決定，不在本 Sprint 固定。
 
+## Hot Account Evidence Gate
+
+D1 conditional balance／version update、Unique Guard與local transaction永遠是 correctness boundary。Durable Object不得預設啟用，也不得成為唯一可防止超扣的路徑。
+
+只有在下列指標有 target D1量測、Owner批准門檻、觀測期間與rollback plan後，才可對特定 Account或shard評估 optional Durable Object serialization／load shedding：
+
+- balance/version conflict rate；
+- same-key retry rate與write contention error rate；
+- Point Command p95／p99 latency；
+- 單一 Account burst write rate與queue depth；
+- D1 transaction abort／timeout rate。
+
+啟用後仍需 negative test證明直連、replay、failover與DO unavailable路徑不能繞過D1 guard。全域單一 Durable Object禁止；routing key至少使用stable Point Account ID。實際 threshold在Runtime／Capacity Sprint決定，本 Proposal不虛構數值。
+
 ## D1 Topology Options
 
 | Option | Benefit | Risk／Unknown |

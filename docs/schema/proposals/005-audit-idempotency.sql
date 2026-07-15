@@ -16,6 +16,7 @@ CREATE TABLE idempotency_records (
   result_reference TEXT,
   safe_result_json TEXT,
   processing_owner TEXT,
+  processing_generation INTEGER NOT NULL DEFAULT 1 CHECK (processing_generation > 0),
   lease_expires_at INTEGER,
   started_at INTEGER NOT NULL,
   completed_at INTEGER,
@@ -24,10 +25,15 @@ CREATE TABLE idempotency_records (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, id, processing_generation, status),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   CHECK (
     (scope_type = 'platform' AND tenant_id IS NULL) OR
     (scope_type = 'tenant' AND tenant_id IS NOT NULL)
+  ),
+  CHECK (
+    (status = 'processing' AND processing_owner IS NOT NULL AND lease_expires_at IS NOT NULL AND result_code IS NULL AND result_reference IS NULL AND safe_result_json IS NULL AND completed_at IS NULL) OR
+    (status <> 'processing' AND result_code IS NOT NULL AND completed_at IS NOT NULL)
   )
 );
 

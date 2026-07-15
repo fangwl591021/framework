@@ -35,6 +35,17 @@ Expand → Migrate → Verify → Switch → Contract
 - 大量 data migration 必須分批並受 target D1 limits／CPU／query duration evidence 控制。
 - 每階段都有 stop condition、owner、metrics、audit與 forward plan。
 
+## Point Concurrency Guard Migration Gate
+
+本 PR 尚未執行任何 Migration；以下只定義未來若存在資料時的 tightening順序：
+
+1. Additive 建立 Idempotency `processing_generation`、Point Transaction account version／resulting balance／idempotency generation與 Projection consistency欄位；舊 Runtime不可開始寫新格式。
+2. 依 immutable Ledger重算每個 Account 的 balance、max version與watermark；無法建立一對一 Account Version或Idempotency Effect的資料進 quarantine。
+3. 掃描同一 Idempotency Record多重 Point Effect、同 Original多重 Reverse、Reverse-of-Reverse、非精確 Full Reverse與負餘額。
+4. 只有 zero unexplained violations後才建立 Account Version、Idempotency Effect與Single Full Reverse Unique Guard，並驗證 Composite FK target。
+5. Switch 前執行雙併發、response lost、lease takeover、stale owner與partial failure negative test；任何 Projection Drift都阻止資產寫入。
+6. 不允許以刪除 Ledger或任意挑選 Reverse Winner通過 migration；使用 quarantine、Owner-approved forward correction與完整 audit。
+
 ## Rollback Taxonomy
 
 - **Schema rollback**：僅對可逆 additive schema；drop／rename 可能失去資料，不自動執行。

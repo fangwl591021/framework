@@ -24,7 +24,7 @@
 | Q05 | Point | Account resolve | `point_accounts` | tenant＋membership＋program＋shop nullable＋active | none | unique row | high | required | `uq_point_accounts_tenant_active` or `uq_point_accounts_shop_active` | no | account lifecycle uniqueness | frozen／closed accounts excluded | Not Verified |
 | Q06 | Point | Ledger history | `point_transactions` | tenant＋account | `occurred_at DESC, id DESC` | high | high | required | `idx_point_transactions_account_time` | no | append index cost | ledger history retained | Not Verified |
 | Q07 | Point | Business reference lookup | `point_transactions` | tenant＋business type＋reference | none | low | high | required | `idx_point_transactions_business_ref` | operation／rule require row read | append index cost | ledger history retained | Not Verified |
-| Q08 | Point | Reverse chain | `point_transactions` | tenant＋original transaction | `occurred_at, id` | low | medium | required | `idx_point_transactions_original` | no | append index cost | reverse history retained | Not Verified |
+| Q08 | Point | Reverse chain／single full reverse | `point_transactions` | tenant＋original transaction | `occurred_at, id` | unique full reverse＋history lookup | medium | required | `idx_point_transactions_original`＋`uq_point_transactions_single_full_reverse` | no | append＋reverse uniqueness | reverse history retained | Not Verified |
 | Q09 | Referral | Active referrer | `referral_relationships` | tenant＋member＋active | none | unique row | high | required | `uq_referral_relationships_active` | no | lifecycle uniqueness | replaced history retained | Not Verified |
 | Q10 | Referral | Referral history | `referral_relationships` | tenant＋member | `confirmed_at DESC, id DESC` | low | medium | required | `idx_referral_relationships_history` | no | lifecycle index | relationship history retained | Not Verified |
 | Q11 | Attribution | Share token resolve | `share_links` | tenant＋token hash | none | unique row | high | required | `uq_share_links_token` | status／expiry require row read | token write uniqueness | revoked token retention | Not Verified |
@@ -36,6 +36,8 @@
 | Q17 | Redemption | Receipt lookup | `redemption_results` | tenant＋receipt reference | none | unique candidate | medium | required | `idx_redemption_results_receipt` | no | nullable index write | result history retained | Not Verified |
 | Q18 | Platform Core Candidate | Idempotency replay | `idempotency_records` | scope type＋tenant?＋secondary scope＋operation＋key hash | none | unique row | very high | Platform／Tenant separated | `uq_idempotency_platform_operation_key` or `uq_idempotency_tenant_operation_key` | result requires row read | hot claim／result write | risk-based expiry | Not Verified |
 | Q19 | Platform Core Candidate | Audit search | `audit_records` | tenant＋resource／time range | `occurred_at DESC, id DESC` | very high | medium | tenant filter required | `idx_audit_records_scope_time`＋`idx_audit_records_resource_time` | no | append-heavy indexes | archive changes search set | Not Verified |
+| Q20 | Point | Account version winner | `point_transactions` | tenant＋account＋projection version | none | unique row | very high write guard | required | `uq_point_transactions_account_version` | resulting balance read | one unique write per effect | ledger retained | Not Verified |
+| Q21 | Point | Idempotency effect winner | `point_transactions` | tenant＋idempotency record | none | zero／one row | very high replay guard | required | `uq_point_transactions_idempotency_effect` | result reference read | one unique write per intent | retention tied to ledger | Not Verified |
 
 ## Composite Order and Pagination
 
@@ -47,4 +49,4 @@
 
 ## Evidence Gap
 
-19 個 Query 均只有 Contract／logical evidence，沒有 D1 query plan、production cardinality、latency 或 write amplification evidence。Sprint 7 不宣稱任何 index 已驗證。
+21 個 Query 均只有 Contract／logical／Gate Review evidence，沒有 D1 query plan、production cardinality、latency 或 write amplification evidence。Sprint 7 不宣稱任何 index 已驗證。

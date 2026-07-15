@@ -28,6 +28,10 @@
 - [ ] Insufficient Balance 與其他 Rejected／Failed Point Intent 不建立 Ledger Entry，且有安全 Stored Result。
 - [ ] Completed／Reversed Transaction 與 Rejected／Failed Attempt 使用不同 Logical Record、Status 與 Query Path。
 - [ ] Point Balance 只由有效 Ledger Entry 推導；失敗嘗試不參與 Projection。
+- [ ] 同步 Projection Guard、Ledger Insert、Account Version 與 Idempotency Completed Result具有單一 D1 Local Transaction Boundary。
+- [ ] 同一 Tenant Idempotency Record最多一筆 Point Ledger Effect；Processing Lease有generation fencing。
+- [ ] Single Full Reverse由Unique Guard與同 transaction application validation限制；Partial Reverse未批准。
+- [ ] Projection Drift會停止Point Effect，且只允許由Ledger重建Projection。
 - [ ] Audit／Application／Security Log 只保存用途所需摘要，不複製完整 Transaction 或 Payload。
 - [ ] Reverse／Correct／Adjust／Merge／Anonymize 路徑已定義。
 - [ ] 跨 Module Failure 使用 Reconciliation／Compensation，不假設分散式 Transaction。

@@ -32,29 +32,49 @@
 
 只保存正式 Ledger Entry：`grant`、`deduct`、`redeem`、`expire`、`reverse`、`adjust`。
 
-候選欄位：`id`、`tenant_id`、`point_account_id`、`operation`、`signed_amount INTEGER`、`business_type`、`business_reference`、`rule_version`、`idempotency_record_id`、`original_transaction_id`、`actor_type`、`actor_reference`、`reason_code`、`occurred_at`、`created_at`、`audit_reference`。
+候選欄位：`id`、`tenant_id`、`point_account_id`、`operation`、`signed_amount INTEGER`、`business_type`、`business_reference`、`rule_version`、`idempotency_record_id`、`idempotency_generation`、固定為 `completed` 的 `idempotency_status`、`original_transaction_id`、`projection_version`、`resulting_balance`、`actor_type`、`actor_reference`、`reason_code`、`occurred_at`、`created_at`、`audit_reference`。
 
-`idempotency_record_id` 以 `(tenant_id, idempotency_record_id)` Composite FK 指向 Tenant-scoped Idempotency Record。Point Transaction 不能引用 Platform Scope 或其他 Tenant 的 Stored Result；單欄 ID FK 不視為 Tenant Isolation。
+Point Transaction 以 `(tenant_id, idempotency_record_id, idempotency_generation, idempotency_status)` Composite FK 指向同 Tenant、同 processing generation 且已完成的 Idempotency Record。`uq_point_transactions_idempotency_effect` 保證同一 Tenant Idempotency Record 最多產生一筆正式 Point Ledger Effect；Platform Scope、其他 Tenant、舊 generation 或非 Completed Record 都不能成為成功 Ledger Entry 的依據。
 
-- `signed_amount != 0`；禁止 floating point。
-- Grant／Reverse／Adjust 的正負語意由 Contract＋CHECK candidate 共同限制；所有 operation 的符號矩陣需 Tony 批准。
+- `signed_amount != 0`；禁止 floating point。Grant 為正；Deduct／Redeem／Expire 為負；Adjust 必須是經批准的非零差額。
+- `projection_version` 是該 Account 的正式 Ledger Sequence；`uq_point_transactions_account_version` 讓每個 Account Version 只有一筆 Ledger Winner。`resulting_balance` 必須等於同一 transaction 更新後的 Projection Balance，並供 reconciliation 驗證。
 - Reverse／Adjust 是正式 Entry；Original 與新 Entry 必須同 Tenant、同 Account。
+- 初版 Reverse Policy 為 **Single Full Reverse**：eligible Original 最多一筆 Reverse，由 `uq_point_transactions_single_full_reverse` 選出 Winner；Reverse Amount 必須精確等於 Original Amount 相反數，且 Original 不得是 Reverse。金額與 Original Operation 的跨 row 驗證由 Point Engine 在同一 local transaction 內執行。
+- Partial Reverse 不支援；未來若需要，必須建立 remaining reversible amount、累計上限、獨立 Contract 版本與新 ADR。
 - Insufficient Balance、Permission Denied、Scope Violation、Conflict、Expired、Invalid State、Validation Failure **不建立 row**；只保存 Idempotency Stored Result／Command Result／必要 Audit。
-- 不得 UPDATE `signed_amount`、不得 DELETE；實際不可變性需 Repository permission、trigger candidate 或 application policy 再審查。
-- 同 Original 是否只允許一次完整 Reverse、是否允許 partial reverse 尚未決定；SQL 只提出 `original_transaction_id` index，不假裝已解決。
+- 不得 UPDATE `signed_amount`、`projection_version`、`resulting_balance`，不得 DELETE；實際不可變性需 Repository permission、trigger candidate 或 application policy 再審查。
 - Expire batch 使用 `business_type='expiration_batch'`＋穩定 reference candidate；Adjust 需高風險 permission 與 audit。
 
 ## `point_balance_projections`
 
-候選：`point_account_id` PK、`tenant_id`、`balance INTEGER`、`ledger_watermark`、`projection_version`、`updated_at`。
+候選：`point_account_id` PK、`tenant_id`、`balance INTEGER CHECK balance >= 0`、`ledger_watermark`、從 `0` 單調遞增的 `projection_version`、`consistency_status`、`last_reconciled_at`、`updated_at`。
 
-- 只由有效 Ledger Entry 推導，failed intent 不參與。
-- D1 Ledger 是 Source of Truth；projection／KV 可重建。
-- 是否與 Ledger insert 同一 local transaction 更新，取決於 concurrency／hot account 測試；替代方案是 async rebuild＋freshness contract。
-- Reconciliation 比對 ledger sum、watermark 與 projection version；drift 不可直接改 Ledger。
+- 初版採 **Synchronous Authoritative Projection Row**：建立 Point Account 時在同一 local transaction 建立 `balance=0`、`projection_version=0`、`ledger_watermark=NULL`、`consistency_status='healthy'` 的唯一 Projection。
+- 每一筆正式 Ledger Entry 必須在同一 D1 local transaction 更新 Projection；async Projection 不得作扣點核准來源。
+- Deduct／Redeem／Expire／負 Adjust 使用條件式 Compare-and-Update：目前 generation／owner 有效、`consistency_status='healthy'`、expected version 相符且 `balance + signed_amount >= 0` 時，才更新 balance、遞增 version 並將 watermark 設為預先產生的 Transaction ID。
+- 條件式更新未選出 row時不得 Insert Ledger。餘額不足保存 Failed Permanent／Insufficient Stored Result；version conflict、stale generation 或 drift 回明確 Conflict／Unavailable Result。
+- D1 Ledger 仍是長期 Source of Truth；Projection 是同步 concurrency guard 且可由 Ledger 重建。`consistency_status != 'healthy'` 時停止該 Account 的所有資產異動，先 Reconcile／Rebuild／Verify，再由 Owner Command 恢復。
+- Reconciliation 比對 ledger sum、最後 Ledger ID、最大 Account Version、watermark 與 resulting balance；drift 不可改 Ledger，也不可盲目繼續扣點。
+
+## D1-only Atomic Boundary
+
+成功 Point Command 必須在一個 D1 local transaction 內完成：
+
+```text
+Validate current Idempotency owner + processing_generation
+→ Conditional Projection balance/version/watermark update
+→ Insert exactly one Ledger Entry with same version/resulting balance
+→ Mark the same Idempotency generation Completed with Stored Result
+```
+
+- Account Version Unique、Idempotency Effect Unique、Single Full Reverse Unique 共同提供 DB Winner。為滿足 immediate Composite FK，physical statement可先把同 generation Stored Result轉為 Completed再 Insert Ledger；兩者仍在同一 transaction，Ledger或後續 invariant失敗時Completed update必須一起 rollback。
+- 任一 statement error、constraint conflict、stale generation、row-count invariant mismatch 或 Stored Result completion failure都必須 abort／rollback；不得在 commit 後才以 Application compensation 修補 Projection 或 Ledger。
+- 若底層使用 D1 `batch()`，零筆 conditional update 本身不是成功；Runtime Design 必須把「預期 row count 不是 1」轉成同一 transaction 的 abort condition，不得先 commit 再檢查。
+- Claim Record 可先以無 Domain Effect 的短 transaction 建立；真正資產提交仍須在上述 transaction 重新驗證 owner＋generation。Unknown Response 只用原 key查 Stored Result／Ledger Reference，不以新 key重扣。
+- D1 Sessions 只處理 sequential read consistency，不是 balance lock。Durable Object 只能依 conflict rate、retry rate、write contention、p95／p99 latency 與 hot-account burst evidence 作 optional serialization／load-shedding，不是 correctness dependency。
 
 ## Open Decisions
 
-Internal ID generator、scope key 的非權威顯示／查詢格式、partial reverse、single-reverse guard、projection atomicity、hot account serialization、ledger retention／archive 都需 Architecture Owner 決定或要求證據。Active Account 唯一 Winner 不再依賴 scope key。
+Internal ID generator、scope key 的非權威顯示／查詢格式、D1 Runtime 如何把 row-count mismatch 轉成 transaction abort、Durable Object 啟用門檻、ledger retention／archive 仍需後續批准或證據。Single Full Reverse、同步 Projection Guard 與 D1-only correctness boundary 已由 Gate 3 Review 指定為初版 Proposal，不代表 Implemented 或 Verified。
 
 SQL：[002-point-ledger.sql](schema/proposals/002-point-ledger.sql)。

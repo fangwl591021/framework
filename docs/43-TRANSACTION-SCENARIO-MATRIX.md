@@ -25,6 +25,22 @@
 | 19. Suspended Member 簽到 | Membership suspended | Member | A | S1 | ConfirmAttendance | inactive | Attendance Ref | Rejected | AttendanceRejected | None | None | None | Membership status | Authorization/Invalid State | No | Admin review |
 | 20. Staff 權限撤銷後重送舊請求 | Role revoked after old request | Former Staff | A | S1 | CompleteRedemption | revalidated and denied | Old Request ID | No new transaction | PermissionDenied | No additional effect | None | None | Revocation/current auth | Authorization Error | No | Security review |
 
+## Gate 3 Point Concurrency Scenarios
+
+| ID | Scenario | Expected Winner／State | Retry／Recovery |
+| --- | --- | --- | --- |
+| P01 | Two concurrent deducts against one account | Conditional balance＋version guard permits only valid committed effects；balance never negative | loser receives Insufficient or Version Conflict Stored Result |
+| P02 | Same key and fingerprint replay | One Idempotency Record and at most one Ledger Effect | return Processing or original Completed Result |
+| P03 | Same key with different fingerprint | No Ledger Effect | permanent Conflict Stored Result |
+| P04 | Commit succeeds but response is lost | Projection、Ledger、Completed Result already agree | query same key；never create a new key |
+| P05 | Expired lease takeover | CAS increments processing generation and assigns new owner | new owner first reconciles Stored Result／Domain state |
+| P06 | Stale owner returns | generation predicate rejects all writes | read current result；security audit if repeated |
+| P07 | Projection update succeeds but Ledger insert fails | entire D1 local transaction rolls back | same key retry after temporary failure |
+| P08 | Ledger insert succeeds but Stored Result completion fails | entire D1 local transaction rolls back | no normal Processing＋Ledger partial state |
+| P09 | Full Reverse replay | Idempotency and Single Full Reverse Unique select one effect | return original Reverse／Already Reversed |
+| P10 | Projection drift | Account guard becomes `drifted`; Point Effects stop | rebuild from Ledger, verify, Owner restores healthy |
+| P11 | Hot account burst | D1 constraints remain correctness boundary | bounded retry；optional DO only after approved evidence |
+
 ## Coverage
 
 涵蓋 Physical／Online Attendance、QR Replay、Redemption 雙向安全、Cross-shop Point、Insufficient Balance、Notification Isolation、Duplicate Request、Point／Attribution Reversal、Referral Correction、Token Tampering、Suspended Actor 與 Permission Revocation。未來測試必須保留 Tenant Boundary negative cases 與 Stored Result evidence。
