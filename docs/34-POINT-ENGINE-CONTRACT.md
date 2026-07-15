@@ -102,3 +102,12 @@ Architecture Owner：Tony；Review、Approval Date、Approval Reference：Pendin
 - Module ID：`point-engine`。
 - Permissions：所有寫入依 Command table 的 Required Permission，由 Backend 驗證。
 - Forbidden Responsibilities：活動資格、Attendance 驗證、Payment、Referral、Attribution、Commission、UI。
+## Exact Contract Field Index
+
+- Public Queries：見本 Contract 的 Queries section；所有 Query 均只讀。
+- Published Domain Events：見 Domain Events 的 Published 清單。
+- Consumed Domain Events：見 Domain Events 的 Consumed 清單。
+- Testing Requirements：Unit、Contract、Tenant／Shop Boundary、Permission、Idempotency／Retry、Correction、Audit、Operational；目前全部 Not Started。
+- Approval Status：Contract Proposed。
+- Implementation Status：Not Implemented。
+- Verification Status：Not Verified。

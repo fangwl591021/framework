@@ -94,3 +94,12 @@ Architecture Owner：Tony；Approval Pending；Implementation Not Implemented；
 - Module ID：`attendance-engine`。
 - Shop Scope：Optional，依 Event／Session／Location Policy；永遠保留 Tenant Scope。
 - Forbidden Responsibilities：Point Balance／Grant、Reward Payment、Event Content、Scanner／GPS Provider、Notification Format。
+## Exact Contract Field Index
+
+- Public Queries：見本 Contract 的 Queries section；所有 Query 均只讀。
+- Published Domain Events：見 Domain Events 的 Published 清單。
+- Consumed Domain Events：見 Domain Events 的 Consumed 清單。
+- Testing Requirements：Unit、Contract、Tenant／Shop Boundary、Permission、Idempotency／Retry、Correction、Audit、Operational；目前全部 Not Started。
+- Approval Status：Contract Proposed。
+- Implementation Status：Not Implemented。
+- Verification Status：Not Verified。
