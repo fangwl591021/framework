@@ -159,3 +159,18 @@
 - [ ] Notification Failure 不回滾核心交易。
 - [ ] 五個 Registry Entry 與 Contract Lifecycle／Owner／Version／Production Use 一致。
 - [ ] Module Contract 與 20 個 Transaction Scenario 已逐項審查。
+
+## 19. Sprint 6 D1 Logical Design Gate
+
+- [ ] Logical Record Catalog 涵蓋 Identity、Organization、Membership、Permission 與五個 Candidate Engine。
+- [ ] 每個 Logical Record 有唯一 Owner Module、Tenant Scope 與 History Rule。
+- [ ] Platform User、Identity Mapping、Tenant Membership、Shop Membership、Role Assignment 保持分離。
+- [ ] Point Account／Ledger／Projection 分離，Balance Projection 可由 D1 Ledger 重建。
+- [ ] Referral Relationship、Attribution Touch 與 Attribution Record 不共用可覆寫欄位。
+- [ ] Attendance／Redemption 與 Point 使用 Business Reference、Stored Result、Reconciliation 協作。
+- [ ] Idempotency／Audit Candidate 不接管 Domain Transaction 本體。
+- [ ] Logical Uniqueness、Conflict、Original／Correction／Merge Chain 與跨 Tenant 拒絕規則已定義。
+- [ ] Retention Class、Erasure、Anonymization、Archive 與 Legal Hold 問題已列出 Owner。
+- [ ] Access Pattern、容量、競爭與 Index Candidate 留待 evidence-based Physical Design。
+- [ ] 未建立 SQL、D1 Table、Column Type、Index Syntax、Migration、Runtime 或部署。
+- [ ] Physical Schema 工作開始前已通過 [Schema Implementation Readiness Checklist](51-SCHEMA-IMPLEMENTATION-READINESS-CHECKLIST.md)。
