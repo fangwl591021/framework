@@ -31,7 +31,7 @@
 | Organization | Tenant／Brand／Shop | Tenant Manager | Tenant 為根 | 停用與移動需 Audit |
 | Membership | Tenant Membership／Shop Membership | Membership Engine | Required | 停用、恢復、合併保留 |
 | Permission | Role／Permission／Role Assignment | Permission Engine | Assignment 決定 Scope | Grant／Revoke／Expire 保留 |
-| Point | Point Program／Account／Transaction | Point Engine | Required | Ledger append-only；Reverse 關聯原紀錄 |
+| Point | Point Program／Account／Ledger Entry | Point Engine | Required | 只保存已成立交易；Reverse／Adjust 為正式 Entry |
 | Referral | Referral Relationship | Referral Engine | Required | Replace／Correct 保留舊關係 |
 | Attribution | Share Link／Touch／Attribution Record | Attribution Engine | Required | Evidence 與 Decision 版本化 |
 | Attendance | Attendance Subject／Record | Attendance Engine | Required | Confirm／Reject／Correct／Revoke 保留 |
@@ -74,7 +74,9 @@ Sensitive Change ──1..n Audit Record
 
 - 單一 Aggregate 的狀態、唯一性與 Idempotency 結果應在同一明確寫入意圖內完成。
 - 跨 Module 不假設分散式 Transaction；以 Stored Result、Domain Event、Reconciliation 與 Compensation 協作。
-- Point Balance 是 Ledger 推導結果；任何 Projection／Cache 都必須可重建。
+- Point Transaction Ledger 只保存已成立並正式影響、抵消或調整點數資產的 Entry；Rejected／Failed Point Intent 不得進入 Ledger。
+- Rejected／Failed Point Intent 由 Idempotency Record、Command Result、必要 Audit Record 與依用途保存的 Application／Security Log 承接。
+- Point Balance 只由有效 Ledger Entry 推導；任何 Projection／Cache 都必須可重建。
 - Notification、Analytics 或 Cache 更新失敗不得改寫已完成核心交易結果。
 
 ## 實體設計前必須補齊

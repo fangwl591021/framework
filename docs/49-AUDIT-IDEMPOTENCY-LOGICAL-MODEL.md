@@ -29,6 +29,13 @@ Audit Log 與 Idempotency 仍是 Platform Core Candidate，不因本文件存在
 - 高價值 Transaction 的防重不可只依短期 KV；D1 Candidate Record 是正式真相候選。
 - Idempotency Record 不保存完整 Secret、Token、PII 或不必要 Payload。
 
+### Failed Point Intent Boundary
+
+- Insufficient Balance、Permission Denied、Scope Violation、Duplicate Conflict、Expired Request、Invalid State 與 Validation Failure 都是未成立 Point Intent。
+- Idempotency Record 保存其安全 Stored Result、Failure Category、Result Reference 與 Retry／Conflict 語意；相同有效 Request 不得因重送建立新效果。
+- Failed Point Intent 不建立 Point Transaction Ledger Entry，也不影響 Point Balance。
+- 只有已成立的 Grant、Deduct、Redeem、Expire、Reverse 或 Adjust 由 Point Engine 保存為正式 Ledger Entry。
+
 ## Audit Record
 
 ### Logical Content
@@ -44,7 +51,7 @@ Audit Log 與 Idempotency 仍是 Platform Core Candidate，不因本文件存在
 - Correlation／Command／Original Record Reference
 - Evidence Reference、Security Classification、Retention Class
 
-Audit 只保存最小必要摘要與 Reference，不複製整筆 Point Transaction、Provider Payload、完整 Profile 或 Secret。
+Audit 只保存最小必要 Decision／Change 摘要與 Reference，不複製整筆 Point Transaction、完整 Command／Provider Payload、完整 Profile 或 Secret。Application／Security Log 依觀測與事件用途保存，不能取代 Idempotency Stored Result 或 Point Ledger Source of Truth。
 
 ## Separation of Responsibilities
 
@@ -52,7 +59,8 @@ Audit 只保存最小必要摘要與 Reference，不複製整筆 Point Transacti
 | --- | --- | --- | --- |
 | Business validation | Owner | 不負責 | 不負責 |
 | Duplicate winner／Stored Result | 提供 Contract | 保存候選狀態 | 記錄重要衝突 |
-| Transaction state | Owner Source of Truth | 只保存 Result Reference | 只保存 Decision／Change Reference |
+| Established transaction state | Owner Source of Truth | 只保存 Result Reference | 只保存 Decision／Change Reference |
+| Rejected／Failed attempt | 不建立 Domain Ledger Entry | 保存 Failure Stored Result／Retry 語意 | 必要時保存最小決策摘要 |
 | Permission decision | Permission／Owner | 納入 validated scope | 保存高風險允許／拒絕摘要 |
 | Retention／PII | Owner 提供分類 | 依風險保留 | 依法規與 Audit Policy 保留 |
 

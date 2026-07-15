@@ -24,6 +24,11 @@
 
 - [ ] Command 的 Atomic Intent、Allowed State、Success／Failure 已定義。
 - [ ] Idempotency Key、Fingerprint、Stored Result、Retry、Conflict 與 Retention 已定義。
+- [ ] Point Ledger 只保存已成立的 Grant／Deduct／Redeem／Expire／Reverse／Adjust Entry。
+- [ ] Insufficient Balance 與其他 Rejected／Failed Point Intent 不建立 Ledger Entry，且有安全 Stored Result。
+- [ ] Completed／Reversed Transaction 與 Rejected／Failed Attempt 使用不同 Logical Record、Status 與 Query Path。
+- [ ] Point Balance 只由有效 Ledger Entry 推導；失敗嘗試不參與 Projection。
+- [ ] Audit／Application／Security Log 只保存用途所需摘要，不複製完整 Transaction 或 Payload。
 - [ ] Reverse／Correct／Adjust／Merge／Anonymize 路徑已定義。
 - [ ] 跨 Module Failure 使用 Reconciliation／Compensation，不假設分散式 Transaction。
 - [ ] Point Balance、Attendance、Redemption 等高價值結果不依賴 KV 作唯一真相。
