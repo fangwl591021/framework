@@ -201,3 +201,20 @@
 - [ ] Capacity、Retention、Archive、D1 topology options 與官方 limits 已列入未決決策。
 - [ ] SQL Header、SQL location、documentation-only migration path 與 no-execute rule 已驗證。
 - [ ] Schema Status 仍為 Not Approved；Migration Not Executed；Runtime Not Implemented；Production Not Deployed。
+
+## 22. Framework RC1／Approved Migration Package Gate
+
+- [ ] 已閱讀 [Framework RC1](releases/RC1.md)、Component Matrix、Known Limitations 與 Freeze Policy。
+- [ ] 已確認 RC1 是 Documentation Baseline，不是 Runtime／Schema／Migration Release。
+- [ ] Migration Package Designed 已從 Proposed 取得正式核准。
+- [ ] Test Plan 已由 Architecture 與 Security 分別核准。
+- [ ] Local D1 與 Fresh／Seeded Isolated D1 有可重現證據。
+- [ ] A01～A06 均為 Executed／Verified，且整批 rollback final state 正確。
+- [ ] Constraint、Trigger、Atomicity、Concurrency、Replay 與 Fencing 測試完成。
+- [ ] Rollback、Forward Fix、Reconciliation 與 Promotion Runbook 已演練。
+- [ ] Architecture Gate、Security Gate、Execution Approval Gate 分別通過。
+- [ ] Evidence Registry 綁定 commit、schema hash、fixture hash、Run ID 與 reviewer。
+- [ ] Go／No-Go Decision 為 GO。
+- [ ] Production Migration 已取得四角色所需的獨立核准。
+
+本 Sprint 僅建立 Design；以上項目不得因文件或 PR 存在而自動勾選。

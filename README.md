@@ -241,3 +241,16 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | --- | --- |
 | [Module Contract Template](docs/templates/MODULE-CONTRACT-TEMPLATE.md) | 建立完整 Domain Module Contract |
 | [Module Registry Entry Template](docs/templates/MODULE-REGISTRY-ENTRY-TEMPLATE.md) | 建立單一 Module Registry Entry |
+
+## Framework RC1 and Migration Governance
+
+Framework RC1 是以 `6dd23c30dd496a4892660c71b33349c2695ecb67` 為來源的 Architecture Release Candidate／Documentation Baseline。它納入 Physical D1 Schema Proposal 與三項已通過的 Architecture Review Gate，但不代表 Schema、Migration、Runtime 或 Production 已可執行。
+
+- [RC1 Release Baseline](docs/releases/RC1.md)
+- [RC1 Component Matrix](docs/releases/RC1-COMPONENT-MATRIX.md)
+- [RC1 Known Limitations](docs/releases/RC1-KNOWN-LIMITATIONS.md)
+- [RC1 Freeze Policy](docs/releases/RC1-FREEZE-POLICY.md)
+- [Approved Migration Package Design](docs/migration-package/README.md)
+- [Current Go／No-Go Decision](docs/migration-package/11-GO-NOGO-DECISION.md)
+
+目前狀態：Package Designed = Proposed；Local／Isolated D1 尚未測試；Architecture／Security／Execution Approval 均未取得；決策為 **NO-GO — Execution Not Yet Approved**。Test design、approval、execution 與 verification 必須分開記錄。

@@ -1,6 +1,6 @@
 # Decision Status Map
 
-> Status snapshot based on `main` at `b78d48f942e0dc8994426ee14787574e2be9bf68`
+> Status snapshot based on Framework RC1 baseline commit `6dd23c30dd496a4892660c71b33349c2695ecb67`
 
 ## Accepted ADR
 
@@ -45,12 +45,23 @@ Accepted 表示 Decision 已批准，不表示其 Runtime／Schema 已存在。
 ## Not Implemented
 
 - Runtime
-- Physical Schema on `main`
-- Migration
+- Physical Schema Execution（Architecture-reviewed Proposal 已在 `main`）
+- Approved／Executed Migration
 - Worker
 - API
 - Cloudflare Binding
 - Deployment
 - Production Verification
 
-Sprint 7 Physical Proposal 的 Architecture Gates 已通過，但仍在 [Draft PR #6](https://github.com/fangwl591021/framework/pull/6) 等待最終審查；未合併、未批准執行、Not Executed、Not Verified。
+PR #6 已合併至 RC1 baseline；三項 Architecture Review Gate 均已通過。此狀態只代表 Physical Schema Proposal 已納入架構基準，仍未批准執行，且維持 Not Executed／Not Verified。
+
+## Framework RC1／Migration Package Status
+
+| Item | Document | Architecture | Execution | Verification |
+| --- | --- | --- | --- | --- |
+| Framework RC1 | Documentation Baseline | Frozen RC1 boundary | Not Applicable | Documentation reviewed in PR |
+| Physical D1 Schema Proposal | On `main` | Gates 1～3 PASS | Not Approved／Not Executed | Not Verified |
+| Approved Migration Package | Proposed Design | Not Approved | Not Approved／Not Executed | Local／Isolated Not Tested |
+| A01～A06 | Test Plan Proposed | Pending | Not Executed | Not Verified |
+
+詳細狀態見 [Package Status](../migration-package/00-PACKAGE-STATUS.md) 與 [Go／No-Go Decision](../migration-package/11-GO-NOGO-DECISION.md)。PR merge 不會把任何 Execution 或 Verification 狀態改為 Yes。
