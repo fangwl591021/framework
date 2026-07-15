@@ -39,7 +39,7 @@ Point Transaction 以 `(tenant_id, idempotency_record_id, idempotency_generation
 - `signed_amount != 0`；禁止 floating point。Grant 為正；Deduct／Redeem／Expire 為負；Adjust 必須是經批准的非零差額。
 - `projection_version` 是該 Account 的正式 Ledger Sequence；`uq_point_transactions_account_version` 讓每個 Account Version 只有一筆 Ledger Winner。`resulting_balance` 必須等於同一 transaction 更新後的 Projection Balance，並供 reconciliation 驗證。
 - Reverse／Adjust 是正式 Entry；Original 與新 Entry 必須同 Tenant、同 Account。
-- 初版 Reverse Policy 為 **Single Full Reverse**：eligible Original 最多一筆 Reverse，由 `uq_point_transactions_single_full_reverse` 選出 Winner；Reverse Amount 必須精確等於 Original Amount 相反數，且 Original 不得是 Reverse。金額與 Original Operation 的跨 row 驗證由 Point Engine 在同一 local transaction 內執行。
+- 初版 Reverse Policy 為 **Single Full Reverse**：eligible Original 最多一筆 Reverse，由 `uq_point_transactions_single_full_reverse` 選出 Winner；`trg_point_transactions_reverse_guard` 在 Insert 前驗證 Original 不是 Reverse、同 Tenant／Account，且 Reverse Amount 精確等於 Original Amount 相反數；任一不符以 `RAISE(ABORT, 'point_reverse_guard_mismatch')` 拒絕。
 - Partial Reverse 不支援；未來若需要，必須建立 remaining reversible amount、累計上限、獨立 Contract 版本與新 ADR。
 - Insufficient Balance、Permission Denied、Scope Violation、Conflict、Expired、Invalid State、Validation Failure **不建立 row**；只保存 Idempotency Stored Result／Command Result／必要 Audit。
 - 不得 UPDATE `signed_amount`、`projection_version`、`resulting_balance`，不得 DELETE；實際不可變性需 Repository permission、trigger candidate 或 application policy 再審查。
@@ -69,7 +69,7 @@ Validate current Idempotency owner + processing_generation
 
 - Account Version Unique、Idempotency Effect Unique、Single Full Reverse Unique 共同提供 DB Winner。為滿足 immediate Composite FK，physical statement可先把同 generation Stored Result轉為 Completed再 Insert Ledger；兩者仍在同一 transaction，Ledger或後續 invariant失敗時Completed update必須一起 rollback。
 - 任一 statement error、constraint conflict、stale generation、row-count invariant mismatch 或 Stored Result completion failure都必須 abort／rollback；不得在 commit 後才以 Application compensation 修補 Projection 或 Ledger。
-- 初版 D1 Binding 策略明確使用單一 `batch()`：先以 owner＋generation CAS暫存 Completed Result，再條件式更新 Projection，最後執行 assertion-backed Ledger Insert。Ledger statement 必須以緊接前一個 guard statement 的 affected-row evidence組成；guard不是精確一筆時，必填欄位／constraint assertion必須讓該 statement失敗，使 Idempotency、Projection與Ledger整批 rollback。禁止先 commit再檢查 row count。
+- 初版 D1 Binding 策略明確使用單一 `batch()`：先以 owner＋generation CAS暫存 Completed Result，再條件式更新 Projection，最後 Insert Ledger。`trg_point_transactions_projection_guard` 在 Insert 前要求 Projection 與 `NEW` Ledger 的 Tenant、Account、healthy status、Version、Watermark／Transaction ID 與 Resulting Balance 全部一致；Projection UPDATE 為零筆或任一 snapshot 不符時，以 `RAISE(ABORT, 'point_projection_guard_mismatch')` 讓 Ledger statement 失敗，使 Idempotency、Projection與Ledger整批 rollback。禁止依賴跨 statement affected-row 傳遞，也禁止先 commit再檢查 row count。
 - Claim Record 可先以無 Domain Effect 的短 transaction 建立；真正資產提交仍須在上述 transaction 重新驗證 owner＋generation。Unknown Response 只用原 key查 Stored Result／Ledger Reference，不以新 key重扣。
 - D1 Sessions 只處理 sequential read consistency，不是 balance lock。Durable Object 只能依 conflict rate、retry rate、write contention、p95／p99 latency 與 hot-account burst evidence 作 optional serialization／load-shedding，不是 correctness dependency。
 

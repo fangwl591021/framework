@@ -30,6 +30,7 @@
 | Point Idempotency Effect | one tenant idempotency record links >1 ledger effect／generation or completed status mismatch | Critical | Never automatic | freeze account guard；inspect claim／ledger／result | no retry／Point＋Platform Core |
 | Stale Processing Owner | terminal write or ledger effect references non-current generation | Critical | Never automatic | security incident；owner／generation timeline | no retry／Platform Core |
 | Point Account Version | duplicate／gap／non-monotonic ledger projection_version or resulting balance mismatch | Critical | mark `drifted`；rebuild projection only after review | ledger remains immutable | bounded／Point Engine |
+| Point Projection Assertion | ledger tenant／account／version／watermark／resulting balance does not match synchronized Projection snapshot | Critical | Never automatic | freeze account；treat as legacy bypass／corruption incident；rebuild only after review | no retry／Point＋Platform Core |
 | Single Full Reverse | original has >1 reverse、reverse-of-reverse or amount not exact opposite | Critical | Never automatic | finance approval／incident／Adjust or forward correction | no retry／Point Engine |
 | Unknown Point Outcome | processing／retryable record with ambiguous ledger／projection evidence | Critical | query only；no blind replay | classify committed／not committed／manual review | same key／Point Engine |
 | Hot Account | conflict／retry／contention／p95／p99 or burst exceeds approved threshold | High | optional routing／load shedding only | D1 correctness remains mandatory | bounded／Platform Operations |
@@ -47,7 +48,7 @@
 
 1. Atomic transaction或 reconciliation偵測任何 Ledger／Projection／Idempotency invariant mismatch時，將 Projection `consistency_status` 轉為 `drifted`，停止該 Account 的所有資產異動。
 2. 以 Ledger 順序重算 balance、max projection version、last transaction ID 與每筆 resulting balance；Failed Intent 不參與。
-3. 比對 Idempotency generation、Completed Result Reference、Account Version Unique 與 Single Full Reverse Guard；任何多重效果或不合法 Reverse 都進人工財務審查。
+3. 比對 Idempotency generation、Completed Result Reference、Account Version Unique、Projection Trigger snapshot與Single Full Reverse Guard；任何多重效果、Projection assertion bypass或不合法 Reverse都進人工財務審查。
 4. 只有在 counts、sum、watermark、version、idempotency reference 全部一致後，Owner Command才可寫入重建 Projection並轉回 `healthy`；不得修改 Ledger來配合 Projection。
 5. Response lost／Unknown Outcome 必須先用原 key與 immutable references判定，無法判定時維持 blocked，不自動重送新 Intent。
 

@@ -303,7 +303,8 @@ CREATE INDEX idx_audit_records_resource_time
 -- Point effect transaction contract:
 -- one D1 batch must CAS the Idempotency generation to completed,
 -- conditionally update the healthy Projection guard, and insert the Ledger row.
--- A zero-row guard must become a statement constraint error before commit;
+-- BEFORE INSERT triggers bind the Ledger row to the already-updated Projection
+-- and eligible Original transaction. Any mismatch raises SQLITE_CONSTRAINT;
 -- inspecting affected rows only after commit is forbidden.
 
 CREATE TABLE point_programs (
@@ -396,6 +397,40 @@ CREATE TABLE point_balance_projections (
     (projection_version > 0 AND ledger_watermark IS NOT NULL)
   )
 );
+
+CREATE TRIGGER trg_point_transactions_projection_guard
+BEFORE INSERT ON point_transactions
+FOR EACH ROW
+WHEN NOT EXISTS (
+  SELECT 1
+  FROM point_balance_projections AS projection
+  WHERE projection.tenant_id = NEW.tenant_id
+    AND projection.point_account_id = NEW.point_account_id
+    AND projection.consistency_status = 'healthy'
+    AND projection.projection_version = NEW.projection_version
+    AND projection.ledger_watermark = NEW.id
+    AND projection.balance = NEW.resulting_balance
+)
+BEGIN
+  SELECT RAISE(ABORT, 'point_projection_guard_mismatch');
+END;
+
+CREATE TRIGGER trg_point_transactions_reverse_guard
+BEFORE INSERT ON point_transactions
+FOR EACH ROW
+WHEN NEW.operation = 'reverse'
+ AND NOT EXISTS (
+  SELECT 1
+  FROM point_transactions AS original
+  WHERE original.tenant_id = NEW.tenant_id
+    AND original.point_account_id = NEW.point_account_id
+    AND original.id = NEW.original_transaction_id
+    AND original.operation <> 'reverse'
+    AND NEW.signed_amount = -original.signed_amount
+)
+BEGIN
+  SELECT RAISE(ABORT, 'point_reverse_guard_mismatch');
+END;
 
 CREATE UNIQUE INDEX uq_point_accounts_tenant_active
   ON point_accounts(tenant_id, tenant_membership_id, point_program_id)

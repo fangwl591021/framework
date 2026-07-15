@@ -43,8 +43,9 @@ Expand → Migrate → Verify → Switch → Contract
 2. 依 immutable Ledger重算每個 Account 的 balance、max version與watermark；無法建立一對一 Account Version或Idempotency Effect的資料進 quarantine。
 3. 掃描同一 Idempotency Record多重 Point Effect、同 Original多重 Reverse、Reverse-of-Reverse、非精確 Full Reverse與負餘額。
 4. 只有 zero unexplained violations後才建立 Account Version、Idempotency Effect與Single Full Reverse Unique Guard，並驗證 Composite FK target。
-5. Switch 前執行雙併發、response lost、lease takeover、stale owner與partial failure negative test；任何 Projection Drift都阻止資產寫入。
-6. 不允許以刪除 Ledger或任意挑選 Reverse Winner通過 migration；使用 quarantine、Owner-approved forward correction與完整 audit。
+5. 建立 `trg_point_transactions_projection_guard` 與 `trg_point_transactions_reverse_guard` 前確認 zero unexplained violations；Trigger 必須與 Point Runtime switch 同一受控 release，不能留下可繞過 assertion 的正式寫入窗口。
+6. Switch 前執行雙併發、response lost、lease takeover、stale owner、partial failure，以及 Projection zero-row／Version／Watermark／Balance mismatch、Reverse amount mismatch／reverse-of-reverse negative test；每一 assertion case 都必須取得 DB abort與整批 rollback證據。任何 Projection Drift都阻止資產寫入。
+7. 不允許以刪除 Ledger或任意挑選 Reverse Winner通過 migration；使用 quarantine、Owner-approved forward correction與完整 audit。
 
 ## Rollback Taxonomy
 

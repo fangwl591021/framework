@@ -41,6 +41,19 @@
 | P10 | Projection drift | Account guard becomes `drifted`; Point Effects stop | rebuild from Ledger, verify, Owner restores healthy |
 | P11 | Hot account burst | D1 constraints remain correctness boundary | bounded retry；optional DO only after approved evidence |
 
+## Gate 3 DB Assertion Negative Scenarios
+
+> Proposal evidence only. Not Executed／Not Verified.
+
+| ID | Forced Invalid Write | Expected DB Result | Expected State |
+| --- | --- | --- | --- |
+| A01 | Projection UPDATE affects 0 rows, then Ledger INSERT is attempted | `point_projection_guard_mismatch` abort | no Ledger；whole local batch rollback |
+| A02 | Ledger `projection_version` differs from Projection | `point_projection_guard_mismatch` abort | no Ledger；whole local batch rollback |
+| A03 | Ledger `id` differs from Projection `ledger_watermark` | `point_projection_guard_mismatch` abort | no Ledger；whole local batch rollback |
+| A04 | Ledger `resulting_balance` differs from Projection `balance` | `point_projection_guard_mismatch` abort | no Ledger；whole local batch rollback |
+| A05 | Reverse amount is not exact negative of Original | `point_reverse_guard_mismatch` abort | no Reverse；whole local batch rollback |
+| A06 | Reverse references an Original whose operation is `reverse` | `point_reverse_guard_mismatch` abort | no Reverse；whole local batch rollback |
+
 ## Coverage
 
 涵蓋 Physical／Online Attendance、QR Replay、Redemption 雙向安全、Cross-shop Point、Insufficient Balance、Notification Isolation、Duplicate Request、Point／Attribution Reversal、Referral Correction、Token Tampering、Suspended Actor 與 Permission Revocation。未來測試必須保留 Tenant Boundary negative cases 與 Stored Result evidence。

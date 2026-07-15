@@ -62,15 +62,16 @@
 - [ ] 每個 Point Account 建立唯一同步 Projection Guard，初始 balance／version／watermark／consistency status明確。
 - [ ] Deduct／Redeem／Expire／負 Adjust 使用 non-negative balance＋expected version＋healthy status條件式更新，併發時只有合法 Winner。
 - [ ] Projection Guard、Ledger Insert、Account Version、Idempotency Completed Result在單一 D1 local transaction提交；任一步驟失敗整體 rollback。
-- [ ] Runtime Design能把 zero-row／row-count mismatch轉成 transaction abort，不能 commit後檢查或補償。
+- [ ] `trg_point_transactions_projection_guard` 能把 Projection zero-row／Tenant／Account／healthy／Version／Watermark／Balance mismatch轉成 DB abort，不能依賴跨 statement row count或commit後補償。
 - [ ] 同一 Tenant Idempotency Record最多一筆 Point Ledger Effect，且 Ledger綁定目前 generation與 Completed Status。
 - [ ] Claim／Retry／Takeover使用 generation fencing與 CAS；stale owner不能提交 terminal result或 Domain Effect。
 - [ ] Same Key replay、Different Fingerprint、Response Lost、Unknown Outcome與 Retry規則已審查。
-- [ ] 初版採 Single Full Reverse；同 Original最多一筆、金額精確相反、Reverse不得再 Reverse、Partial Reverse不支援。
+- [ ] 初版採 Single Full Reverse；Unique Index限制同 Original最多一筆，`trg_point_transactions_reverse_guard` DB驗證同 Tenant／Account、金額精確相反且Reverse不得再Reverse，Partial Reverse不支援。
 - [ ] Projection Drift會阻止 Point Effect；rebuild只改 Projection，不改 Ledger，Owner Verify後才能恢復 healthy。
 - [ ] Durable Object只有在 conflict／retry／contention／latency／burst evidence後作 optional optimization，不是 correctness dependency。
 - [ ] Gate 3 故障矩陣覆蓋雙併發、lease takeover、stale owner、partial failure、reverse replay、drift與hot account。
-- [x] Gate 3 Architecture Owner Review NO-GO 已記錄；本輪 Proposal 修正仍待第二輪 Review，PR維持 Draft／Not Approved。
+- [ ] A01–A06 Negative Evidence覆蓋Projection zero-row／Version／Watermark／Balance mismatch與Reverse amount／reverse-of-reverse，且每案取得DB abort與整批rollback證據。
+- [x] Gate 3 第二輪 Architecture Owner Review NO-GO 已記錄；DB Assertion Proposal修正仍待最終Review，PR維持Draft／Not Approved／Not Executed／Not Verified。
 
 ## Index and Query Evidence
 
