@@ -61,7 +61,7 @@ CREATE TABLE point_transactions (
   UNIQUE (tenant_id, point_account_id, id),
   UNIQUE (tenant_id, business_type, business_reference, operation, rule_version),
   FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_account_id, original_transaction_id)
     REFERENCES point_transactions(tenant_id, point_account_id, id) ON DELETE RESTRICT,
   CHECK (

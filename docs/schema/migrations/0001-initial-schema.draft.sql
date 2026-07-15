@@ -51,6 +51,7 @@ CREATE TABLE shops (
   updated_at INTEGER NOT NULL,
   archived_at INTEGER,
   UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, brand_id, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT
 );
@@ -90,7 +91,8 @@ CREATE TABLE tenant_memberships (
 
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (platform_user_id) REFERENCES platform_users(id) ON DELETE RESTRICT,
-  FOREIGN KEY (merged_into_membership_id) REFERENCES tenant_memberships(id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, merged_into_membership_id)
+    REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL)),
   CHECK (merged_into_membership_id IS NULL OR merged_into_membership_id <> id)
 );
@@ -125,31 +127,44 @@ CREATE TABLE permissions (
 
 CREATE TABLE roles (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
   tenant_id TEXT,
-  role_kind TEXT NOT NULL CHECK (role_kind IN ('core_template', 'tenant_defined')),
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   name_reference TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'deprecated', 'archived')),
   version INTEGER NOT NULL CHECK (version > 0),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  UNIQUE (tenant_scope_key, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  CHECK ((role_kind = 'core_template' AND tenant_id IS NULL) OR (role_kind = 'tenant_defined' AND tenant_id IS NOT NULL))
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  )
 );
 
 CREATE TABLE role_permissions (
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
+  tenant_id TEXT,
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   role_id TEXT NOT NULL,
   permission_id TEXT NOT NULL,
-  tenant_id TEXT,
   created_at INTEGER NOT NULL,
-  PRIMARY KEY (role_id, permission_id),
+  PRIMARY KEY (tenant_scope_key, role_id, permission_id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
-  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_scope_key, role_id) REFERENCES roles(tenant_scope_key, id) ON DELETE RESTRICT,
+  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE RESTRICT,
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  )
 );
 
 CREATE TABLE role_assignments (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
   tenant_id TEXT,
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   brand_id TEXT,
   shop_id TEXT,
   subject_type TEXT NOT NULL CHECK (subject_type IN ('platform_user', 'tenant_membership', 'integration_service')),
@@ -167,9 +182,18 @@ CREATE TABLE role_assignments (
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
-  UNIQUE (subject_type, subject_reference, role_id, scope_type, tenant_id, brand_id, shop_id, active_marker),
-  CHECK ((scope_type = 'platform' AND tenant_id IS NULL) OR (scope_type <> 'platform' AND tenant_id IS NOT NULL)),
+  FOREIGN KEY (tenant_scope_key, role_id) REFERENCES roles(tenant_scope_key, id) ON DELETE RESTRICT,
+  UNIQUE (subject_type, subject_reference, role_id, scope_type, tenant_scope_key, brand_id, shop_id, active_marker),
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  ),
+  CHECK (
+    (scope_type = 'platform' AND role_scope_type = 'core_template' AND tenant_id IS NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type IN ('tenant', 'own_record', 'assigned_records') AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type = 'brand' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NOT NULL AND shop_id IS NULL) OR
+    (scope_type = 'shop' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NOT NULL)
+  ),
   CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
 );
 
@@ -188,6 +212,7 @@ CREATE INDEX idx_role_assignments_subject
 -- Source proposal: 005-audit-idempotency.sql
 CREATE TABLE idempotency_records (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  scope_type TEXT NOT NULL CHECK (scope_type IN ('platform', 'tenant')),
   tenant_id TEXT,
   scope_key TEXT NOT NULL CHECK (length(scope_key) > 0),
   operation TEXT NOT NULL,
@@ -205,12 +230,17 @@ CREATE TABLE idempotency_records (
   retry_count INTEGER NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  UNIQUE (tenant_id, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  CHECK ((tenant_id IS NULL AND scope_key LIKE 'platform:%') OR tenant_id IS NOT NULL)
+  CHECK (
+    (scope_type = 'platform' AND tenant_id IS NULL) OR
+    (scope_type = 'tenant' AND tenant_id IS NOT NULL)
+  )
 );
 
 CREATE TABLE audit_records (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  scope_type TEXT NOT NULL CHECK (scope_type IN ('platform', 'tenant', 'brand', 'shop')),
   tenant_id TEXT,
   brand_id TEXT,
   shop_id TEXT,
@@ -231,11 +261,25 @@ CREATE TABLE audit_records (
   created_at INTEGER NOT NULL,
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, brand_id, shop_id) REFERENCES shops(tenant_id, brand_id, id) ON DELETE RESTRICT,
+  CHECK (brand_id IS NULL OR tenant_id IS NOT NULL),
+  CHECK (shop_id IS NULL OR tenant_id IS NOT NULL),
+  CHECK (
+    (scope_type = 'platform' AND tenant_id IS NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type = 'tenant' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type = 'brand' AND tenant_id IS NOT NULL AND brand_id IS NOT NULL AND shop_id IS NULL) OR
+    (scope_type = 'shop' AND tenant_id IS NOT NULL AND shop_id IS NOT NULL)
+  )
 );
 
-CREATE UNIQUE INDEX uq_idempotency_scope_operation_key
-  ON idempotency_records(scope_key, operation, idempotency_key_hash);
+CREATE UNIQUE INDEX uq_idempotency_platform_operation_key
+  ON idempotency_records(scope_key, operation, idempotency_key_hash)
+  WHERE scope_type = 'platform';
+
+CREATE UNIQUE INDEX uq_idempotency_tenant_operation_key
+  ON idempotency_records(tenant_id, scope_key, operation, idempotency_key_hash)
+  WHERE scope_type = 'tenant';
 
 CREATE INDEX idx_idempotency_status_expiry
   ON idempotency_records(status, expires_at, id);
@@ -305,7 +349,7 @@ CREATE TABLE point_transactions (
   UNIQUE (tenant_id, point_account_id, id),
   UNIQUE (tenant_id, business_type, business_reference, operation, rule_version),
   FOREIGN KEY (tenant_id, point_account_id) REFERENCES point_accounts(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_account_id, original_transaction_id)
     REFERENCES point_transactions(tenant_id, point_account_id, id) ON DELETE RESTRICT,
   CHECK (
@@ -503,6 +547,7 @@ CREATE TABLE event_sessions (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, event_id, id),
   UNIQUE (tenant_id, event_id, session_reference),
   FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
   CHECK (ends_at >= starts_at)
@@ -524,10 +569,11 @@ CREATE TABLE attendance_attempts (
   archived_at INTEGER,
   created_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
-  FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, event_session_id) REFERENCES event_sessions(tenant_id, id) ON DELETE RESTRICT,
+  UNIQUE (tenant_id, event_id, event_session_id, id),
+  FOREIGN KEY (tenant_id, event_id, event_session_id)
+    REFERENCES event_sessions(tenant_id, event_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE attendance_records (
@@ -545,10 +591,11 @@ CREATE TABLE attendance_records (
   audit_reference TEXT,
   created_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
-  FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, event_session_id) REFERENCES event_sessions(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, event_id, event_session_id)
+    REFERENCES event_sessions(tenant_id, event_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, source_attempt_id) REFERENCES attendance_attempts(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, event_id, event_session_id, source_attempt_id)
+    REFERENCES attendance_attempts(tenant_id, event_id, event_session_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT,
   CHECK ((status = 'confirmed' AND active_marker = 'active') OR (status <> 'confirmed' AND active_marker IS NULL))
 );
@@ -575,7 +622,7 @@ CREATE TABLE redemption_intents (
   FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_program_id) REFERENCES point_programs(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE redemption_results (

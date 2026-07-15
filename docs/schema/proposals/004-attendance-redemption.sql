@@ -31,6 +31,7 @@ CREATE TABLE event_sessions (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, event_id, id),
   UNIQUE (tenant_id, event_id, session_reference),
   FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
   CHECK (ends_at >= starts_at)
@@ -52,10 +53,11 @@ CREATE TABLE attendance_attempts (
   archived_at INTEGER,
   created_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
-  FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, event_session_id) REFERENCES event_sessions(tenant_id, id) ON DELETE RESTRICT,
+  UNIQUE (tenant_id, event_id, event_session_id, id),
+  FOREIGN KEY (tenant_id, event_id, event_session_id)
+    REFERENCES event_sessions(tenant_id, event_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE attendance_records (
@@ -73,10 +75,11 @@ CREATE TABLE attendance_records (
   audit_reference TEXT,
   created_at INTEGER NOT NULL,
   UNIQUE (tenant_id, id),
-  FOREIGN KEY (tenant_id, event_id) REFERENCES events(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, event_session_id) REFERENCES event_sessions(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, event_id, event_session_id)
+    REFERENCES event_sessions(tenant_id, event_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (tenant_id, source_attempt_id) REFERENCES attendance_attempts(tenant_id, id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, event_id, event_session_id, source_attempt_id)
+    REFERENCES attendance_attempts(tenant_id, event_id, event_session_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, corrected_by_record_id) REFERENCES attendance_records(tenant_id, id) ON DELETE RESTRICT,
   CHECK ((status = 'confirmed' AND active_marker = 'active') OR (status <> 'confirmed' AND active_marker IS NULL))
 );
@@ -103,7 +106,7 @@ CREATE TABLE redemption_intents (
   FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, tenant_membership_id) REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, point_program_id) REFERENCES point_programs(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (idempotency_record_id) REFERENCES idempotency_records(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_id, idempotency_record_id) REFERENCES idempotency_records(tenant_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE redemption_results (

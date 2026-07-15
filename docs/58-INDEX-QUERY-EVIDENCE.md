@@ -34,7 +34,7 @@
 | Q15 | Attendance | Member history | `attendance_records` | tenant＋member | `confirmed_at DESC, id DESC` | medium | medium | required | `idx_attendance_records_member_time` | no | record index | archive policy changes size | Not Verified |
 | Q16 | Redemption | Intent resolve | `redemption_intents` | tenant＋business reference | none | low／unique candidate | high | required | `uq_redemption_intents_business_ref` | status requires row read | intent uniqueness | expired intent retention | Not Verified |
 | Q17 | Redemption | Receipt lookup | `redemption_results` | tenant＋receipt reference | none | unique candidate | medium | required | `idx_redemption_results_receipt` | no | nullable index write | result history retained | Not Verified |
-| Q18 | Platform Core Candidate | Idempotency replay | `idempotency_records` | scope＋operation＋key hash | none | unique row | very high | explicit scope | `uq_idempotency_scope_operation_key` | result requires row read | hot claim／result write | risk-based expiry | Not Verified |
+| Q18 | Platform Core Candidate | Idempotency replay | `idempotency_records` | scope type＋tenant?＋secondary scope＋operation＋key hash | none | unique row | very high | Platform／Tenant separated | `uq_idempotency_platform_operation_key` or `uq_idempotency_tenant_operation_key` | result requires row read | hot claim／result write | risk-based expiry | Not Verified |
 | Q19 | Platform Core Candidate | Audit search | `audit_records` | tenant＋resource／time range | `occurred_at DESC, id DESC` | very high | medium | tenant filter required | `idx_audit_records_scope_time`＋`idx_audit_records_resource_time` | no | append-heavy indexes | archive changes search set | Not Verified |
 
 ## Composite Order and Pagination

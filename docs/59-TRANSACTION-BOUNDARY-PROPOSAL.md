@@ -36,11 +36,13 @@ Optional Referral Candidate 是後續 command／event，不要求跨 Module atom
 ### Permission Assignment
 
 ```text
-Validate Actor／Role／Scope → Create or Revoke Assignment
+Validate Actor／Role／Scope → Normalize Core or Tenant Role Scope
+→ Enforce Role＋Mapping／Assignment Composite FK
+→ Validate Subject Business Reference → Create or Revoke Assignment
 → Invalidate Cache Candidate → Audit
 ```
 
-Cache invalidation failure 不能回滾 authoritative D1 assignment，但需 retry／alert。
+Platform Assignment 只能使用 Core Template；Tenant／Brand／Shop Assignment 只能使用同 Tenant 的 Tenant-defined Role。Role／Mapping／Assignment scope 與 Brand／Shop Tenant hierarchy 是 DB-enforced candidate；polymorphic subject existence、membership eligibility 與 policy evaluation 是 Permission Engine application invariant。Cache invalidation failure 不能回滾 authoritative D1 assignment，但需 retry／alert。
 
 ### Point Grant
 
@@ -104,7 +106,9 @@ Point timeout 先 query Stored Result；不可用新 key 盲目扣點。Notifica
 
 ### Idempotency／Audit
 
-Idempotency claim 與同一 local domain write 的組合需按 owner module設計；Audit failure policy 依風險決定。Audit 只存最小 reference，不接管 Domain record。Cross-database audit 若存在只能以可靠 event／reconciliation 協作，不能宣稱 atomic。
+Platform 與 Tenant Idempotency 使用不同 Scope 與唯一性空間。Tenant command 在 claim 前先解析 validated `tenant_id`；Tenant Domain write 只能以 Tenant-aware Composite FK 連結相同 Tenant Idempotency Record，不能引用 Platform Scope 或其他 Tenant。Idempotency claim 與同一 local domain write 的組合需按 owner module設計；Audit failure policy 依風險決定。
+
+Audit 建立前先解析合法 Platform／Tenant／Brand／Shop Scope；CHECK 排除任意 nullable 組合，Composite FK 驗證 Brand／Shop hierarchy。Actor／Resource polymorphic reference 仍由 application 驗證。Audit 只存最小 reference，不接管 Domain record。Cross-database audit 若存在只能以可靠 event／reconciliation 協作，不能宣稱 atomic。
 
 ## Failure and Recovery
 

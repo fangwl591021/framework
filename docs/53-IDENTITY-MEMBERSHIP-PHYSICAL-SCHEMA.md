@@ -40,6 +40,8 @@
 
 Active-only uniqueness proposal：UNIQUE `(tenant_id, platform_user_id, active_marker)`；active row=`'active'`，historical row=`NULL`。這是 Proposal，需驗證 concurrent transition 與 invalid marker repair；若不採 marker，替代方案為 D1 支援度確認後的 partial unique index 或 application transaction guard。
 
+Membership Merge 使用 `(tenant_id, merged_into_membership_id) → tenant_memberships(tenant_id, id)`，並保留 `merged_into_membership_id <> id`，因此 DB 拒絕跨 Tenant target 與直接 self-merge。Merge chain 無循環、Source／Target 同一 Platform User（或具有正式 Identity Merge 核准）、Merged Membership 不再作 Active Business Subject，仍是 Membership Engine 在 merge transaction 內驗證的 application-only invariants。
+
 ### `shop_memberships`
 
 直接含 `tenant_id`、`tenant_membership_id`、`shop_id`、`status`、`active_marker` 與 lifecycle timestamps。Composite FK 候選：
@@ -52,18 +54,23 @@ Active-only uniqueness proposal：UNIQUE `(tenant_id, platform_user_id, active_m
 ## Role and Permission
 
 - `permissions` 是固定 Core vocabulary：`resource`、`action`、`status`；前端名稱不是安全判斷。
-- `roles` 可為 Core Template 或 Tenant-defined；`tenant_id NULL` 僅允許 Core role，Tenant role 必須有 tenant scope，此規則由 CHECK＋transaction validation 維護。
-- `role_permissions` 使用 composite PK `(role_id, permission_id)`；直接保存 optional `tenant_id` 區分 Core Template 與 Tenant-defined Role，不含 UI label。`tenant_id` 與 role owner 一致性仍由 transaction validation。
-- `role_assignments` 保存 subject type／reference、role、tenant／brand／shop scope、effective period、status、active marker 與 audit reference。Subject polymorphism 與 scope hierarchy 是 application-only invariant；敏感 command 每次重驗有效 membership 與 scope。
+- 本 Proposal 採單一 `roles` 表＋normalized scope，不在本輪拆成 `core_roles`／`tenant_roles`。單表可共用 version／status 與查詢，但必須攜帶 scope discriminator；分表可讓 FK 更直觀，代價是 mapping／assignment 查詢與 lifecycle 規則重複。Architecture Owner 可在批准前改選分表，不影響本輪 Tenant Isolation 目標。
+- `roles`、`role_permissions`、`role_assignments` 都保存 `role_scope_type`、`tenant_id`、`tenant_scope_key`。Core Template 固定為 `core_template + tenant_id NULL + tenant_scope_key='platform'`；Tenant-defined Role 固定為 `tenant_defined + tenant_id NOT NULL + tenant_scope_key='tenant:' || tenant_id`。
+- `roles` 提供 `UNIQUE (tenant_scope_key, id)`；Mapping 與 Assignment 使用 `(tenant_scope_key, role_id)` Composite FK。Tenant A 的 Mapping／Assignment 因 scope key 不同，不能引用 Tenant B Role；Platform Assignment 只能引用 Core Template。
+- `role_permissions` 的 Core Mapping 與 Tenant Mapping 使用相同 normalized rule，不能把 optional `tenant_id` 與獨立 `role_id` 任意組合。
+- `role_assignments` 以 CHECK 限定合法 scope 組合：Platform 不得有 Tenant／Brand／Shop；Tenant／Own／Assigned 不得有 Brand／Shop；Brand 必須有同 Tenant Brand；Shop 必須有同 Tenant Shop。為避免 nullable hierarchy 模糊，Role Assignment 的 Shop Scope 不同時保存 Brand。
+- `subject_reference` 仍是 polymorphic business reference。Subject 實際存在、Tenant Membership 可用、Integration Service 授權與敏感 command 的即時 permission evaluation，明確列為 application-only invariant，不宣稱由 FK 完整覆蓋。
 
-## Constraint Summary
+## DB-enforced and Application-enforced Invariants
 
-| Rule | Physical Candidate | Application-only Remainder |
+| Rule | DB-enforced candidate | Application-enforced remainder |
 | --- | --- | --- |
 | Provider identity single active owner | UNIQUE＋active marker | normalization、hash collision、recovery |
 | User single active tenant membership | UNIQUE＋active marker | concurrent lifecycle transition |
+| Membership Merge same Tenant／not self | Tenant-aware composite FK＋CHECK | no cycle、same Platform User／approved Identity Merge、merged subject inactive |
 | Shop／Membership same Tenant | composite FK | parent lifecycle eligibility |
-| Tenant role cannot grant Platform scope | CHECK candidate | permission policy evaluation |
-| Merge no cycle | self-FK RESTRICT | graph validation／approval |
+| Core／Tenant Role separation | normalized scope CHECK＋composite FK | role policy semantics、template publication |
+| Role Mapping／Assignment same Tenant | `tenant_scope_key + role_id` composite FK | subject polymorphism、current membership eligibility |
+| Brand／Shop Assignment same Tenant | legal-combination CHECK＋composite FK | policy evaluation、assigned-record resolution |
 
 SQL：[001-core-identity-membership.sql](schema/proposals/001-core-identity-membership.sql)。

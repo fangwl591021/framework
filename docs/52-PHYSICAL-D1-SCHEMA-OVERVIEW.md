@@ -53,10 +53,10 @@
 | `shops` | Tenant Manager | 選用營運節點 | Tenant | `id` → tenant／brand? | deactivate；Internal | low write／scope resolve |
 | `tenant_memberships` | Membership Engine | User–Tenant 關係 | Tenant | `id` → user／tenant | lifecycle；Restricted | medium write／member resolve |
 | `shop_memberships` | Membership Engine | Membership–Shop 關係 | Tenant＋Shop | `id` → membership／shop | revoke；Restricted | medium write／shop list |
-| `roles` | Permission Engine | Core／Tenant role | Platform／Tenant | `id` | versioned；Internal | low write／permission resolve |
+| `roles` | Permission Engine | Normalized Core／Tenant role | Platform／Tenant | `tenant_scope_key + id` | versioned；Internal | low write／permission resolve |
 | `permissions` | Permission Engine | 固定 permission vocabulary | Platform | `id` | additive；Internal | rare write／lookup |
-| `role_permissions` | Permission Engine | Role–Permission map | Platform／Tenant | composite | replace history by version；Internal | low write／permission check |
-| `role_assignments` | Permission Engine | Subject role grant | explicit scope | `id` → role | grant／revoke；Restricted | medium write／hot permission read |
+| `role_permissions` | Permission Engine | Scope-bound Role–Permission map | Platform／Tenant | scope＋role＋permission | replace history by version；Internal | low write／permission check |
+| `role_assignments` | Permission Engine | Scope-bound subject role grant | explicit Core／Tenant／Brand／Shop | `id` → scoped role | grant／revoke；Restricted | medium write／hot permission read |
 | `point_programs` | Point Engine | Point policy container | Tenant | `id` → tenant | versioned；Internal | low write／program resolve |
 | `point_accounts` | Point Engine | Membership point account | Tenant＋optional Shop | `id` → membership／program | freeze／close；Restricted | medium write／account resolve |
 | `point_transactions` | Point Engine | Formal asset ledger | Tenant＋Account | `id` → account | append-only；Financial-like | append-heavy／history lookup |
@@ -73,8 +73,8 @@
 | `attendance_records` | Attendance Engine | Formal attendance result | Tenant | `id` → session／member | correct／revoke；Restricted | medium write／history |
 | `redemption_intents` | Redemption Engine | Pending transaction intent | Tenant＋Shop | `id` → member | expire／cancel；Restricted | medium write／intent resolve |
 | `redemption_results` | Redemption Engine | completed／rejected result | Tenant＋Shop | `id` → intent | reverse／correct；Financial-like | medium write／receipt lookup |
-| `idempotency_records` | Platform Core Candidate | Winner／Stored Result | Platform／Tenant | `id` | retention by risk；Restricted | hot write／replay lookup |
-| `audit_records` | Platform Core Candidate | Minimal decision／change evidence | Platform／Tenant | `id` | append-only／archive；Restricted | append-heavy／scoped search |
+| `idempotency_records` | Platform Core Candidate | Scope-separated Winner／Stored Result | Platform／Tenant | `id`＋Tenant composite target | retention by risk；Restricted | hot write／replay lookup |
+| `audit_records` | Platform Core Candidate | Minimal decision／change evidence | Platform／Tenant／Brand／Shop | `id` | append-only／archive；Restricted | append-heavy／scoped search |
 
 **Table count: 29.** `events`、`event_sessions` 與 `conversions` 只是必要 reference envelope，不代表 Framework 接管完整 Event、Order 或 Commerce schema。
 

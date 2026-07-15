@@ -27,6 +27,21 @@
 - [ ] Application-only invariant 有 owner、transaction point與negative test。
 - [ ] Time 使用 UTC，Tenant local time 只作計算／顯示。
 
+## Gate 1 — Cross-Tenant Foreign Key
+
+- [ ] Membership Merge 使用 Tenant-aware Composite FK；cross-tenant target 與 self target 有 negative evidence。
+- [ ] Merge chain no-cycle、same Platform User／approved Identity Merge、merged subject inactive 有 Membership Engine owner 與 negative test。
+- [ ] Core Template 與 Tenant-defined Role 使用明確 normalized scope；合法 scope CHECK 已審查。
+- [ ] Role、Mapping、Assignment 使用 Composite FK 保證相同 Core／Tenant scope。
+- [ ] Platform Assignment 只能引用 Core Template；Tenant／Brand／Shop Assignment 不能引用其他 Tenant Role。
+- [ ] Polymorphic subject reference 明確列為 application-only invariant，不宣稱 FK 完整覆蓋。
+- [ ] Platform／Tenant Idempotency 的 CHECK 與唯一性空間分離。
+- [ ] Tenant Domain → Idempotency 使用 Tenant-aware Composite FK，不能引用 Platform 或其他 Tenant Record。
+- [ ] Audit 的 Platform／Tenant／Brand／Shop 合法 nullable 組合、Tenant FK 與 optional Brand–Shop hierarchy 已審查。
+- [ ] Attendance 的 Event／Session／Source Attempt hierarchy 使用同一 Composite FK path。
+- [ ] 所有 nullable Composite FK 均有必要 CHECK、獨立 parent FK 或明確 application invariant。
+- [ ] Gate 1 第二輪 Architecture Owner Review 結果已記錄；未通過前維持 Draft／Not Approved。
+
 ## Index and Query Evidence
 
 - [ ] 每個 Index Candidate 對應 Query ID。

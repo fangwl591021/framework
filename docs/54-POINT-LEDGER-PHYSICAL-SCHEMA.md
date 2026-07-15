@@ -33,6 +33,8 @@
 
 候選欄位：`id`、`tenant_id`、`point_account_id`、`operation`、`signed_amount INTEGER`、`business_type`、`business_reference`、`rule_version`、`idempotency_record_id`、`original_transaction_id`、`actor_type`、`actor_reference`、`reason_code`、`occurred_at`、`created_at`、`audit_reference`。
 
+` 以 `(tenant_id, idempotency_record_id)` Composite FK 指向 Tenant-scoped Idempotency Record。Point Transaction 不能引用 Platform Scope 或其他 Tenant 的 Stored Result；單欄 ID FK 不視為 Tenant Isolation。
+
 - `signed_amount != 0`；禁止 floating point。
 - Grant／Reverse／Adjust 的正負語意由 Contract＋CHECK candidate 共同限制；所有 operation 的符號矩陣需 Tony 批准。
 - Reverse／Adjust 是正式 Entry；Original 與新 Entry 必須同 Tenant、同 Account。

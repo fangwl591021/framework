@@ -48,6 +48,7 @@ CREATE TABLE shops (
   updated_at INTEGER NOT NULL,
   archived_at INTEGER,
   UNIQUE (tenant_id, id),
+  UNIQUE (tenant_id, brand_id, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT
 );
@@ -87,7 +88,8 @@ CREATE TABLE tenant_memberships (
 
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (platform_user_id) REFERENCES platform_users(id) ON DELETE RESTRICT,
-  FOREIGN KEY (merged_into_membership_id) REFERENCES tenant_memberships(id) ON DELETE RESTRICT,
+  FOREIGN KEY (tenant_id, merged_into_membership_id)
+    REFERENCES tenant_memberships(tenant_id, id) ON DELETE RESTRICT,
   CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL)),
   CHECK (merged_into_membership_id IS NULL OR merged_into_membership_id <> id)
 );
@@ -122,31 +124,44 @@ CREATE TABLE permissions (
 
 CREATE TABLE roles (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
   tenant_id TEXT,
-  role_kind TEXT NOT NULL CHECK (role_kind IN ('core_template', 'tenant_defined')),
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   name_reference TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'deprecated', 'archived')),
   version INTEGER NOT NULL CHECK (version > 0),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  UNIQUE (tenant_scope_key, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  CHECK ((role_kind = 'core_template' AND tenant_id IS NULL) OR (role_kind = 'tenant_defined' AND tenant_id IS NOT NULL))
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  )
 );
 
 CREATE TABLE role_permissions (
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
+  tenant_id TEXT,
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   role_id TEXT NOT NULL,
   permission_id TEXT NOT NULL,
-  tenant_id TEXT,
   created_at INTEGER NOT NULL,
-  PRIMARY KEY (role_id, permission_id),
+  PRIMARY KEY (tenant_scope_key, role_id, permission_id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
-  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE RESTRICT
+  FOREIGN KEY (tenant_scope_key, role_id) REFERENCES roles(tenant_scope_key, id) ON DELETE RESTRICT,
+  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE RESTRICT,
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  )
 );
 
 CREATE TABLE role_assignments (
   id TEXT PRIMARY KEY CHECK (length(id) > 0),
+  role_scope_type TEXT NOT NULL CHECK (role_scope_type IN ('core_template', 'tenant_defined')),
   tenant_id TEXT,
+  tenant_scope_key TEXT NOT NULL CHECK (length(tenant_scope_key) > 0),
   brand_id TEXT,
   shop_id TEXT,
   subject_type TEXT NOT NULL CHECK (subject_type IN ('platform_user', 'tenant_membership', 'integration_service')),
@@ -164,9 +179,18 @@ CREATE TABLE role_assignments (
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, brand_id) REFERENCES brands(tenant_id, id) ON DELETE RESTRICT,
   FOREIGN KEY (tenant_id, shop_id) REFERENCES shops(tenant_id, id) ON DELETE RESTRICT,
-  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
-  UNIQUE (subject_type, subject_reference, role_id, scope_type, tenant_id, brand_id, shop_id, active_marker),
-  CHECK ((scope_type = 'platform' AND tenant_id IS NULL) OR (scope_type <> 'platform' AND tenant_id IS NOT NULL)),
+  FOREIGN KEY (tenant_scope_key, role_id) REFERENCES roles(tenant_scope_key, id) ON DELETE RESTRICT,
+  UNIQUE (subject_type, subject_reference, role_id, scope_type, tenant_scope_key, brand_id, shop_id, active_marker),
+  CHECK (
+    (role_scope_type = 'core_template' AND tenant_id IS NULL AND tenant_scope_key = 'platform') OR
+    (role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND tenant_scope_key = 'tenant:' || tenant_id)
+  ),
+  CHECK (
+    (scope_type = 'platform' AND role_scope_type = 'core_template' AND tenant_id IS NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type IN ('tenant', 'own_record', 'assigned_records') AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NULL) OR
+    (scope_type = 'brand' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NOT NULL AND shop_id IS NULL) OR
+    (scope_type = 'shop' AND role_scope_type = 'tenant_defined' AND tenant_id IS NOT NULL AND brand_id IS NULL AND shop_id IS NOT NULL)
+  ),
   CHECK ((status = 'active' AND active_marker = 'active') OR (status <> 'active' AND active_marker IS NULL))
 );
 

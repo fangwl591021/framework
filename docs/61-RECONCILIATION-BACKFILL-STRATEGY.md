@@ -23,6 +23,11 @@
 | Idempotency vs Domain | completed Stored Result missing domain result | Critical | No blind replay | determine unknown outcome | same key／Owner Module |
 | Audit missing reference | high-risk change without audit reference | High | append verified minimal audit candidate | security review | bounded／Audit Owner |
 | Cross-tenant scope | child tenant differs from parent | Critical | Never automatic | quarantine／incident／approval | no retry／Security＋Owner |
+| Membership merge scope | target tenant differs／self／cycle／ineligible target | Critical | Never automatic | Identity／Membership approval | no retry／Membership Engine |
+| Role scope integrity | role、mapping、assignment scope key mismatch | Critical | Never automatic | Permission incident／policy review | no retry／Permission Engine |
+| Idempotency scope integrity | Tenant Domain result points to platform／other Tenant record | Critical | Never automatic | quarantine command and domain result | no retry／Owner＋Security |
+| Audit hierarchy | illegal nullable scope／Brand／Shop mismatch | High | Never automatic | classify correct scope with evidence | case retry／Audit Owner |
+| Event session hierarchy | attendance event differs from referenced session／attempt | High | Never automatic | Attendance correction／quarantine | case retry／Attendance Engine |
 | Orphan FK | reference parent absent | High | No | migration source review | batch retry／Data Owner |
 | Merge chain integrity | cycle／missing terminal identity | Critical | No | Identity Reviewer approval | case retry／Identity Center |
 
