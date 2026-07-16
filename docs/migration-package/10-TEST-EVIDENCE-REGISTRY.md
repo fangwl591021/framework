@@ -1,17 +1,15 @@
 # Test Evidence Registry
 
-> Initial Registry 只有 Planned rows；不得填入虛構測試結果。
+> Planned records only; do not enter fictional actual results. The complete record schema below is mandatory for every future run.
 
-| Evidence ID | Test ID | Environment | Repository | Commit SHA | Schema Hash | Migration Hash | Execution Time | Operator | Expected Result | Actual Result | Logs | Screenshots | Database Snapshot Reference | Status | Reviewer | Review Date |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| E-PLAN-A01 | A01 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | DB abort and full rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-A02 | A02 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | DB abort and full rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-A03 | A03 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | DB abort and full rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-A04 | A04 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | DB abort and full rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-A05 | A05 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | reverse guard abort and rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-A06 | A06 | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | reverse guard abort and rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-TENANT | Tenant Isolation | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | cross-tenant reference rejected | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-ATOMIC | Atomicity／Replay | Local／Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | one effect or full rollback | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
-| E-PLAN-RECON | Reconciliation | Isolated | fangwl591021/framework | Pending | Pending | Pending | Not Executed | Unassigned | drift detected and safely stopped | Not Executed | Pending | Pending | Pending | Planned | Unassigned | Pending |
+| Evidence ID | Test ID | Run ID | Environment / Target | Source / Schema / Migration Hash | Fixture / Seed | Start / End | Exit Code | Command Ref | Expected Result | Actual Result | Before / After State | Sanitized Logs | Snapshot / Plan / Screenshot Ref | Result | Retention Class | Operator | Reviewer / Date |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| E-PLAN-A01 | A01 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | guard abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-A02 | A02 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | guard abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-A03 | A03 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | guard abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-A04 | A04 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | guard abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-A05 | A05 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | reverse abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-A06 | A06 | Pending | Local／Isolated Pending | Pending | Pending | Not Executed | Pending | Pending | reverse abort; zero committed changes | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
+| E-PLAN-CATALOG | TBL-01…29 / REG / Q | Pending | Pending | Pending | Pending | Not Executed | Pending | Pending | per catalog case | Not Executed | Pending | Pending | Pending | Planned | Pending | Unassigned | Unassigned / Pending |
 
 新增實際 Evidence row 時不得覆寫 Planned row；必須保留 failed run、retry relationship、rollback evidence 與 Reviewer 判定。Artifact 不得包含 Secret 或完整 PII。

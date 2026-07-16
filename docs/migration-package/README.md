@@ -26,6 +26,7 @@ It defines:
 10. [Environment Promotion Policy](09-ENVIRONMENT-PROMOTION-POLICY.md)
 11. [Test Evidence Registry](10-TEST-EVIDENCE-REGISTRY.md)
 12. [Go／No-Go Decision](11-GO-NOGO-DECISION.md)
+13. [Migration Test Plan Approval Review](12-TEST-PLAN-APPROVAL-DECISION.md)
 
 ## Authority Boundary
 
@@ -40,5 +41,9 @@ Package Design 被合併，不等於 Test Plan Approved、Tested、Architecture 
 ## QA Governance Dependency
 
 Migration Test Plan Approval 必須遵循 [QA Governance Foundation](../qa-governance/README.md)，並以 [Migration Test Plan Mapping](../qa-governance/14-MIGRATION-TEST-PLAN-MAPPING.md) 建立 Review Finding、Test Case、Expected Result、Evidence 與 Approval Gate 的追溯。
+
+補正設計目前見 [RC1 Migration Test Catalog](../qa-governance/16-MIGRATION-TEST-CATALOG.md)、[Migration Execution Control Plan](../qa-governance/17-MIGRATION-EXECUTION-CONTROL-PLAN.md) 與 [Query／Index Test Design](../qa-governance/18-QUERY-INDEX-TEST-DESIGN.md)。這些文件仍為 Pending Review，不代表 Test Plan 已批准。
+
+重新審查前的 finding disposition 與 required decision records 見 [Migration Test Plan Re-review Packet](../qa-governance/19-MIGRATION-TEST-PLAN-REREVIEW-PACKET.md)。
 
 目前 QA Governance Designed = Proposed、QA Governance Approved = No、Test Plan Approved = No。PR #9 仍為 NO-GO；本依賴不授權測試執行、SQL、D1、Migration、Runtime 或 Deployment。
