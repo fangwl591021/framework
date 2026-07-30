@@ -18,17 +18,18 @@ Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義�
 ## Repository Status
 
 ```text
-Documentation and Schema Proposal Stage
-No Runtime Implemented
+Runtime Foundation Bootstrap Stage
+Runtime Foundation Implemented and Locally Verified
+Domain Modules Not Implemented
 No D1 Schema Implemented
 No Migration Executed
 No Deployment
 No Production Verification
 ```
 
-目前 Repository 包含架構、治理、D1 Logical Design 與 Physical Schema Proposal 文件。SQL 與 Migration Draft 只供審查，尚未對 SQLite 或 D1 執行；沒有 Worker、Binding、API、Module Runtime 或部署。Proposal、Constraint Candidate、Index Candidate 或 ADR Accepted 都不代表已 Implemented、Performance Verified 或 Production Ready。
+目前 Repository 包含架構、治理、D1 Logical Design、Physical Schema Proposal，以及最小 Cloudflare Workers Runtime Foundation。Foundation 只提供 request pipeline、operational health／readiness、UUIDv7、safe error envelope 與 Module boundary skeleton；沒有 Binding、Domain CRUD、Module persistence 或部署。SQL 與 Migration Draft 只供審查，尚未對 SQLite 或 D1 執行。
 
-Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份 Module Contract 已由 Tony 核准；Lifecycle 仍為 Candidate，Runtime／SQL／Migration／Binding／Secret／Deployment 均未建立。
+Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份 Module Contract 已由 Tony 核准。Runtime Foundation 與 Operational Health／Readiness 已在 review branch 完成並通過本機驗證；四個 Domain Module 仍為 Candidate／Not Implemented；既有 SQL Proposal／Migration Draft 未修改且未執行，D1／Binding／Secret／Deployment 也未建立或執行。
 
 ## 目的
 
@@ -240,7 +241,9 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [Tenant Access Contract](docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md) | Contract Approved／Not Implemented |
 | [Authorization Contract](docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md) | Contract Approved／Not Implemented |
 | [Core Operations Contract](docs/runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) | Contract Approved／Not Implemented |
-| [Runtime Operational Endpoints](docs/runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md) | Contract Approved／Not Implemented |
+| [Runtime Operational Endpoints](docs/runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md) | Implemented／Locally Verified／Not Deployed |
+| [Core Foundation Local Technical Decision](docs/runtime-phase-1/07-CORE-FOUNDATION-LOCAL-TECHNICAL-DECISION.md) | Local Runtime Decision |
+| [Core Foundation Status](docs/runtime-phase-1/08-CORE-FOUNDATION-STATUS.md) | Foundation Implemented／Domain Modules Not Implemented |
 
 Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-access](docs/registry/tenant-access.md)、[authorization](docs/registry/authorization.md)、[core-operations](docs/registry/core-operations.md)。四者均為 Candidate／Contract Approved／Not Implemented／Not Verified／Not Deployed／Production Use Not Allowed；Health Check 不是 Domain Module，不建立 Registry Entry。
 
@@ -261,7 +264,7 @@ Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-acc
 | [ADR-011](docs/adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md) | Use First Valid Touch with a 30-Day Default Attribution Window | Accepted |
 | [ADR-012](docs/adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md) | Reverse or Correct Completed Transactions Instead of Deleting Them | Accepted |
 
-Runtime Phase 1 Accepted ADR： [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md)、[ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md)、[ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md)、[ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md)、[ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md)。它們已由 Tony 核准，屬於 Accepted ADR；仍為 Not Implemented／Not Verified。
+Runtime Phase 1 Accepted ADR： [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md)、[ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md)、[ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md)、[ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md)、[ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md)。它們已由 Tony 核准。Foundation 已本機驗證 UUIDv7 與 Runtime boundary；Domain 行為、持久化與 production verification 仍未實作。
 
 ### Template Index
 

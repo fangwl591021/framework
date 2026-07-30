@@ -1,0 +1,1 @@
+export { authorizationBoundary } from "./contract";

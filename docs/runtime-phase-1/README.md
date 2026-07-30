@@ -1,6 +1,6 @@
-﻿# Runtime Phase 1 Decision Closure
+# Runtime Phase 1
 
-> Architecture and documentation only. No Runtime, SQL, Migration, D1 access, Binding, Secret or Deployment is authorized by these documents.
+> Decision Closure is approved. The Core Foundation is implemented and locally verified in its review branch; Domain Modules, persistence, D1 and production remain unimplemented or unauthorized.
 
 ## Status
 
@@ -9,8 +9,10 @@
 | Decision Closure | Approved by Tony／PR #12 |
 | Module Contracts | Approved by Tony |
 | Module Registry Entries | Candidate／Contract Approved |
-| Runtime | Not Implemented |
-| Verification | Not Verified |
+| Runtime Foundation | Implemented／Locally Verified |
+| Operational Health／Readiness | Implemented／Locally Verified |
+| Domain Modules | Not Implemented／Not Verified |
+| D1／Migration | Not Implemented／Not Executed |
 | Deployment | Not Deployed |
 
 ## Reading Order
@@ -22,6 +24,8 @@
 5. [Core Operations Contract](04-CORE-OPERATIONS-CONTRACT.md)
 6. [Runtime Operational Endpoints](05-RUNTIME-OPERATIONAL-ENDPOINTS.md)
 7. [Physical Proposal Gap](06-PHYSICAL-PROPOSAL-GAP.md)
+8. [Core Foundation Local Technical Decision](07-CORE-FOUNDATION-LOCAL-TECHNICAL-DECISION.md)
+9. [Core Foundation Status](08-CORE-FOUNDATION-STATUS.md)
 
 The four contracts define the Phase 1 logical and public architecture boundary. They do not define HTTP endpoints, tables, columns or executable handlers.
 

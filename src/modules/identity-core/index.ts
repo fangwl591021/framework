@@ -1,0 +1,1 @@
+export { identityCoreBoundary } from "./contract";
