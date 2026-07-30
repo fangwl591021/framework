@@ -26,4 +26,4 @@ D1 Execution: Not Authorized
 Verification: Not Verified
 ```
 
-The Decision Closure PR can be approved without resolving physical storage. Runtime persistence and Migration remain NO-GO until a separate Proposal reconciles every row above and passes its own Architecture, Security, Test Plan and Execution Gates.
+The Decision Closure architecture is approved without resolving physical storage. Runtime persistence and Migration remain NO-GO until a separate Proposal reconciles every row above and passes its own Architecture, Security, Test Plan and Execution Gates.

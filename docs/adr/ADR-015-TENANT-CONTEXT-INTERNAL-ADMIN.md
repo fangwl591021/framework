@@ -2,11 +2,11 @@
 
 ## 基本資料
 
-- 狀態：Proposed
+- 狀態：Accepted
 - 日期：2026-07-30
-- 決策人：Tony decision selected；PR approval pending
-- Architecture Owner Approval：Pending
-- Approval Date：N/A
+- 決策人：Tony
+- Architecture Owner Approval：Accepted by Tony
+- Approval Date：2026-07-30
 - Implementation Status：Not Implemented
 - Verification Status：Not Verified
 - Supersedes：None
@@ -31,7 +31,7 @@ Tenant Route、Credential 與 Resource 可能提供不同 Scope。若 Header 或
 | Route only | 清楚 | 仍未證明 Actor authority | 低 |
 | Cross-check | 邊界可驗證 | 實作與測試較多 | 高 |
 
-## Proposed Decision
+## 最終決策
 
 Tenant Route `tenantId` 定義 Resource Scope，但必須與 Credential、Role Assignment 及 Resource Tenant 相符。Header 不得建立可信 Tenant Context。Repository 所有 tenant-scoped 方法都要求 `tenantId`。
 
@@ -45,7 +45,7 @@ Platform Administration 使用獨立 Internal Administration Boundary。不得�
 
 ## 後續工作
 
-- [ ] Tony 核准本 ADR。
+- [x] Tony 核准本 ADR（Approved in PR #12）。
 - [ ] Runtime PR 定義 trusted request context port。
 - [ ] Security Design 定義 Service Principal 與 bootstrap ceremony。
 

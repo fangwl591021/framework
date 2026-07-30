@@ -2,11 +2,11 @@
 
 ## 基本資料
 
-- 狀態：Proposed
+- 狀態：Accepted
 - 日期：2026-07-30
-- 決策人：Tony decision selected；PR approval pending
-- Architecture Owner Approval：Pending
-- Approval Date：N/A
+- 決策人：Tony
+- Architecture Owner Approval：Accepted by Tony
+- Approval Date：2026-07-30
 - Implementation Status：Not Implemented
 - Verification Status：Not Verified
 - Supersedes：None
@@ -31,7 +31,7 @@ Identity Linking、Membership、Role Assignment 與 Tenant mutations 都需要�
 | Deferred | 範圍小 | Mutation 無法安全開放 | 低 |
 | Core contract | 統一 Stored Result、Audit、Correlation | 增加基礎設施範圍 | 高 |
 
-## Proposed Decision
+## 最終決策
 
 Phase 1 將 `idempotency_records` 與 `audit_records` 納入 logical scope。Identity Linking、Membership Mutation、Role Assignment Mutation 與 Tenant Mutation 都必須使用一致 Contract。
 
@@ -45,7 +45,7 @@ Phase 1 將 `idempotency_records` 與 `audit_records` 納入 logical scope。Ide
 
 ## 後續工作
 
-- [ ] Tony 核准本 ADR。
+- [x] Tony 核准本 ADR（Approved in PR #12）。
 - [ ] Security／Privacy Owner 核准 retention 與 Stored Result filtering。
 - [ ] Migration／Runtime PR 分別提出 physical 和 executable design。
 

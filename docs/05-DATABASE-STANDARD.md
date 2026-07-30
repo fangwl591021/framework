@@ -126,7 +126,7 @@ Referral Relationship 是 Tenant 內的長期直接關係；Attribution Touch �
 ## Sprint 7 Physical Proposal Principles
 
 - Logical Model 定義 Domain ownership／invariant；Physical Proposal 才提出 Table、Column、SQLite Type、Constraint 與 Index，但仍不是 Implemented Schema。
-- ID 採 opaque `TEXT`；Runtime Phase 1 已在 ADR-013 Proposed Decision 選定 UUIDv7，由 Application／Domain Service 產生。ADR 核准前仍不得實作；Provider UID、Email、Phone、公開 Token、Repository 或 D1 均不得產生或取代 Domain ID。
+- ID 採 opaque `TEXT`；Runtime Phase 1 已由 Accepted ADR-013 選定 UUIDv7，由 Application／Domain Service 產生；Provider UID、Email、Phone、公開 Token、Repository 或 D1 均不得產生或取代 Domain ID。
 - Business time 採 UTC Unix millisecond INTEGER proposal；Tenant local timezone 只作顯示與 window calculation。
 - 穩定 status vocabulary 可用 TEXT + CHECK；高變動 business state 仍由 Contract／Transaction Validation。
 - FK 與 composite tenant FK 需要 relationship evidence；D1 foreign key enforcement 不取代 application permission／lifecycle validation。

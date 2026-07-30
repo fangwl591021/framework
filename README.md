@@ -28,7 +28,7 @@ No Production Verification
 
 目前 Repository 包含架構、治理、D1 Logical Design 與 Physical Schema Proposal 文件。SQL 與 Migration Draft 只供審查，尚未對 SQLite 或 D1 執行；沒有 Worker、Binding、API、Module Runtime 或部署。Proposal、Constraint Candidate、Index Candidate 或 ADR Accepted 都不代表已 Implemented、Performance Verified 或 Production Ready。
 
-Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 已建立 Proposed 文件與四份 Contract，等待 Tony 審查。它沒有建立 Runtime、SQL、Migration、Binding、Secret 或部署。
+Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份 Module Contract 已由 Tony 核准；Lifecycle 仍為 Candidate，Runtime／SQL／Migration／Binding／Secret／Deployment 均未建立。
 
 ## 目的
 
@@ -81,15 +81,15 @@ Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 已建立
 | [ADR-011](docs/adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md) | Accepted | First Valid Touch／30-Day Window | Not Implemented | Not Verified |
 | [ADR-012](docs/adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md) | Accepted | 完成交易採 Reverse／Correct，不 Delete | Not Implemented | Not Verified |
 
-### Runtime Phase 1 Proposed Decisions
+### Runtime Phase 1 Accepted Decisions
 
 | ADR | Status | Decision | Implementation | Verification |
 | --- | --- | --- | --- | --- |
-| [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md) | Proposed | Core Entity ID 採 UUIDv7 | Not Implemented | Not Verified |
-| [ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md) | Proposed | External Identity 使用版本化 HMAC Digest | Not Implemented | Not Verified |
-| [ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md) | Proposed | Trusted Tenant Context 與 Internal Administration 分離 | Not Implemented | Not Verified |
-| [ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) | Proposed | Audit／Idempotency 為 Phase 1 橫切契約 | Not Implemented | Not Verified |
-| [ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md) | Proposed | 固定 Phase 1 Lifecycle 與 Authorization Vocabulary | Not Implemented | Not Verified |
+| [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md) | Accepted | Core Entity ID 採 UUIDv7 | Not Implemented | Not Verified |
+| [ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md) | Accepted | External Identity 使用版本化 HMAC Digest | Not Implemented | Not Verified |
+| [ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md) | Accepted | Trusted Tenant Context 與 Internal Administration 分離 | Not Implemented | Not Verified |
+| [ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) | Accepted | Audit／Idempotency 為 Phase 1 橫切契約 | Not Implemented | Not Verified |
+| [ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md) | Accepted | 固定 Phase 1 Lifecycle 與 Authorization Vocabulary | Not Implemented | Not Verified |
 
 ## Module Contract and Registry
 
@@ -235,14 +235,14 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 
 | Document | Status |
 | --- | --- |
-| [Decision Closure](docs/runtime-phase-1/00-DECISION-CLOSURE.md) | Proposed／Pending Tony Approval |
-| [Identity Core Contract](docs/runtime-phase-1/01-IDENTITY-CORE-CONTRACT.md) | Contract Defined／Not Implemented |
-| [Tenant Access Contract](docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md) | Contract Defined／Not Implemented |
-| [Authorization Contract](docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md) | Contract Defined／Not Implemented |
-| [Core Operations Contract](docs/runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) | Contract Defined／Not Implemented |
-| [Runtime Operational Endpoints](docs/runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md) | Contract Defined／Not Implemented |
+| [Decision Closure](docs/runtime-phase-1/00-DECISION-CLOSURE.md) | Approved by Tony |
+| [Identity Core Contract](docs/runtime-phase-1/01-IDENTITY-CORE-CONTRACT.md) | Contract Approved／Not Implemented |
+| [Tenant Access Contract](docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md) | Contract Approved／Not Implemented |
+| [Authorization Contract](docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md) | Contract Approved／Not Implemented |
+| [Core Operations Contract](docs/runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) | Contract Approved／Not Implemented |
+| [Runtime Operational Endpoints](docs/runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md) | Contract Approved／Not Implemented |
 
-Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-access](docs/registry/tenant-access.md)、[authorization](docs/registry/authorization.md)、[core-operations](docs/registry/core-operations.md)。四者均為 Candidate／Not Implemented／Not Verified／Not Deployed；Health Check 不是 Domain Module，不建立 Registry Entry。
+Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-access](docs/registry/tenant-access.md)、[authorization](docs/registry/authorization.md)、[core-operations](docs/registry/core-operations.md)。四者均為 Candidate／Contract Approved／Not Implemented／Not Verified／Not Deployed／Production Use Not Allowed；Health Check 不是 Domain Module，不建立 Registry Entry。
 
 ### ADR Index
 
@@ -261,7 +261,7 @@ Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-acc
 | [ADR-011](docs/adr/ADR-011-DEFAULT-FIRST-TOUCH-ATTRIBUTION.md) | Use First Valid Touch with a 30-Day Default Attribution Window | Accepted |
 | [ADR-012](docs/adr/ADR-012-TRANSACTION-REVERSAL-NOT-DELETION.md) | Reverse or Correct Completed Transactions Instead of Deleting Them | Accepted |
 
-Runtime Phase 1 Proposed ADR： [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md)、[ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md)、[ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md)、[ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md)、[ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md)。它們等待 Tony 核准，不屬於上表 Accepted ADR。
+Runtime Phase 1 Accepted ADR： [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md)、[ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md)、[ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md)、[ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md)、[ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md)。它們已由 Tony 核准，屬於 Accepted ADR；仍為 Not Implemented／Not Verified。
 
 ### Template Index
 

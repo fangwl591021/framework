@@ -69,4 +69,4 @@ Idempotency 是交易安全能力，不等同於單純 Cache。
 | Idempotency | Grant／Deduct／Reverse | Candidate／Confirm／Correct | Touch／Conversion／Evaluate | Attempt／Confirm | Intent／Complete／Reverse |
 | Audit Log | Adjust／Reverse／Freeze | Confirm／Replace／Revoke | Decision／Correct／Reverse | Confirm／Correct／Revoke | Merchant decision／Complete／Reverse |
 
-Idempotency 與 Audit Log 仍為 Platform Core Candidate，Not Implemented、Not Verified。Runtime Phase 1 已建立 [Core Operations Contract](runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) 與 [ADR-016](adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) Proposed Decision；在 Tony 核准 Decision Closure PR 前仍是 Not Approved。任何 Contract 都不得假設已有共同 Runtime、D1 Table、KV Key 或 Durable Object。
+Idempotency 與 Audit Log 仍為 Platform Core Candidate，Not Implemented、Not Verified。Runtime Phase 1 的 [Core Operations Contract](runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) 與 [ADR-016](adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) 已由 Tony 核准；Lifecycle 仍為 Candidate，未晉升 Core Approved、未 Implemented、未 Verified。任何 Contract 都不得假設已有共同 Runtime、D1 Table、KV Key 或 Durable Object。

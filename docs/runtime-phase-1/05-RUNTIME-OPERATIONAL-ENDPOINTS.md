@@ -22,7 +22,8 @@ Health Check is a Runtime Operational Endpoint, not a Domain Module and not a Mo
 ## Status
 
 ```text
-Contract: Defined
+Contract: Approved
+Architecture Approval: Approved by Tony／PR #12
 Implementation: Not Implemented
 Verification: Not Verified
 Deployment: Not Deployed

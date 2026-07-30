@@ -2,11 +2,11 @@
 
 ## 基本資料
 
-- 狀態：Proposed
+- 狀態：Accepted
 - 日期：2026-07-30
-- 決策人：Tony decision selected；PR approval pending
-- Architecture Owner Approval：Pending
-- Approval Date：N/A
+- 決策人：Tony
+- Architecture Owner Approval：Accepted by Tony
+- Approval Date：2026-07-30
 - Implementation Status：Not Implemented
 - Verification Status：Not Verified
 - Supersedes：None
@@ -40,7 +40,7 @@ ADR-008 禁止 External Identity 成為 Business Key，但仍需定義 Mapping �
 | Versioned HMAC | 不可逆、Context-bound、可輪替 | Rotation 需雙版本解析流程 | 中 |
 | Encryption | 可恢復原值 | Key compromise 可解密全部資料 | 中 |
 
-## Proposed Decision
+## 最終決策
 
 Identity Core 使用 HMAC-SHA-256 建立 `subject_digest`。輸入是 Provider、Issuer／Context 與 Subject 的版本化無歧義編碼，Mapping 保存 `digest_key_version`。正式 Mapping 狀態只有 `active`、`revoked`、`conflict`；只有已驗證 Credential 或受控 Internal Administration Command 能建立 active Mapping。
 
@@ -54,7 +54,7 @@ Rotation 必須在建立新 Platform User 前，以 active 與允許的 previous
 
 ## 後續工作
 
-- [ ] Tony 核准本 ADR。
+- [x] Tony 核准本 ADR（Approved in PR #12）。
 - [ ] Security Gate 核准 canonical encoding、Secret provider、rotation operator 與 recovery。
 - [ ] Runtime Contract tests 驗證 rotation continuity 與 no-raw-subject leakage。
 

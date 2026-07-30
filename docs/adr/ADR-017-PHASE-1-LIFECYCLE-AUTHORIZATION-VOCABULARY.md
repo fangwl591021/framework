@@ -2,11 +2,11 @@
 
 ## 基本資料
 
-- 狀態：Proposed
+- 狀態：Accepted
 - 日期：2026-07-30
-- 決策人：Tony decision selected；PR approval pending
-- Architecture Owner Approval：Pending
-- Approval Date：N/A
+- 決策人：Tony
+- Architecture Owner Approval：Accepted by Tony
+- Approval Date：2026-07-30
 - Implementation Status：Not Implemented
 - Verification Status：Not Verified
 - Supersedes：None
@@ -23,7 +23,7 @@ Conceptual documents contain broad candidate states and roles, while Phase 1 req
 2. Leave vocabulary undefined until coding.
 3. Freeze a Phase 1 subset and keep other workflows in future Modules.
 
-## Proposed Decision
+## 最終決策
 
 - Platform User: `active`, `suspended`, `merged`, `anonymized`; no `deleted`.
 - Identity Mapping: `active`, `revoked`, `conflict`; Pending／Verified remain verification workflow states.
@@ -45,7 +45,7 @@ The subset matches the smallest safe Runtime slice and keeps invitation, Provide
 
 ## 後續工作
 
-- [ ] Tony 核准本 ADR。
+- [x] Tony 核准本 ADR（Approved in PR #12）。
 - [ ] Runtime tests prove every allowed and forbidden transition.
 - [ ] Future Invitation Module defines invited／pending without changing Membership meaning.
 

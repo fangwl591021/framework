@@ -1,6 +1,6 @@
-# Registry Entry: Authorization
+﻿# Registry Entry: Authorization
 
-> Candidate · Contract Defined · Not Implemented · Not Verified · Production Use Not Allowed
+> Candidate · Contract Approved · Not Implemented · Not Verified · Production Use Not Allowed
 
 | Metadata | Value |
 | --- | --- |
@@ -9,10 +9,12 @@
 | `description` | Evaluates approved Permission from Core or Tenant Role Assignment scope |
 | `category` | Platform Core Module |
 | `lifecycle_status` | Candidate |
-| `contract_status` | Contract Defined — Pending Approval |
+| `contract_status` | Approved |
 | `implementation_status` | Not Implemented |
 | `verification_status` | Not Verified |
 | `deployment_status` | Not Deployed |
+| `production_use` | Not Allowed |
+| `architecture_approval` | Approved by Tony |
 | `current_version` | `0.1.0-draft` |
 | `owner` | Unassigned |
 | `minimum_core_version` | N/A |
@@ -32,4 +34,4 @@
 | `contract_path` | `docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md` |
 | `deprecation_date` | None |
 | `replacement_module` | None |
-| `approval_reference` | Pending Decision Closure PR |
+| `approval_reference` | PR #12／Approved by Tony |

@@ -14,7 +14,7 @@ Deployment: Not Performed
 Production Verification: Not Verified
 ```
 
-Runtime Phase 1 已建立 [Decision Closure](docs/runtime-phase-1/README.md) Proposed 文件。四份 Module Contract 已定義但尚未獲 Tony 核准、未 Implemented、未 Verified、未 Deployed。
+Runtime Phase 1 [Decision Closure](docs/runtime-phase-1/README.md)、五份 ADR、四份 Module Contract 與 Operational Endpoint Contract 已由 Tony 核准；Module 仍為 Candidate，未 Implemented、未 Verified、未 Deployed。
 
 ## 1. 這套 Framework 是什麼
 
@@ -164,4 +164,4 @@ Runtime Phase 1 只規劃 Identity Core、Tenant Access、Authorization、Core O
 
 BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Referral、Product、Coupon、AI Agent、LINE Messaging Adapter 與客戶專屬流程都不屬於本階段 Runtime。Handbook 的 BookingOS Candidate 描述不是 Runtime Implementation Source。
 
-四份 Contract 與五份 Proposed ADR 目前只代表 Decision Closure PR 的選定提案；在 Tony 核准前不得開始 Runtime Coding。正式入口見 [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)。
+四份 Contract 與 ADR-013～ADR-017 已由 Tony 核准。Runtime Coding Gate 只對後續獨立的 Foundation Bootstrap PR 開啟；本 PR 不建立 Runtime，也不開放 SQL／Migration／D1／Production。正式入口見 [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)。

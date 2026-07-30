@@ -1,4 +1,4 @@
-# Runtime Phase 1 Decision Closure
+﻿# Runtime Phase 1 Decision Closure
 
 > Architecture and documentation only. No Runtime, SQL, Migration, D1 access, Binding, Secret or Deployment is authorized by these documents.
 
@@ -6,9 +6,9 @@
 
 | Item | Status |
 | --- | --- |
-| Decision Closure | Proposed — awaiting Tony approval |
-| Module Contracts | Contract Defined — Pending Approval |
-| Module Registry Entries | Proposed |
+| Decision Closure | Approved by Tony／PR #12 |
+| Module Contracts | Approved by Tony |
+| Module Registry Entries | Candidate／Contract Approved |
 | Runtime | Not Implemented |
 | Verification | Not Verified |
 | Deployment | Not Deployed |
@@ -25,7 +25,7 @@
 
 The four contracts define the Phase 1 logical and public architecture boundary. They do not define HTTP endpoints, tables, columns or executable handlers.
 
-## Proposed ADR
+## Accepted ADR
 
 - [ADR-013: UUIDv7 Core Entity IDs](../adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md)
 - [ADR-014: External Identity Subject Digests](../adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md)

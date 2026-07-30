@@ -2,11 +2,11 @@
 
 ## 基本資料
 
-- 狀態：Proposed
+- 狀態：Accepted
 - 日期：2026-07-30
-- 決策人：Tony decision selected；PR approval pending
-- Architecture Owner Approval：Pending
-- Approval Date：N/A
+- 決策人：Tony
+- Architecture Owner Approval：Accepted by Tony
+- Approval Date：2026-07-30
 - Implementation Status：Not Implemented
 - Verification Status：Not Verified
 - Supersedes：None
@@ -39,7 +39,7 @@ Framework 需要不依賴 Provider、Tenant 或資料庫自增序列的穩定 Do
 | UUIDv7 | 標準化、時間有序、可先產生 | 需要合規 generator 與 test vectors | 中 |
 | ULID／CUID2 | 可排序或友善 | 非選定 UUID 標準；生態差異 | 中 |
 
-## Proposed Decision
+## 最終決策
 
 所有 Phase 1 Core Entity ID 使用 UUIDv7，由 Application／Domain Service 產生，未來 D1 以 `TEXT` 保存。Repository 與 D1 不產生 Domain ID；API 不使用流水號；`crypto.randomUUID()` 的 UUIDv4 不得冒充 UUIDv7。
 
@@ -51,7 +51,7 @@ Framework 需要不依賴 Provider、Tenant 或資料庫自增序列的穩定 Do
 
 ## 後續工作
 
-- [ ] Tony 核准本 ADR。
+- [x] Tony 核准本 ADR（Approved in PR #12）。
 - [ ] Runtime PR 選定 generator 並加入 conformance／collision tests。
 - [ ] Migration Proposal 只接受合法 UUIDv7 Domain IDs。
 

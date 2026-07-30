@@ -1,19 +1,20 @@
 # Runtime Phase 1 Decision Closure
 
-> Proposed architecture baseline awaiting Tony approval. Documentation only; not an implementation or execution authorization.
+> Approved architecture baseline. Documentation only; not an implementation, SQL, Migration, D1 or production execution authorization.
 
 ## Decision Status
 
 | Dimension | Status |
 | --- | --- |
 | Architecture Owner | Tony |
-| Decision Selection | Tony decisions applied |
-| Architecture Approval | Pending Decision Closure PR review |
+| Decision Selection | Approved by Tony |
+| Architecture Approval | Approved by Tony |
+| Approval Reference | PR #12 |
 | Runtime | Not Implemented |
 | D1／Migration | Not Executed／Not Verified |
 | Deployment | Not Deployed |
 
-The choices below are the selected Phase 1 proposal. They become an approved Runtime implementation baseline only after Tony approves and merges the Decision Closure PR.
+The choices below are the approved Runtime Phase 1 architecture baseline. After this Decision Closure PR is merged, they open only a separate Foundation Bootstrap PR; they do not authorize Runtime coding in this PR or any SQL, Migration, D1, Secret, Binding or production action.
 
 ## 1. ID Strategy
 
@@ -203,7 +204,7 @@ No existing Accepted ADR is superseded:
 - ADR-004 continues to allow optional Brand／Shop globally; Phase 1 merely excludes them from its initial slice.
 - ADR-008 remains the prohibition against External Identity as a Business Key.
 
-ADR-013 through ADR-017 are Proposed additions. They do not modify the historical text or Accepted status of ADR-001 through ADR-012.
+ADR-013 through ADR-017 are Accepted additions approved by Tony in PR #12. They do not modify the historical text or Accepted status of ADR-001 through ADR-012.
 
 ## 12. Remaining Open Decisions
 
@@ -219,3 +220,10 @@ The following remain outside this closure:
 - Runtime route names and transport DTOs.
 
 These questions must be resolved at the relevant Security, Runtime or Migration Gate; none authorizes implementation in this PR.
+
+## 13. Post-Approval Gate
+
+- Runtime Foundation Bootstrap: GO only as a separate PR after Decision Closure merge.
+- Runtime coding in this PR: NO-GO.
+- SQL／Migration／D1／Secret／Binding／Production: NO-GO.
+- Module lifecycle remains Candidate; Implementation and Verification remain negative.
