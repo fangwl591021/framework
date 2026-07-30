@@ -31,7 +31,7 @@
 | CUID2 | generally not time-sortable | distributed／collision-resistant design | opaque；長度與 D1 index cost需量測 | Candidate |
 | Other opaque TEXT | depends on generator | 必須提供 entropy／collision evidence | 必須支援 URL safety與 migration stability | Candidate |
 
-本 Sprint 只批准 storage envelope：`TEXT opaque internal ID`；exact generator、長度與排序性待 ADR，不實作 generator。
+本 Physical Proposal 只批准 storage envelope：`TEXT opaque internal ID`。Runtime Phase 1 的 ADR-013 已選定 UUIDv7 Proposal，但仍待 Tony 核准；generator、長度驗證與 conformance evidence 未實作、未驗證。
 
 ## Time Storage Comparison
 

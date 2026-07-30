@@ -12,6 +12,8 @@
 
 ## Tenant Membership
 
+Runtime Phase 1 正式狀態限定為 `active`、`suspended`、`closed`、`merged`。`invited`／`pending` 屬未來 Invitation Module；Phase 1 Membership 不承擔 Invitation Workflow。Merged Membership 保留 canonical Membership reference，Closed／Merged Membership 不得授權 Tenant Permission。
+
 Tenant Membership 可表達以下概念：
 
 - Status 與 Lifecycle

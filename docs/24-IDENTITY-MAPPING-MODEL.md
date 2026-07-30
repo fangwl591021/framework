@@ -9,13 +9,15 @@ Identity Mapping 隔離外部登入識別與平台、Tenant 業務身份。LINE 
 以下只是語意需求，不是欄位定義：
 
 - `provider`
-- `provider_subject`
+- `issuer_context`
+- `subject_digest`
+- `digest_key_version`
 - `platform_user_id`
-- `provider_tenant_context`
-- `verification_status`
 - `linked_at`
 - `last_verified_at`
 - `status`
+
+Runtime Phase 1 不保存 raw Provider Subject。`subject_digest` 是 Provider、Issuer／Context 與 Subject 之版本化 canonical input 的 HMAC-SHA-256；正式 Mapping 狀態只有 `active`、`revoked`、`conflict`。Pending／Verified 屬 Credential verification workflow，不是正式 Mapping Entity 狀態。
 
 `provider_tenant_context` 表示 Provider 自身的 Channel、App 或組織範圍，不等於 Platform Tenant。
 
@@ -44,8 +46,9 @@ Unverified
 
 ## 安全與邊界
 
-- Provider Token、Secret 與原始憑證不是 Identity Mapping 的業務識別。
-- 查詢與稽核輸出應遮罩 Provider Subject 與 PII。
+- Provider Token、Secret、原始憑證與 raw Provider Subject 不是 Identity Mapping 的業務識別，且不得保存於正式 Mapping。
+- 查詢與稽核輸出只使用必要 Mapping Reference，不回傳 raw Provider Subject 或 HMAC input。
+- Mapping 保存 `digest_key_version`。Key Rotation 必須先以 active／permitted previous key versions 解析既有 Mapping，再更新版本；不能只靠單一 Unique Constraint 避免建立重複 Platform User。
 - Identity Center 只負責 Identity Mapping，不授予 Tenant Role、不修改 Point 或 Referral。
 - 新增 Provider 只增加 Adapter 與驗證 Policy，不改變核心 Business Reference。
 

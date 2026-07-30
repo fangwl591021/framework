@@ -22,23 +22,30 @@
 
 相同 Platform User 可在 Tenant A 是 Tenant Admin、在 Tenant B 是 Member，權限不互相繼承。
 
-## Candidate Roles
+## Runtime Phase 1 Vocabulary
 
-- Platform Admin
-- Architecture Owner
-- Tenant Owner
-- Tenant Admin
-- Brand Manager
-- Shop Manager
-- Merchant Staff
-- Sales／Distributor
-- Editor
-- Finance
-- Auditor
-- Member
-- Integration Service
+Core Role 固定為：
 
-這些是跨 Application 的候選語意。Platform Core 判斷 Permission、Action、Resource 與 Scope；Application 可自訂顯示名稱與 Role 組合，但不得改變隔離規則。
+- `tenant_owner`
+- `tenant_admin`
+- `tenant_member`
+
+Core Permission 固定為：
+
+- `tenant:read`
+- `tenant:update`
+- `membership:read`
+- `membership:manage`
+- `role:read`
+- `role:manage`
+- `platform_user:read_self`
+- `external_identity:read_self`
+
+Role Model 使用 `scope_type = core | tenant`。Core Role 的 `tenant_id = NULL` 且由 system 管理；Tenant Custom Role 必須有 `tenant_id`，只能組合已核准 Permission，不得跨 Tenant、不得使用 Core Role identifier 或冒充 Core Role。Platform Administrator 不屬於 Tenant Role。
+
+Tenant 必須保留至少一位有效 `tenant_owner`；一般管理流程不得移除、停用或撤銷最後一位有效 Owner。`tenant_member` 初版只有基本自我讀取權限。
+
+Brand Manager、Shop Manager、Merchant Staff、Finance、Auditor 等仍是未來跨 Application 候選語意，不屬於 Phase 1 Core Role。
 
 ## 強制規則
 

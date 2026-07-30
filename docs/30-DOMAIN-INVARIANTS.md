@@ -10,8 +10,10 @@
 | --- | --- | --- | --- | --- | --- |
 | External Identity 不得成為 Business Primary Key | Identity Center | Provider 更換造成資料遺失或污染 | Identity Resolution Contract | 連結與解除需 Audit | Link Command 需 Key |
 | Platform User 不依賴單一 Provider 存在 | Identity Center | Provider 停用造成業務身份失聯 | Platform User Aggregate | Identity Lifecycle 需 Audit | Provider Event 需去重 |
-| 同一 Provider Subject 不得同時 Active 連至多個 Platform User | Identity Center | 帳號接管 | Aggregate／唯一性 Guard | 衝突與人工決策需 Audit | 重送回傳原結果 |
+| 同一 Provider＋Issuer Context＋Subject 不得同時 Active 連至多個 Platform User | Identity Core | 帳號接管 | HMAC digest resolution＋Aggregate／唯一性 Guard；rotation 不能只靠單一 Unique Constraint | 衝突與人工決策需 Audit | 重送回傳原結果 |
 | 高風險 Duplicate 不得自動 Merge | Identity Center | 不可逆身份混併 | Merge Policy／人工審核 | 完整 Evidence、Actor、Reason | Merge Request 唯一 Key |
+
+UUIDv7 Domain ID 由 Application／Domain Service 產生；Repository、D1、流水號與 External Identity 均不得代替 Domain ID。
 
 ## Membership
 

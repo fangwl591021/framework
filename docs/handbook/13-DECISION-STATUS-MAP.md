@@ -21,6 +21,18 @@
 
 Accepted 表示 Decision 已批准，不表示其 Runtime／Schema 已存在。
 
+## Runtime Phase 1 Proposed ADR
+
+| ADR | Decision | Status | Implementation | Verification |
+| --- | --- | --- | --- | --- |
+| [ADR-013](../adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md) | UUIDv7 Core Entity IDs | Proposed／Pending Tony Approval | Not Implemented | Not Verified |
+| [ADR-014](../adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md) | Versioned HMAC External Identity Digest | Proposed／Pending Tony Approval | Not Implemented | Not Verified |
+| [ADR-015](../adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md) | Trusted Tenant Context and Internal Administration | Proposed／Pending Tony Approval | Not Implemented | Not Verified |
+| [ADR-016](../adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) | Phase 1 Audit and Idempotency | Proposed／Pending Tony Approval | Not Implemented | Not Verified |
+| [ADR-017](../adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md) | Phase 1 Lifecycle and Authorization Vocabulary | Proposed／Pending Tony Approval | Not Implemented | Not Verified |
+
+這些 ADR 不修改 ADR-001～ADR-012 的歷史或 Accepted 狀態。
+
 ## Platform Core Candidates
 
 | Candidate | Lifecycle | Core Approval | Implementation | Verification |
@@ -31,6 +43,19 @@ Accepted 表示 Decision 已批准，不表示其 Runtime／Schema 已存在。
 | Module Registry | Candidate | Not Approved | Not Implemented | Not Verified |
 
 正式邊界見 [Core Cross-cutting Candidates](../21-CORE-CROSSCUTTING-CANDIDATES.md)。
+
+Audit／Idempotency 已被選入 Runtime Phase 1 Proposed Contract，但在 ADR-016 與 Decision Closure PR 獲 Tony 核准前仍維持 Candidate／Not Approved。
+
+## Runtime Phase 1 Modules
+
+| Module | Lifecycle | Contract | Implementation | Verification | Registry |
+| --- | --- | --- | --- | --- | --- |
+| Identity Core | Candidate | Contract Defined／Pending Approval | Not Implemented | Not Verified | [Registry](../registry/identity-core.md) |
+| Tenant Access | Candidate | Contract Defined／Pending Approval | Not Implemented | Not Verified | [Registry](../registry/tenant-access.md) |
+| Authorization | Candidate | Contract Defined／Pending Approval | Not Implemented | Not Verified | [Registry](../registry/authorization.md) |
+| Core Operations | Candidate | Contract Defined／Pending Approval | Not Implemented | Not Verified | [Registry](../registry/core-operations.md) |
+
+Health Check 是 [Runtime Operational Endpoint](../runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md)，不是 Domain Module。
 
 ## Candidate Modules with Proposed Contracts
 

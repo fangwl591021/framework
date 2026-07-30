@@ -68,6 +68,16 @@ Login Adapter 只處理外部驗證、簽章、Token Exchange 與格式轉換，
 - Provider 更換不得複製或污染既有 Tenant Membership。
 - Permission 判斷交由 Permission Engine；Identity Center 不承擔商業授權規則。
 
+## Runtime Phase 1 Contract Boundary
+
+- Platform User 狀態：`active`、`suspended`、`merged`、`anonymized`；不使用 `deleted`。
+- Identity Mapping 狀態：`active`、`revoked`、`conflict`；Pending／Verified 只屬驗證流程。
+- Raw Provider Subject 不保存；Identity Mapping 使用版本化 HMAC-SHA-256 digest。
+- Identity Linking 只接受已驗證 Credential 或受控 Internal Administration Command。
+- Phase 1 不建立 LINE、Google 或 Apple Provider Adapter。
+
+正式 Contract 見 [Identity Core](runtime-phase-1/01-IDENTITY-CORE-CONTRACT.md)。
+
 ## Identity Mapping Lifecycle
 
 ```text

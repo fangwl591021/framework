@@ -19,9 +19,10 @@
 
 - Owner：Identity Center。
 - 語意：已驗證 Provider Subject 在特定 Provider Context 與 Platform User 的連結。
-- 核心內容：Provider、Provider Context、Subject Reference、Verification State、Platform User Reference、Linked／Unlinked Time、Conflict State。
-- 唯一性候選：同一有效 Provider Context＋Subject 同時只能連結一個有效 Platform User。
-- PII／Provider Subject 的正規化、雜湊或加密屬 Physical Design，尚未決定。
+- 核心內容：Provider、Issuer／Context、HMAC-SHA-256 Subject Digest、Digest Key Version、Platform User Reference、Linked／Revoked Time、Conflict State。
+- 正式 Mapping 狀態：`active`、`revoked`、`conflict`；Pending／Verified 是 credential workflow，不是 Mapping Entity State。
+- 唯一性候選：同一有效 Provider＋Issuer Context＋Subject 同時只能連結一個有效 Platform User。
+- Raw Provider Subject 不保存。Key Rotation 必須跨 active／permitted previous key versions 解析身份延續，不能只靠單一資料庫 Unique Constraint。
 
 ### Tenant／Brand／Shop
 
