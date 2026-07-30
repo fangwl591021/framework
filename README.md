@@ -1,4 +1,4 @@
-﻿# Platform Core Framework
+# Platform Core Framework
 
 ## Start Here
 

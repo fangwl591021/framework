@@ -1,4 +1,4 @@
-﻿# Runtime Phase 1 Decision Closure
+# Runtime Phase 1 Decision Closure
 
 > Approved architecture baseline. This approval record does not itself implement or authorize SQL, Migration, D1 or production execution.
 >

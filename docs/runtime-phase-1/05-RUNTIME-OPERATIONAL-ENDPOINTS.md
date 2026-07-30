@@ -1,4 +1,4 @@
-﻿# Runtime Phase 1 Operational Endpoints
+# Runtime Phase 1 Operational Endpoints
 
 > Contract approved. The Foundation implements `/health` and `/ready`; this document does not authorize Domain Module, D1 or production readiness.
 

@@ -1,4 +1,4 @@
-﻿# Runtime Phase 1
+# Runtime Phase 1
 
 > Decision Closure is approved. The Core Foundation is implemented and locally verified in its review branch; Domain Modules, persistence, D1 and production remain unimplemented or unauthorized.
 

@@ -1,4 +1,4 @@
-﻿# Platform Core Framework — Architecture Handbook
+# Platform Core Framework — Architecture Handbook
 
 > Framework 的最高層理解與導航入口。Handbook 是摘要，不取代 Accepted ADR、正式 Boundary 或 Module Contract。
 
