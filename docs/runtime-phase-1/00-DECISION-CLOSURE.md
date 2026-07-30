@@ -1,6 +1,8 @@
-# Runtime Phase 1 Decision Closure
+﻿# Runtime Phase 1 Decision Closure
 
-> Approved architecture baseline. Documentation only; not an implementation, SQL, Migration, D1 or production execution authorization.
+> Approved architecture baseline. This approval record does not itself implement or authorize SQL, Migration, D1 or production execution.
+>
+> Current Foundation implementation status is tracked separately in [Core Foundation Status](08-CORE-FOUNDATION-STATUS.md).
 
 ## Decision Status
 
@@ -10,7 +12,7 @@
 | Decision Selection | Approved by Tony |
 | Architecture Approval | Approved by Tony |
 | Approval Reference | PR #12 |
-| Runtime | Not Implemented |
+| Runtime at Decision Approval | Not Implemented |
 | D1／Migration | Not Executed／Not Verified |
 | Deployment | Not Deployed |
 

@@ -1,6 +1,6 @@
-# Runtime Phase 1 Operational Endpoints
+﻿# Runtime Phase 1 Operational Endpoints
 
-> Operational contract only. No route or Worker is implemented by this document.
+> Contract approved. The Foundation implements `/health` and `/ready`; this document does not authorize Domain Module, D1 or production readiness.
 
 ## Health Check Classification
 
@@ -24,7 +24,8 @@ Health Check is a Runtime Operational Endpoint, not a Domain Module and not a Mo
 ```text
 Contract: Approved
 Architecture Approval: Approved by Tony／PR #12
-Implementation: Not Implemented
-Verification: Not Verified
+Implementation: Implemented
+Verification: Locally Verified
 Deployment: Not Deployed
+D1／Provider／Production Readiness: Not Verified
 ```
