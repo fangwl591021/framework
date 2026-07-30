@@ -4,8 +4,8 @@ export const authorizationBoundary = Object.freeze({
   id: "authorization",
   lifecycle: "Candidate",
   contract: "Approved",
-  implementation: "Not Implemented",
-  verification: "Not Verified",
+  implementation: "Locally Implemented",
+  verification: "Locally Verified",
   deployment: "Not Deployed",
   dependencies: [],
 } satisfies ModuleBoundary);

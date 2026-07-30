@@ -1,5 +1,7 @@
 # Runtime Phase 1 Physical Proposal Gap
 
+> Supersession note: this pre-implementation gap assessment is retained as history. The Phase 1-only reconciliation and Local D1 evidence are in [Core Persistence and Domain Foundation Status](09-CORE-PERSISTENCE-DOMAIN-STATUS.md).
+
 > Documentation-only gap record. No SQL or Migration is changed or authorized.
 
 ## Why This Gap Exists

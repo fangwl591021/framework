@@ -18,7 +18,7 @@ const modules: readonly ModuleBoundary[] = [
 ];
 
 describe("Module boundary skeletons", () => {
-  it("loads four approved Candidate contracts without claiming implementation", () => {
+  it("loads four approved Candidate contracts with local implementation evidence", () => {
     expect(modules.map(({ id }) => id)).toEqual([
       "identity-core",
       "tenant-access",
@@ -29,8 +29,8 @@ describe("Module boundary skeletons", () => {
       expect(module).toMatchObject({
         lifecycle: "Candidate",
         contract: "Approved",
-        implementation: "Not Implemented",
-        verification: "Not Verified",
+        implementation: "Locally Implemented",
+        verification: "Locally Verified",
         deployment: "Not Deployed",
       });
     }

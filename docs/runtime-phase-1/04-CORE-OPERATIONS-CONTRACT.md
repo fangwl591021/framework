@@ -1,6 +1,6 @@
-﻿# Core Operations Module Contract
+# Core Operations Module Contract
 
-> Contract Approved · Approved by Tony · Not Implemented · Not Verified · Not Deployed
+> Contract Approved · Approved by Tony · Locally Implemented · Locally Verified · Not Deployed
 
 ## 1. Basic Information
 
@@ -120,8 +120,8 @@ Breaking semantics require MAJOR version and Architecture Owner approval. Deprec
 | Platform Architect | Reviewed through PR #12 Decision Closure |
 | Architecture Owner | Tony／Approved |
 | Approval Reference | PR #12／Approved by Tony |
-| Implementation | Not Implemented |
-| Verification | Not Verified |
+| Implementation | Locally Implemented |
+| Verification | Locally Verified |
 | Deployment | Not Deployed |
 | Production Use | Not Allowed |
 
@@ -134,7 +134,7 @@ Breaking semantics require MAJOR version and Architecture Owner approval. Deprec
 | Question | Owner | Needed By | Status |
 | --- | --- | --- | --- |
 | Audit and Idempotency retention periods | Security／Privacy Owner | Migration approval | Open |
-| Stored Result size limit and canonical fingerprint | Platform Architect | Runtime implementation | Open |
+| Stored Result size limit and canonical fingerprint | Platform Architect | Runtime implementation | Closed locally: 4096 bytes; sorted canonical JSON plus SHA-256 |
 | Service Principal credential mechanism | Security Owner | Administration design | Open |
 
 ADR reference: [ADR-016](../adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md).

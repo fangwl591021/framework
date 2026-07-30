@@ -8,14 +8,14 @@
 Runtime Foundation Bootstrap Stage
 
 Runtime Foundation: Implemented／Locally Verified
-Domain Modules: Not Implemented／Not Verified
-Physical Schema: Not Implemented
+Phase 1 Core Modules: Locally Implemented／Locally Verified／Not Deployed
+Phase 1 Physical Schema: Local D1 Only／Not Deployed
 Migration: Not Executed
 Deployment: Not Performed
 Production Verification: Not Verified
 ```
 
-Runtime Phase 1 [Decision Closure](docs/runtime-phase-1/README.md)、五份 ADR、四份 Module Contract 與 Operational Endpoint Contract 已由 Tony 核准。Foundation 與 Operational Health／Readiness 已本機驗證；四個 Domain Module 仍為 Candidate／Not Implemented／Not Verified／Not Deployed。
+Runtime Phase 1 [Decision Closure](docs/runtime-phase-1/README.md)、五份 ADR、四份 Module Contract 與 Operational Endpoint Contract 已由 Tony 核准。Foundation 與 Operational Health／Readiness 已本機驗證；四個 Phase 1 Core Module 維持 Candidate，現為 Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。
 
 ## 1. 這套 Framework 是什麼
 
@@ -165,4 +165,4 @@ Runtime Phase 1 只規劃 Identity Core、Tenant Access、Authorization、Core O
 
 BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Referral、Product、Coupon、AI Agent、LINE Messaging Adapter 與客戶專屬流程都不屬於本階段 Runtime。Handbook 的 BookingOS Candidate 描述不是 Runtime Implementation Source。
 
-四份 Contract 與 ADR-013～ADR-017 已由 Tony 核准。Foundation Bootstrap 只實作 request pipeline、operational endpoints、UUIDv7、safe error handling 與 boundary skeleton；它不實作 Domain Module、SQL、Migration、D1、Binding 或 Production。正式入口與 current truth 見 [Runtime Phase 1](docs/runtime-phase-1/README.md)。
+四份 Contract 與 ADR-013～ADR-017 已由 Tony 核准。Foundation Bootstrap 提供 request pipeline、operational endpoints、UUIDv7 與 safe error handling；後續 Phase 1 Core Persistence and Domain Foundation 已在隔離 Local D1 實作及驗證十張表、Repository、Domain Service、Audit、Idempotency 與 Authorization。它仍不提供公開 Domain API、Remote D1、Binding、Secret、Deployment 或 Production。正式入口與 current truth 見 [Runtime Phase 1](docs/runtime-phase-1/README.md)。

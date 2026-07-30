@@ -1,5 +1,7 @@
 # Runtime Phase 1 Core Foundation Status
 
+> Historical scope note: this file records the earlier Foundation Bootstrap evidence. Current persistence and Domain status is in [Core Persistence and Domain Foundation Status](09-CORE-PERSISTENCE-DOMAIN-STATUS.md).
+
 > Status applies to the Core Foundation Bootstrap implementation in its review branch. It does not promote any Domain Module.
 
 ## Current Truth
