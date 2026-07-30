@@ -276,6 +276,9 @@ CREATE UNIQUE INDEX uq_idempotency_tenant
 CREATE INDEX idx_idempotency_tenant_expiry
   ON idempotency_records(tenant_id, status, expires_at, id);
 
+CREATE INDEX idx_idempotency_scope_status_expiry
+  ON idempotency_records(scope_type, status, expires_at, id);
+
 CREATE INDEX idx_audit_tenant_time
   ON audit_records(tenant_id, occurred_at DESC, id DESC);
 
@@ -330,9 +333,43 @@ BEGIN
 END;
 
 CREATE TRIGGER trg_last_owner_assignment_revoke
-BEFORE UPDATE OF status ON role_assignments
+BEFORE UPDATE ON role_assignments
 FOR EACH ROW
-WHEN OLD.status = 'active' AND NEW.status = 'revoked'
+WHEN OLD.status = 'active'
+  AND EXISTS (
+    SELECT 1 FROM roles
+    WHERE id = OLD.role_id AND scope_type = 'core' AND role_key = 'tenant_owner'
+  )
+  AND NOT (
+    NEW.status = 'active'
+    AND NEW.tenant_id = OLD.tenant_id
+    AND EXISTS (
+      SELECT 1 FROM roles
+      WHERE id = NEW.role_id AND scope_type = 'core' AND role_key = 'tenant_owner'
+    )
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM role_assignments AS other
+    JOIN roles AS role ON role.id = other.role_id
+    JOIN tenant_memberships AS member
+      ON member.tenant_id = other.tenant_id
+      AND member.id = other.tenant_membership_id
+    WHERE other.tenant_id = OLD.tenant_id
+      AND other.id <> OLD.id
+      AND other.status = 'active'
+      AND member.status = 'active'
+      AND role.scope_type = 'core'
+      AND role.role_key = 'tenant_owner'
+  )
+BEGIN
+  SELECT RAISE(ABORT, 'last_tenant_owner');
+END;
+
+CREATE TRIGGER trg_last_owner_assignment_delete
+BEFORE DELETE ON role_assignments
+FOR EACH ROW
+WHEN OLD.status = 'active'
   AND EXISTS (
     SELECT 1 FROM roles
     WHERE id = OLD.role_id AND scope_type = 'core' AND role_key = 'tenant_owner'

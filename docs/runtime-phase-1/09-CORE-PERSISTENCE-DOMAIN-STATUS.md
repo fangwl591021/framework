@@ -16,9 +16,11 @@ The executable migration is `migrations/0001_phase_1_core.sql`. It is used only 
 | Tenant Access | Candidate / Contract Approved / Locally Implemented / Locally Verified |
 | Authorization | Candidate / Contract Approved / Locally Implemented / Locally Verified |
 | Core Operations | Candidate / Contract Approved / Locally Implemented / Locally Verified |
-| Local D1 Migration | Implemented / Executed Locally / Verified Locally |
-| Remote or Production D1 | Not Accessed / Not Approved |
-| Deployment | Not Deployed |
+| Phase 1 Migration | Executed and Verified on Isolated Local D1 |
+| Remote Migration | Not Executed |
+| Production Migration | Not Executed |
+| Deployment | Not Performed |
+| Production Verification | Not Verified |
 | Production Use | Not Allowed |
 
 ## Physical Model
@@ -55,11 +57,12 @@ All entity IDs are application-generated UUIDv7 values stored as `TEXT`. Timesta
 | `role_assignments` | `uq_role_assignments_active` | One active assignment per role and member |
 | `role_assignments` | `idx_role_assignments_member` | Single-query Permission evaluation |
 | `idempotency_records` | separate platform and tenant unique indexes | Prevent NULL scope ambiguity and duplicate effects |
-| `idempotency_records` | `idx_idempotency_tenant_expiry` | Bounded recovery and retention scan |
+| `idempotency_records` | `idx_idempotency_tenant_expiry` | Bounded Tenant recovery and retention scan |
+| `idempotency_records` | `idx_idempotency_scope_status_expiry` | Bounded scope-wide status and expiry scan |
 | `audit_records` | `idx_audit_tenant_time` | Bounded Tenant audit timeline |
 | `audit_records` | `idx_audit_resource_time` | Bounded resource history |
 
-The last active `tenant_owner` is protected by database triggers on both Role Assignment revocation and Membership lifecycle change. Application checks improve error clarity; database constraints remain the final winner.
+The last active `tenant_owner` is protected by formal database triggers against Role Assignment revocation, role rewrite, direct deletion, and Membership suspension, closure, or merge. Application checks improve error clarity; database constraints remain the final winner.
 
 ## Local Technical Decisions
 
@@ -75,7 +78,7 @@ The last active `tenant_owner` is protected by database triggers on both Role As
 
 ## Local Verification
 
-The Local D1 suite covers fresh rebuild, repeat application through the D1 migration ledger, FK enforcement, active uniqueness, seed counts, User-to-Permission flow, Tenant isolation, idempotency replay/conflict/stale recovery, identity key rotation, raw-subject absence, last-owner protection, terminal lifecycle states, minimal Audit, and query-plan index evidence.
+The Local D1 suite creates a fresh empty database, applies only the formal migration, and then inspects `sqlite_master` and `PRAGMA foreign_key_list` for all expected tables, indexes, triggers, and foreign keys. It also covers repeat application through the D1 migration ledger, FK enforcement, active uniqueness, seed counts, User-to-Permission flow, Tenant isolation, idempotency replay/conflict/stale recovery, identity key rotation, raw-subject absence, every last-owner loss path, Core Role／Permission immutability, terminal lifecycle states, minimal Audit, and query-plan index evidence.
 
 Existing Runtime Foundation tests continue to cover UUIDv7 and `/health` / `/ready`. These endpoints intentionally do not claim D1 or production readiness.
 

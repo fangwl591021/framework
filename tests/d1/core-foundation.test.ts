@@ -190,6 +190,80 @@ describe("Phase 1 core persistence and domain foundation", () => {
     expect(await app.revokeRole(tenant.id, firstOwner.id, context())).toMatchObject({ status: "revoked" });
   });
 
+  it("blocks every direct path that would remove the last effective tenant owner", async () => {
+    const app = application();
+    const ownerUser = await app.createPlatformUser(context());
+    const mergeTargetUser = await app.createPlatformUser(context());
+    const tenant = await app.createTenant("Owner Trigger Coverage", context());
+    const ownerMember = await app.addTenantMembership(tenant.id, ownerUser.id, "bootstrap", context());
+    const mergeTargetMember = await app.addTenantMembership(
+      tenant.id,
+      mergeTargetUser.id,
+      "merge-target",
+      context(),
+    );
+    const ownerAssignment = await app.assignRole(
+      tenant.id,
+      ownerMember.id,
+      "tenant_owner",
+      context(),
+    );
+
+    await expect(
+      env.DB.prepare(
+        `UPDATE role_assignments
+         SET status = 'revoked', revoked_at = 1, updated_at = updated_at + 1
+         WHERE tenant_id = ?1 AND id = ?2`,
+      ).bind(tenant.id, ownerAssignment.id).run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+    await expect(
+      env.DB.prepare(
+        `UPDATE role_assignments
+         SET role_id = '018f0000-0000-7000-8000-000000000202', updated_at = updated_at + 1
+         WHERE tenant_id = ?1 AND id = ?2`,
+      ).bind(tenant.id, ownerAssignment.id).run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+    await expect(
+      env.DB.prepare(`DELETE FROM role_assignments WHERE tenant_id = ?1 AND id = ?2`)
+        .bind(tenant.id, ownerAssignment.id)
+        .run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+
+    await expect(
+      env.DB.prepare(
+        `UPDATE tenant_memberships
+         SET status = 'suspended', suspended_at = 1, updated_at = updated_at + 1
+         WHERE tenant_id = ?1 AND id = ?2`,
+      ).bind(tenant.id, ownerMember.id).run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+    await expect(
+      env.DB.prepare(
+        `UPDATE tenant_memberships
+         SET status = 'closed', closed_at = 1, updated_at = updated_at + 1
+         WHERE tenant_id = ?1 AND id = ?2`,
+      ).bind(tenant.id, ownerMember.id).run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+    await expect(
+      env.DB.prepare(
+        `UPDATE tenant_memberships
+         SET status = 'merged', merged_into_membership_id = ?1, updated_at = updated_at + 1
+         WHERE tenant_id = ?2 AND id = ?3`,
+      ).bind(mergeTargetMember.id, tenant.id, ownerMember.id).run(),
+    ).rejects.toThrow(/last_tenant_owner/);
+
+    expect(await app.repositories.memberships.getById(tenant.id, ownerMember.id)).toMatchObject({
+      status: "active",
+    });
+    expect(
+      await env.DB.prepare(
+        `SELECT status, role_id FROM role_assignments WHERE tenant_id = ?1 AND id = ?2`,
+      ).bind(tenant.id, ownerAssignment.id).first(),
+    ).toMatchObject({
+      status: "active",
+      role_id: "018f0000-0000-7000-8000-000000000201",
+    });
+  });
+
   it("enforces merged and anonymized terminal lifecycle rules", async () => {
     const app = application();
     const source = await app.createPlatformUser(context());
