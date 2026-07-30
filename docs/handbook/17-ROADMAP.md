@@ -14,6 +14,7 @@
 | Sprint 6 — Logical D1 Data Model | Logical Records、Integrity／Retention、Readiness Gate | No Physical Schema／Not Verified |
 | Sprint 7 — Physical Schema Proposal | PR #6 已合併；Architecture Gates 1～3 Passed | Architecture-reviewed Proposal／Not Executed／Not Verified |
 | Architecture Handbook | 本次導航與共同理解入口 | Documentation Only |
+| Runtime Phase 1 Decision Closure | UUIDv7、Lifecycle、Identity Security、Tenant Context、Authorization、Audit／Idempotency Contract | Approved by Tony／No Runtime／Not Verified |
 
 ## 後續候選
 
@@ -23,7 +24,8 @@ Framework RC1 Baseline
 → Local D1 Test Approval
 → Isolated D1 Test Approval
 → Architecture／Security／Execution Gates
-→ Runtime Foundation（另案）
+→ Runtime Phase 1 Decision Closure Approved
+→ Runtime Bootstrap／Health Check（另案）
 → D1 Migration（另案核准）
 → Module Implementation
 → Integration Tests

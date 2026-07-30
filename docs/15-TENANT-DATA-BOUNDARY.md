@@ -96,6 +96,10 @@ Point、CRM View、Referral Attribution 或 Event Participation 是否跨 Shop�
 
 ## 強制隔離規則
 
+- Tenant API Route 的 `tenantId` 是 Resource Scope；必須與 Credential、Role Assignment 與 Resource Tenant 一致。
+- Client Header 不得建立可信 Tenant Context；任何 Scope mismatch 一律拒絕且不洩露其他 Tenant 資源是否存在。
+- Tenant-scoped Repository Contract 必須要求 `tenantId`，不得提供省略 Tenant 的便利方法。
+- Platform 操作使用獨立 Internal Administration Boundary，不得偽裝成 Tenant API。
 - Query、Write、Cache Key、R2 Object、Domain Event、Queue Message 都需保留 Tenant Scope。
 - Brand／Shop Scope 只能在 Tenant Scope 內限縮或經 Policy 擴張。
 - Permission 同時驗證 Platform User、Tenant Membership、Role、Resource、Action 與 Scope。

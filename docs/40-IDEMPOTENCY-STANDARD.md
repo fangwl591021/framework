@@ -4,7 +4,7 @@
 
 ## Required Use Cases
 
-LINE／Payment Webhook、Attendance Submission、Point Grant／Deduct、Redemption、Conversion Registration、Attribution Evaluation、Referral Confirmation、Import／Migration Command 都必須定義 Idempotency Boundary。
+Runtime Phase 1 的 Identity Linking、Tenant Mutation、Membership Mutation 與 Role Assignment Mutation 必須定義 Idempotency Boundary。未來的 LINE／Payment Webhook、Attendance Submission、Point Grant／Deduct、Redemption、Conversion Registration、Attribution Evaluation、Referral Confirmation、Import／Migration Command 亦需各自 Contract。
 
 ## Key Sources
 

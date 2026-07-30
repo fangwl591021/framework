@@ -42,7 +42,8 @@ Audit Log 與 Idempotency 仍是 Platform Core Candidate，不因本文件存在
 
 - Audit Identity／Occurred Time
 - Platform／Tenant／Brand／Shop Scope
-- Actor Type／Actor Business Reference
+- Actor Type：`platform_user`、`service_principal` 或 `system`
+- Actor ID／Actor Business Reference（依 Actor Type nullable）
 - Action／Resource Type／Resource Reference
 - Decision：Allowed、Denied、Changed、Corrected、Reversed、Approved
 - Before／After Summary 或 Change Reference

@@ -64,7 +64,7 @@ Referral Relationship 是 Tenant 內的長期直接關係；Attribution Touch �
 
 ## Conceptual Model, Not Schema
 
-- 本 Sprint 所列 `provider_subject`、Status、Reference、Rule Version、Idempotency Key 等都只是概念資料。
+- Runtime Phase 1 的 External Identity 概念使用 `issuer_context`、HMAC-SHA-256 `subject_digest` 與 `digest_key_version`；不保存 raw Provider Subject。Status、Reference、Rule Version 與 Idempotency Key 仍只是概念資料。
 - Aggregate Root、Entity、Value Object、Policy、Event、Command 與 Query 的選擇必須先於 Schema。
 - Lifecycle 狀態不是資料庫 Enum；Correction、Merge、Reverse 與 Migration 必須保留歷史。
 - Schema Proposal 需逐項證明 Owner Module、Tenant Scope、Business Reference、Invariant 與 Migration 方法。
@@ -126,7 +126,7 @@ Referral Relationship 是 Tenant 內的長期直接關係；Attribution Touch �
 ## Sprint 7 Physical Proposal Principles
 
 - Logical Model 定義 Domain ownership／invariant；Physical Proposal 才提出 Table、Column、SQLite Type、Constraint 與 Index，但仍不是 Implemented Schema。
-- ID 採 opaque TEXT proposal，exact generator pending ADR；不得以 Provider UID、Email、Phone 或公開 token 作 PK。
+- ID 採 opaque `TEXT`；Runtime Phase 1 已由 Accepted ADR-013 選定 UUIDv7，由 Application／Domain Service 產生；Provider UID、Email、Phone、公開 Token、Repository 或 D1 均不得產生或取代 Domain ID。
 - Business time 採 UTC Unix millisecond INTEGER proposal；Tenant local timezone 只作顯示與 window calculation。
 - 穩定 status vocabulary 可用 TEXT + CHECK；高變動 business state 仍由 Contract／Transaction Validation。
 - FK 與 composite tenant FK 需要 relationship evidence；D1 foreign key enforcement 不取代 application permission／lifecycle validation。

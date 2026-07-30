@@ -4,6 +4,8 @@
 
 本文件建立 Platform Core 的共同領域語言，只描述概念、責任與關係；不代表資料表、欄位、API 或 Runtime 已存在。
 
+Runtime Phase 1 的 Core Entity ID 已由 ADR-013 Accepted Decision 選定為 UUIDv7，由 Application／Domain Service 產生；Repository、D1 與 External Identity 不產生 Domain ID。正式狀態見 [Decision Closure](runtime-phase-1/00-DECISION-CLOSURE.md)。
+
 ## 概念圖
 
 ```text

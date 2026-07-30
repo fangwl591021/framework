@@ -4,6 +4,18 @@
 
 以下狀態是跨 Module 的候選語言，不是資料庫 ENUM、Schema 或已實作 State Machine。每次 Transition 都必須由 Owner Module 驗證 Actor、Permission、Tenant Scope、前置狀態、Rule Version 與 Idempotency，並保存來源、時間、理由、Correlation 與必要 Evidence。歷史型資料不得用 Delete 清除交易或關係。
 
+## Runtime Phase 1 Formal Vocabulary
+
+| Entity | Formal Phase 1 States | Excluded Workflow Terms |
+| --- | --- | --- |
+| Platform User | `active`, `suspended`, `merged`, `anonymized` | `deleted` is invalid；PII removal uses irreversible anonymization |
+| Identity Mapping | `active`, `revoked`, `conflict` | Pending／Verified belong to credential verification workflow |
+| Tenant Membership | `active`, `suspended`, `closed`, `merged` | Invited／Pending belong to a future Invitation Module |
+
+Merged Platform User／Membership preserves a canonical reference and cannot resume ordinary authentication or authorization. Anonymized Platform User cannot return to active. Closed／Merged Membership grants no Tenant Permission.
+
+The broader tables below remain historical cross-Module candidate vocabulary. Their `Deleted`, `Pending`, `Verified`, `Invited`, `Left` or `Archived` rows are not formal Runtime Phase 1 Entity states and cannot be implemented without a later Contract／ADR change.
+
 ## Platform User
 
 | State | 可進入來源 | 可轉出狀態 | 業務操作 | 歷史 | 誰可變更 | Audit |

@@ -14,6 +14,8 @@ Deployment: Not Performed
 Production Verification: Not Verified
 ```
 
+Runtime Phase 1 [Decision Closure](docs/runtime-phase-1/README.md)、五份 ADR、四份 Module Contract 與 Operational Endpoint Contract 已由 Tony 核准；Module 仍為 Candidate，未 Implemented、未 Verified、未 Deployed。
+
 ## 1. 這套 Framework 是什麼
 
 Platform Core Framework 是所有未來 SaaS Application 共用的架構母框架。它提供一致的身份、Tenant、Permission、Module Boundary、交易安全、資料治理與開發流程；它不屬於任何客戶，也不包含客戶專屬商業流程。願景與定位見 [Platform Vision](docs/00-VISION.md) 與 [Platform Blueprint](docs/01-PLATFORM-BLUEPRINT.md)。
@@ -129,6 +131,7 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 - [Glossary](docs/handbook/15-GLOSSARY.md)
 - [Open Decisions](docs/handbook/16-OPEN-DECISIONS.md)
 - [Roadmap](docs/handbook/17-ROADMAP.md)
+- [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)
 - [Repository 完整正式文件索引](README.md#文件索引)
 
 ## 14. 狀態說明
@@ -154,3 +157,11 @@ Sprint 1～7 與 Architecture Handbook 已整合為 Framework RC1 文件基準�
 [Approved Migration Package Design](docs/migration-package/README.md) 是下一階段治理入口。閱讀順序為 Package Status → Dependency Order → Test Strategy → A01～A06 → Atomicity → Recovery／Reconciliation → 三項 Gate → Readiness → Promotion → Evidence → Go／No-Go。
 
 目前 Package 決策固定為 **NO-GO — Execution Not Yet Approved**。Package Design merge、Architecture Approval、Security Approval、Execution Approval、Migration Execution 與 Post-Migration Verification 是獨立狀態；Tony 預設只擔任 Architecture Owner。
+
+## 17. Runtime Phase 1 Boundary
+
+Runtime Phase 1 只規劃 Identity Core、Tenant Access、Authorization、Core Operations 與 Operational Health Check。其 logical scope 限定 Platform User、Tenant、External Identity Mapping、Tenant Membership、Permission、Role、Role Assignment、Idempotency 與 Audit。
+
+BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Referral、Product、Coupon、AI Agent、LINE Messaging Adapter 與客戶專屬流程都不屬於本階段 Runtime。Handbook 的 BookingOS Candidate 描述不是 Runtime Implementation Source。
+
+四份 Contract 與 ADR-013～ADR-017 已由 Tony 核准。Runtime Coding Gate 只對後續獨立的 Foundation Bootstrap PR 開啟；本 PR 不建立 Runtime，也不開放 SQL／Migration／D1／Production。正式入口見 [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)。

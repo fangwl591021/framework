@@ -11,6 +11,8 @@
 - Verification Status: Not Verified
 - Production Status: Not Deployed
 
+Approved Runtime Phase 1 Decision Closure 對 UUIDv7、HMAC `subject_digest`＋`digest_key_version`、logical role scope `core | tenant` 與 Phase 1 排除 Brand／Shop 定義新的 Contract。此既有 Physical Proposal 與 SQL 不在本 PR 修改或授權執行；差距與未來 reconciliation 見 [Runtime Phase 1 Physical Proposal Gap](runtime-phase-1/06-PHYSICAL-PROPOSAL-GAP.md)。
+
 ## Identity
 
 ### `platform_users`
