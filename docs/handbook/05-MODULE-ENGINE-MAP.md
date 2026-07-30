@@ -16,7 +16,7 @@
 | Attribution Engine | 保存 Touch、Conversion Reference 與 Decision | Share Link、Touch、Attribution Record | RecordTouch、Evaluate、Correct；Explain Decision；ConversionAttributed 等 | Referral、Payment、Commission、Point Ledger | Candidate；Contract Proposed；Not Implemented；Not Verified | [Attribution Contract](../36-ATTRIBUTION-ENGINE-CONTRACT.md) |
 | Attendance Engine | 驗證 Physical／Online Attendance | Attempt、Evidence Summary、Attendance Record | Verify、Confirm、Correct；Status／Duplicate；AttendanceConfirmed 等 | 直接 Grant Point、Scanner／GPS Provider | Candidate；Contract Proposed；Not Implemented；Not Verified | [Attendance Contract](../37-ATTENDANCE-ENGINE-CONTRACT.md) |
 | Redemption Engine | 管理 Merchant-verified Intent／Result／Receipt | Redemption Intent、Result、Receipt History | Create／Complete／Reverse；Intent／Result；RedemptionCompleted 等 | 直接寫 Point Ledger、Login、Scanner | Candidate；Contract Proposed；Not Implemented；Not Verified | [Redemption Contract](../38-REDEMPTION-ENGINE-CONTRACT.md) |
-| Event Engine | 活動與 Session 領域能力 | Contract 尚未批准 | Commands／Queries／Events TBD | Attendance Verification、Point Ledger | Candidate；Not Implemented | [Engine Design](../07-ENGINE-DESIGN.md) |
+| Event Engine | 活動、Session、動態報名、名額／候補與核銷領域能力 | Event、Session、Form Field、Registration、Payment Status、Check-in、Share、Notification Intent | Create／Publish／Register／Cancel／Check-in；Roster／Statistics；Domain facts 尚未啟用 Event Bus | Platform Identity／Tenant／Authorization ownership、Provider API、Money Movement、Calendar Transport、Point Ledger | Candidate；Contract Proposed；Locally Implemented；Locally Verified；Not Deployed | [Event Engine](../event-engine/README.md) |
 | Content Engine | 通道無關內容與集合 | Contract 尚未批准 | Commands／Queries／Events TBD | LINE Flex transport details | Candidate；Not Implemented | [Engine Design](../07-ENGINE-DESIGN.md) |
 | Document Engine | 文件生命週期與解析協作 | Contract 尚未批准 | Commands／Queries／Events TBD | OCR Provider internals | Candidate；Not Implemented | [Asset Map](../02-FEATURE-ASSET-MAP.md) |
 | OCR Engine | OCR workflow／provider abstraction | Contract 尚未批准 | Commands／Queries／Events TBD | Business Card／Travel business truth | Candidate；Not Implemented | [Asset Map](../02-FEATURE-ASSET-MAP.md) |
@@ -33,4 +33,4 @@
 - 其他 Module 只能依賴 Public Command、Query 或版本化 Domain Event，不得讀寫 private table／function。
 - Owned Data 的副本不轉移 Ownership。
 - `Candidate`、`Contract Proposed`、`Not Implemented`、`Not Verified` 必須同時保留，直到各自有正式證據。
-- 五個 Candidate Registry Entry：[Point](../registry/point-engine.md)、[Referral](../registry/referral-engine.md)、[Attribution](../registry/attribution-engine.md)、[Attendance](../registry/attendance-engine.md)、[Redemption](../registry/redemption-engine.md)。
+- 六個 Candidate Registry Entry：[Event](../registry/event-engine.md)、[Point](../registry/point-engine.md)、[Referral](../registry/referral-engine.md)、[Attribution](../registry/attribution-engine.md)、[Attendance](../registry/attendance-engine.md)、[Redemption](../registry/redemption-engine.md)。
