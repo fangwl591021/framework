@@ -191,3 +191,6 @@ PR #19 status is Platform Service Candidate／Contract Approved by Tony／Archit
 [Platform Traffic Protection](docs/platform-traffic/README.md) defines the trusted admission pipeline, webhook deduplication, rate decisions, Tenant resource isolation, circuit breaker, load shedding, backpressure, and bounded abuse evidence. It is a Platform Service, not a Business Engine and not a billing authority.
 
 Current status is Platform Service Candidate, Contract Approved by Tony, Architecture Review Approved, Security Review Approved, Locally Implemented, Locally Verified, Not Deployed, and Production Use Not Allowed. Verification is limited to deterministic local adapters and isolated Local D1. No Remote D1, Cloudflare Rate Limiting API, Durable Object, Queue, Cron, provider credential, Binding, deployment, or Production verification exists.
+## Application Assembly Reading Path
+
+Application 組裝與可選模組治理請從 [Application Assembly](docs/application-assembly/README.md) 開始，再閱讀 [Access Guard](docs/application-assembly/05-MODULE-ACCESS-GUARD.md) 與 [Security](docs/application-assembly/07-SECURITY.md)。此能力目前為 Platform Service Candidate、Contract Proposed、Locally Verified、Not Deployed。
