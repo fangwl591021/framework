@@ -64,6 +64,8 @@ Channel 只負責輸入輸出適配；商業規則由 Application、Extension �
 
 正式依賴規則見 [Framework Layers](docs/10-FRAMEWORK-LAYERS.md)。
 
+Domain Module 的現行實例包括 [Event Engine](docs/event-engine/README.md) 與 [Business Network Engine](docs/business-network/README.md)；兩者皆不屬於 Platform Core，且各自維持獨立 Contract 與 Lifecycle。
+
 ## 5. Identity 與 Tenant 模型
 
 ```text

@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
 
 const expectedTables = [
+  "attribution_records",
   "audit_records",
+  "business_relationships",
+  "commission_records",
+  "commission_rules",
   "event_checkins",
   "event_form_fields",
   "event_notifications",
@@ -18,18 +22,28 @@ const expectedTables = [
   "events",
   "idempotency_records",
   "identity_mappings",
+  "network_partners",
+  "partner_team_memberships",
+  "partner_teams",
   "permissions",
   "platform_users",
+  "referral_links",
+  "referral_touches",
   "role_assignments",
   "role_permissions",
   "roles",
+  "sales_records",
   "tenant_memberships",
   "tenants",
 ];
 
 const expectedIndexes = [
+  "idx_attribution_partner_time",
   "idx_audit_resource_time",
   "idx_audit_tenant_time",
+  "idx_commission_partner_time",
+  "idx_commission_rule_match",
+  "idx_commission_status_time",
   "idx_event_answers_registration",
   "idx_event_checkins_session_time",
   "idx_event_form_fields_event_order",
@@ -49,9 +63,24 @@ const expectedIndexes = [
   "idx_idempotency_scope_status_expiry",
   "idx_idempotency_tenant_expiry",
   "idx_identity_mappings_user",
+  "idx_network_partner_tenant_status",
+  "idx_referral_link_partner_status",
+  "idx_referral_touch_link_time",
+  "idx_referral_touch_partner_time",
+  "idx_referral_touch_visitor_time",
+  "idx_relationship_source_status",
+  "idx_relationship_target_status",
   "idx_role_assignments_member",
   "idx_roles_tenant_status",
+  "idx_sales_seller_time",
+  "idx_sales_tenant_time",
+  "idx_team_membership_partner",
+  "idx_team_tenant_status",
   "idx_tenant_memberships_tenant_status",
+  "uq_business_relationship_active",
+  "uq_business_relationship_target_active",
+  "uq_commission_primary_sale",
+  "uq_commission_reversal",
   "uq_event_checkins_qr_digest",
   "uq_event_checkins_verified_registration",
   "uq_event_form_fields_active_key",
@@ -60,13 +89,20 @@ const expectedIndexes = [
   "uq_idempotency_platform",
   "uq_idempotency_tenant",
   "uq_identity_mappings_active",
+  "uq_network_partner_active_user",
   "uq_role_assignments_active",
   "uq_roles_core_key",
   "uq_roles_tenant_key",
+  "uq_team_membership_active",
   "uq_tenant_memberships_active",
 ];
 
 const expectedTriggers = [
+  "trg_attribution_immutable_delete",
+  "trg_attribution_immutable_update",
+  "trg_business_relationship_no_delete",
+  "trg_commission_no_delete",
+  "trg_commission_paid_immutable",
   "trg_core_role_permissions_immutable_delete",
   "trg_core_role_permissions_immutable_insert",
   "trg_core_role_permissions_immutable_update",
@@ -91,6 +127,7 @@ const expectedTriggers = [
   "trg_permissions_immutable_update",
   "trg_platform_users_terminal_state",
   "trg_role_assignment_active_membership",
+  "trg_sales_no_delete",
 ];
 
 interface ForeignKeyRow {
@@ -173,7 +210,7 @@ describe("Phase 1 local D1 migration", () => {
       env.DB.prepare("SELECT count(*) AS count FROM d1_migrations").first<{ count: number }>(),
     ]);
 
-    expect(counts.map((row) => row?.count)).toEqual([8, 3, 2]);
+    expect(counts.map((row) => row?.count)).toEqual([19, 3, 3]);
   });
 
   it("keeps Core Roles, Core grants, and the Permission vocabulary immutable", async () => {

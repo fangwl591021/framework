@@ -34,6 +34,7 @@
 8. [Core Foundation Local Technical Decision](07-CORE-FOUNDATION-LOCAL-TECHNICAL-DECISION.md)
 9. [Core Foundation Bootstrap Status](08-CORE-FOUNDATION-STATUS.md)
 10. [Core Persistence and Domain Foundation Status](09-CORE-PERSISTENCE-DOMAIN-STATUS.md)
+11. [Module Permission Registration Gate](MODULE-PERMISSION-REGISTRATION-GATE.md)
 
 The four approved contracts define the logical architecture boundary. The Phase 1 executable physical reconciliation, Local D1 test authority and current implementation truth are recorded in document 09.
 
