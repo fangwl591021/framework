@@ -1,29 +1,58 @@
-import type { TrustedModuleContext } from "./models";
-import { ModuleAccessGuard } from "./access-guard";
+import type { ModuleAccessSnapshot, TrustedModuleContext } from "./models";
+import { ModuleInvocationGuard } from "./access-guard";
 
-/** Optional domain services are resolved internally after a trusted gate. */
+/** Event and Network share exactly one invocation pipeline and ordering. */
 export class ApplicationModuleServiceGateway {
-  constructor(private readonly guard: ModuleAccessGuard) {}
-  async invokeEvent<T>(
+  constructor(private readonly guard: ModuleInvocationGuard) {}
+
+  invokeEventMutation<T>(
     context: Omit<TrustedModuleContext, "moduleKey">,
-    operation: () => Promise<T>,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
   ): Promise<T> {
-    return this.invoke({ ...context, moduleKey: "event_engine" }, operation);
+    return this.guard.invokeMutation(
+      { ...context, moduleKey: "event_engine" },
+      operation,
+    );
   }
-  async invokeBusinessNetwork<T>(
+  invokeEventQuery<T>(
     context: Omit<TrustedModuleContext, "moduleKey">,
-    operation: () => Promise<T>,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
   ): Promise<T> {
-    return this.invoke(
+    return this.guard.invokeQuery(
+      { ...context, moduleKey: "event_engine" },
+      operation,
+    );
+  }
+  invokeBusinessNetworkMutation<T>(
+    context: Omit<TrustedModuleContext, "moduleKey">,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
+  ): Promise<T> {
+    return this.guard.invokeMutation(
       { ...context, moduleKey: "business_network_engine" },
       operation,
     );
   }
-  private async invoke<T>(
-    context: TrustedModuleContext,
-    operation: () => Promise<T>,
+  invokeBusinessNetworkQuery<T>(
+    context: Omit<TrustedModuleContext, "moduleKey">,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
   ): Promise<T> {
-    await this.guard.assertAccess(context);
-    return operation();
+    return this.guard.invokeQuery(
+      { ...context, moduleKey: "business_network_engine" },
+      operation,
+    );
+  }
+
+  /** Existing callers are mutation-safe by default. */
+  invokeEvent<T>(
+    context: Omit<TrustedModuleContext, "moduleKey">,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
+  ): Promise<T> {
+    return this.invokeEventMutation(context, operation);
+  }
+  invokeBusinessNetwork<T>(
+    context: Omit<TrustedModuleContext, "moduleKey">,
+    operation: (snapshot: ModuleAccessSnapshot) => Promise<T>,
+  ): Promise<T> {
+    return this.invokeBusinessNetworkMutation(context, operation);
   }
 }

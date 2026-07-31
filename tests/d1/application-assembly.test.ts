@@ -9,7 +9,10 @@ import {
   GatedModuleInvoker,
   LocalAllowTrafficAdapter,
   ModuleAccessError,
-  ModuleAccessGuard,
+  ModuleEligibilityEvaluator,
+  ModuleInvocationGuard,
+  type ModuleAccessSnapshot,
+  type ModuleEligibilityPort,
   type PlatformOperator,
 } from "../../src/application-assembly";
 import type { MutationContext } from "../../src/application/core-application-base";
@@ -115,6 +118,16 @@ async function seed() {
     "application_manager",
     mutation(),
   );
+  const guard = new ModuleEligibilityEvaluator(
+    app.assemblyRepository,
+    app,
+    new DisabledAssemblyObservationAdapter(),
+    () => clock.now().getTime(),
+  );
+  const invocation = new ModuleInvocationGuard(
+    new LocalAllowTrafficAdapter(),
+    guard,
+  );
   return {
     clock,
     app,
@@ -122,13 +135,8 @@ async function seed() {
     tenant,
     membership,
     manager: { membershipId: membership.id },
-    guard: new ModuleAccessGuard(
-      app.assemblyRepository,
-      app,
-      new LocalAllowTrafficAdapter(),
-      new DisabledAssemblyObservationAdapter(),
-      () => clock.now().getTime(),
-    ),
+    guard,
+    invocation,
   };
 }
 beforeEach(async () => {
@@ -571,7 +579,7 @@ describe("Entitlement, enablement, and access", () => {
       { a } = await base(h);
     let called = false;
     await expect(
-      new GatedModuleInvoker(h.guard).invoke(
+      new GatedModuleInvoker(h.invocation).invoke(
         ctx(h, a.id, "event_engine"),
         async () => {
           called = true;
@@ -609,12 +617,11 @@ describe("Entitlement, enablement, and access", () => {
       h.manager,
       mutation(),
     );
-    const deny = new ModuleAccessGuard(
-      h.app.assemblyRepository,
-      h.app,
-      { admit: async () => false },
-      new DisabledAssemblyObservationAdapter(),
-      () => h.clock.value,
+    const deny = new ModuleInvocationGuard(
+      {
+        admit: async () => ({ admitted: false, release: async () => {} }),
+      },
+      h.guard,
     );
     let called = false;
     await expect(
@@ -855,10 +862,9 @@ describe("Dependencies, navigation, configuration, and evidence", () => {
   it("isolates observation sidecar failure", async () => {
     const h = await seed(),
       { a } = await base(h);
-    const guard = new ModuleAccessGuard(
+    const guard = new ModuleEligibilityEvaluator(
       h.app.assemblyRepository,
       h.app,
-      new LocalAllowTrafficAdapter(),
       {
         record: async () => {
           throw new Error("sidecar");
@@ -931,7 +937,7 @@ describe("Event and Business Network assembly integration", () => {
       );
       await h.app.enableModule(h.tenant.id, b.id, m, h.manager, mutation());
     }
-    const gateway = new ApplicationModuleServiceGateway(h.guard),
+    const gateway = new ApplicationModuleServiceGateway(h.invocation),
       common = {
         source: "trusted_runtime_context" as const,
         tenantId: h.tenant.id,
@@ -1151,5 +1157,280 @@ describe("Assembly authorization boundaries", () => {
         mutation(),
       ),
     ).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+  });
+});
+
+describe("Eligibility side effects and version fences", () => {
+  async function ready(
+    h: Harness,
+    moduleKey = "event_engine",
+    status: "purchased" | "trial" = "purchased",
+  ) {
+    const { a } = await base(h);
+    await h.app.grantEntitlement(
+      operator,
+      h.tenant.id,
+      a.id,
+      moduleKey,
+      {
+        status,
+        validFrom: h.clock.value,
+        validUntil: status === "trial" ? h.clock.value + 1_000 : null,
+        reasonCode: status === "trial" ? "TRIAL" : "BUY",
+      },
+      mutation(),
+    );
+    await h.app.enableModule(
+      h.tenant.id,
+      a.id,
+      moduleKey,
+      h.manager,
+      mutation(),
+    );
+    return {
+      application: a,
+      context: ctx(
+        h,
+        a.id,
+        moduleKey,
+        moduleKey === "event_engine" ? "tenant:read" : "network:read",
+      ),
+    };
+  }
+
+  const frozen = (
+    snapshot: ModuleAccessSnapshot,
+    delegate: ModuleEligibilityPort,
+  ): ModuleEligibilityPort => ({
+    requireEligible: async () => snapshot,
+    isSnapshotCurrent: (value) => delegate.isSnapshotCurrent(value),
+  });
+
+  it("Navigation and Dashboard never claim Traffic admission", async () => {
+    const h = await seed();
+    const { application } = await ready(h);
+    let admissions = 0;
+    const invocation = new ModuleInvocationGuard(
+      {
+        admit: async () => {
+          admissions += 1;
+          return { admitted: true, release: async () => {} };
+        },
+      },
+      h.guard,
+    );
+    expect(invocation).toBeDefined();
+    await h.guard.buildNavigation(h.tenant.id, application.id, h.membership.id);
+    await h.guard.buildDashboard(h.tenant.id, application.id, h.membership.id);
+    expect(admissions).toBe(0);
+  });
+
+  it("repeated shell rendering creates no Traffic evidence", async () => {
+    const h = await seed();
+    const { application } = await ready(h);
+    const before = (
+      await env.DB.prepare(
+        "SELECT count(*) count FROM rate_limit_evidence",
+      ).first<{ count: number }>()
+    )?.count;
+    for (let i = 0; i < 3; i += 1) {
+      await h.guard.buildNavigation(
+        h.tenant.id,
+        application.id,
+        h.membership.id,
+      );
+      await h.guard.buildDashboard(
+        h.tenant.id,
+        application.id,
+        h.membership.id,
+      );
+    }
+    const after = (
+      await env.DB.prepare(
+        "SELECT count(*) count FROM rate_limit_evidence",
+      ).first<{ count: number }>()
+    )?.count;
+    expect(after).toBe(before);
+  });
+
+  it("Traffic throttling does not alter static Navigation eligibility", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const denied = new ModuleInvocationGuard(
+      { admit: async () => ({ admitted: false, release: async () => {} }) },
+      h.guard,
+    );
+    await expect(
+      denied.invokeMutation(context, async () => "bad"),
+    ).rejects.toMatchObject({ code: "TRAFFIC_NOT_ADMITTED" });
+    expect(
+      (
+        await h.guard.buildNavigation(
+          h.tenant.id,
+          application.id,
+          h.membership.id,
+        )
+      ).items,
+    ).toHaveLength(4);
+  });
+
+  it("disable winner invalidates an access snapshot", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.disableModule(
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      h.manager,
+      mutation(),
+    );
+    expect(await h.guard.isSnapshotCurrent(snapshot)).toBe(false);
+  });
+
+  it("entitlement revoke invalidates an access snapshot", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.revokeEntitlement(
+      operator,
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      1,
+      "REVOKED",
+      mutation(),
+    );
+    expect(await h.guard.isSnapshotCurrent(snapshot)).toBe(false);
+  });
+
+  it("Trial expiry invalidates an access snapshot", async () => {
+    const h = await seed();
+    const { context } = await ready(h, "event_engine", "trial");
+    const snapshot = await h.guard.requireEligible(context);
+    h.clock.advance(1_001);
+    expect(await h.guard.isSnapshotCurrent(snapshot)).toBe(false);
+  });
+
+  it("Application suspend invalidates all module snapshots", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.suspendApplication(
+      h.tenant.id,
+      application.id,
+      1,
+      h.manager,
+      mutation(),
+    );
+    expect(await h.guard.isSnapshotCurrent(snapshot)).toBe(false);
+  });
+
+  it("stale snapshot cannot invoke Event mutation", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.disableModule(
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      h.manager,
+      mutation(),
+    );
+    let called = false;
+    const gateway = new ApplicationModuleServiceGateway(
+      new ModuleInvocationGuard(
+        new LocalAllowTrafficAdapter(),
+        frozen(snapshot, h.guard),
+      ),
+    );
+    await expect(
+      gateway.invokeEventMutation(context, async () => {
+        called = true;
+      }),
+    ).rejects.toMatchObject({ code: "STALE_MODULE_ACCESS" });
+    expect(called).toBe(false);
+  });
+
+  it("stale snapshot cannot invoke Network mutation", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h, "business_network_engine");
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.disableModule(
+      h.tenant.id,
+      application.id,
+      "business_network_engine",
+      h.manager,
+      mutation(),
+    );
+    let called = false;
+    const gateway = new ApplicationModuleServiceGateway(
+      new ModuleInvocationGuard(
+        new LocalAllowTrafficAdapter(),
+        frozen(snapshot, h.guard),
+      ),
+    );
+    await expect(
+      gateway.invokeBusinessNetworkMutation(context, async () => {
+        called = true;
+      }),
+    ).rejects.toMatchObject({ code: "STALE_MODULE_ACCESS" });
+    expect(called).toBe(false);
+  });
+
+  it("failed fence releases a claimed budget exactly once", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const snapshot = await h.guard.requireEligible(context);
+    await h.app.disableModule(
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      h.manager,
+      mutation(),
+    );
+    let releases = 0;
+    const invocation = new ModuleInvocationGuard(
+      {
+        admit: async () => ({
+          admitted: true,
+          release: async () => {
+            releases += 1;
+          },
+        }),
+      },
+      frozen(snapshot, h.guard),
+    );
+    await expect(
+      invocation.invokeMutation(context, async () => "bad"),
+    ).rejects.toMatchObject({ code: "STALE_MODULE_ACCESS" });
+    expect(releases).toBe(1);
+  });
+
+  it("re-enable creates a new fence and never revives the old snapshot", async () => {
+    const h = await seed();
+    const { application, context } = await ready(h);
+    const oldSnapshot = await h.guard.requireEligible(context);
+    await h.app.disableModule(
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      h.manager,
+      mutation(),
+    );
+    await h.app.enableModule(
+      h.tenant.id,
+      application.id,
+      "event_engine",
+      h.manager,
+      mutation(),
+    );
+    const newSnapshot = await h.guard.requireEligible(context);
+    expect(newSnapshot.enablementVersion).toBeGreaterThan(
+      oldSnapshot.enablementVersion,
+    );
+    expect(newSnapshot.accessFence).not.toBe(oldSnapshot.accessFence);
+    expect(await h.guard.isSnapshotCurrent(oldSnapshot)).toBe(false);
+    expect(await h.guard.isSnapshotCurrent(newSnapshot)).toBe(true);
   });
 });

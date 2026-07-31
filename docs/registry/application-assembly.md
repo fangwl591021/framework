@@ -3,7 +3,9 @@
 - Module ID: `application-assembly`
 - Layer: Platform Service
 - Lifecycle: Platform Service Candidate
-- Contract: Proposed
+- Contract: Approved by Tony
+- Architecture Review: Approved
+- Security Review: Approved
 - Implementation: Locally Implemented
 - Verification: Locally Verified
 - Deployment: Not Deployed

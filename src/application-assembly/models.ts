@@ -65,6 +65,20 @@ export interface TrustedModuleContext {
   readonly correlationId: string;
 }
 
+export interface ModuleAccessSnapshot {
+  readonly tenantId: string;
+  readonly applicationId: string;
+  readonly moduleKey: string;
+  readonly actorMembershipId: string;
+  readonly requiredPermission: string;
+  readonly applicationVersion: number;
+  readonly entitlementId: string;
+  readonly entitlementVersion: number;
+  readonly enablementVersion: number;
+  readonly evaluatedAt: number;
+  readonly accessFence: string;
+}
+
 export type ModuleAccessCode =
   | "APPLICATION_NOT_FOUND"
   | "APPLICATION_NOT_ACTIVE"
@@ -76,7 +90,8 @@ export type ModuleAccessCode =
   | "MODULE_DEPENDENCY_MISSING"
   | "MODULE_CONFLICT"
   | "PERMISSION_DENIED"
-  | "TRAFFIC_NOT_ADMITTED";
+  | "TRAFFIC_NOT_ADMITTED"
+  | "STALE_MODULE_ACCESS";
 
 export class ModuleAccessError extends Error {
   constructor(readonly code: ModuleAccessCode) {

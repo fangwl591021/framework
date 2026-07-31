@@ -2,7 +2,7 @@
 
 Application Assembly 是 Platform Core 的可重用組裝層，負責在 Tenant 的 Application 範圍內管理可選 Domain Module。它不擁有 Event Engine 或 Business Network Engine 的商業資料。
 
-狀態：Platform Service Candidate；Contract Proposed；Locally Implemented；Locally Verified；Not Deployed；Production Use Not Allowed。
+狀態：Platform Service Candidate；Contract Approved by Tony；Architecture Review Approved；Security Review Approved；Locally Implemented；Locally Verified；Not Deployed；Production Use Not Allowed。
 
 閱讀順序：
 
