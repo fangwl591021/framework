@@ -2,6 +2,7 @@ import { createLocalWorkbench } from "./composition";
 import { readFixture, seedFixture, type DemoFixtureState } from "./seed";
 import {
   assertSafePayload,
+  canonicalPath,
   cookieValue,
   digestToken,
   localOnly,
@@ -161,26 +162,24 @@ export default {
       return new Response("Not Found", { status: 404 });
     if (!localOnly(request, env.LOCAL_DEMO_MODE))
       return new Response("Not Found", { status: 404 });
+    const isApiRoute = url.pathname.startsWith("/local/api/");
+    if (request.method === "GET" && !isApiRoute) {
+      if (/^\/local\/workbench\/*$/.test(url.pathname)) {
+        const target = canonicalPath(url, "/local/workbench/");
+        if (target) return Response.redirect(target.href, 307);
+        return env.ASSETS.fetch(request);
+      }
+      if (/^\/local\/setup\/*$/.test(url.pathname)) {
+        const target = canonicalPath(url, "/local/setup/");
+        if (target) return Response.redirect(target.href, 307);
+        const assetUrl = new URL(url);
+        assetUrl.pathname = "/local/workbench/setup";
+        return env.ASSETS.fetch(new Request(assetUrl, request));
+      }
+    }
     if (
       request.method === "GET" &&
-      (url.pathname === "/local/workbench" ||
-        url.pathname === "/local/workbench/")
-    )
-      return env.ASSETS.fetch(
-        new Request(
-          new URL("/local/workbench/index.html", request.url),
-          request,
-        ),
-      );
-    if (request.method === "GET" && url.pathname === "/local/setup")
-      return env.ASSETS.fetch(
-        new Request(
-          new URL("/local/workbench/setup.html", request.url),
-          request,
-        ),
-      );
-    if (
-      request.method === "GET" &&
+      !isApiRoute &&
       url.pathname.startsWith("/local/workbench/")
     )
       return env.ASSETS.fetch(request);

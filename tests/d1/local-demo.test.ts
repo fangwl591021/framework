@@ -9,7 +9,22 @@ const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
 const localEnv = {
   LOCAL_DEMO_DB: env.DB,
   LOCAL_DEMO_MODE: "enabled",
-  ASSETS: { fetch: async () => new Response("asset") },
+  ASSETS: {
+    fetch: async (assetRequest: Request) => {
+      const pathname = new URL(assetRequest.url).pathname;
+      if (pathname === "/local/workbench/")
+        return new Response("<!doctype html><title>Workbench</title>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      if (pathname === "/local/workbench/setup")
+        return new Response("<!doctype html><title>Setup</title>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      if (pathname.startsWith("/local/workbench/"))
+        return new Response("asset");
+      return new Response("Not Found", { status: 404 });
+    },
+  },
 };
 const request = (path: string, init: RequestInit = {}) =>
   new Request(`http://localhost${path}`, init);
@@ -61,6 +76,75 @@ describe("Local Conversational Workbench integration", () => {
       .filter(Boolean))
       await env.DB.prepare(statement).run();
     await seedFixture(env.DB);
+  });
+  it("serves the canonical workbench page directly", async () => {
+    const response = await worker.fetch(request("/local/workbench/"), localEnv);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("text/html");
+  });
+  it("redirects the non-canonical workbench path at most once", async () => {
+    const first = await worker.fetch(request("/local/workbench"), localEnv);
+    expect(first.status).toBe(307);
+    const location = first.headers.get("Location");
+    expect(location).not.toBe("http://localhost/local/workbench");
+    const second = await worker.fetch(new Request(location!), localEnv);
+    expect(second.status).toBe(200);
+  });
+  it("preserves the query string in canonical redirects", async () => {
+    const response = await worker.fetch(
+      request("/local/workbench?role=owner_a&flow=event"),
+      localEnv,
+    );
+    expect(response.headers.get("Location")).toBe(
+      "http://localhost/local/workbench/?role=owner_a&flow=event",
+    );
+  });
+  it("does not loop within five followed redirects", async () => {
+    let current = request("/local/workbench///?flow=event"),
+      redirects = 0,
+      response = await worker.fetch(current, localEnv);
+    while (response.status >= 300 && response.status < 400 && redirects < 5) {
+      redirects += 1;
+      current = new Request(response.headers.get("Location")!);
+      response = await worker.fetch(current, localEnv);
+    }
+    expect(redirects).toBe(1);
+    expect(response.status).toBe(200);
+  });
+  it.each(["/local/setup", "/local/setup//"])(
+    "canonicalizes setup path %s once",
+    async (path) => {
+      const first = await worker.fetch(request(path), localEnv);
+      expect(first.status).toBe(307);
+      expect(first.headers.get("Location")).toBe(
+        "http://localhost/local/setup/",
+      );
+      expect(
+        (
+          await worker.fetch(
+            new Request(first.headers.get("Location")!),
+            localEnv,
+          )
+        ).status,
+      ).toBe(200);
+    },
+  );
+  it("serves the canonical setup page directly", async () => {
+    const response = await worker.fetch(request("/local/setup/"), localEnv);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("text/html");
+  });
+  it("does not canonicalize local API routes as HTML", async () => {
+    const response = await worker.fetch(request("/local/api/session"), localEnv);
+    expect(response.status).toBe(404);
+    expect(response.headers.get("Location")).toBeNull();
+  });
+  it("fails canonical pages closed outside local mode", async () => {
+    const response = await worker.fetch(request("/local/workbench/"), {
+      ...localEnv,
+      LOCAL_DEMO_MODE: "production",
+    });
+    expect(response.status).toBe(404);
   });
   it("creates an idempotent fixture state", async () => {
     const first = await readFixture(env.DB),
