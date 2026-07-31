@@ -220,6 +220,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 ### Phase 1 Executable Local Migration
 
 - [0001 Phase 1 Core](migrations/0001_phase_1_core.sql) creates exactly ten Phase 1 tables and is verified only through isolated Local D1 tests.
+- [0002 Event Engine](migrations/0002_event_engine.sql) creates exactly ten Event Domain Module tables and is verified only through isolated Local D1 tests.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -232,11 +233,21 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 
 | Entry | Status |
 | --- | --- |
+| [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attendance-engine](docs/registry/attendance-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [redemption-engine](docs/registry/redemption-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
+
+### Event Engine Domain Module
+
+- [Event Engine MVP](docs/event-engine/README.md)
+- [Event Engine Module Contract](docs/event-engine/01-EVENT-ENGINE-CONTRACT.md)
+- [Event Engine Local Verification](docs/event-engine/02-LOCAL-VERIFICATION.md)
+- [LINE No-Flood Adapter Contract](docs/event-engine/03-LINE-NO-FLOOD-ADAPTER-CONTRACT.md)
+
+Event Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由 Tony 核准，Lifecycle 仍為 Candidate；實作與驗證僅限隔離 Local D1，未建立公開 API、Provider Adapter、Remote D1 或部署。
 
 ### Runtime Phase 1 Decision Closure
 
