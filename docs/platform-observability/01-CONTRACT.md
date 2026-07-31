@@ -3,7 +3,9 @@
 ## Status
 
 - Lifecycle: Platform Service Candidate
-- Contract: Proposed
+- Contract: Approved by Tony
+- Architecture Review: Approved
+- Security Review: Approved
 - Implementation: Locally Implemented
 - Verification: Locally Verified
 - Deployment: Not Deployed
@@ -17,11 +19,13 @@
 - User, Tenant Admin, and Platform Operator diagnostic projections;
 - expiring Support Code mapping;
 - required and optional dependency health aggregation;
-- alert policy evaluation, delivery evidence, cooldown, and retry intent.
+- alert policy evaluation, delivery evidence, cooldown, and retry intent;
+- sidecar failure isolation, bounded fallback evidence, and idempotent Incident reconciliation;
+- governed, bounded, audited, and idempotent Observation retention anonymization.
 
 ## Does Not Own
 
-Business decisions, provider credentials, public administration UI, traffic limiting, circuit breaking, webhook queues or deduplication, AI root-cause execution, provider transport, and deployment authority.
+Business decisions, Core Audit ownership, provider credentials, public administration UI, traffic limiting, circuit breaking, webhook queues or deduplication, AI root-cause execution, provider transport, retention scheduling, and deployment authority.
 
 ## Dependencies
 

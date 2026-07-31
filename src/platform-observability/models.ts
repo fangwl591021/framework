@@ -60,7 +60,9 @@ export interface ObservationEvent {
   readonly firstSeenAt: number;
   readonly lastSeenAt: number;
   readonly metadataSafeJson: string;
-  readonly retentionUntil: number;
+  readonly retentionExpiresAt: number;
+  readonly retentionStatus: "active" | "anonymized";
+  readonly anonymizedAt: number | null;
 }
 
 export type IncidentStatus =

@@ -50,7 +50,9 @@ CREATE TABLE observation_events (
     length(metadata_safe_json) <= 2048 AND json_valid(metadata_safe_json)
     AND json_type(metadata_safe_json) = 'object'
   ),
-  retention_until INTEGER NOT NULL CHECK (retention_until >= observed_at),
+  retention_expires_at INTEGER NOT NULL CHECK (retention_expires_at >= observed_at),
+  retention_status TEXT NOT NULL DEFAULT 'active' CHECK (retention_status IN ('active','anonymized')),
+  anonymized_at INTEGER,
   created_at INTEGER NOT NULL CHECK (created_at >= 0),
   UNIQUE (tenant_id, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
@@ -170,14 +172,23 @@ CREATE TABLE support_code_mappings (
     length(support_code) = 14 AND substr(support_code, 1, 4) = 'SUP-'
     AND substr(support_code, 5) NOT GLOB '*[^0-9A-F]*'
   ),
-  correlation_id TEXT NOT NULL CHECK (length(correlation_id) BETWEEN 8 AND 255),
-  trace_id TEXT NOT NULL CHECK (length(trace_id) BETWEEN 8 AND 255),
+  correlation_id TEXT CHECK (correlation_id IS NULL OR length(correlation_id) BETWEEN 8 AND 255),
+  trace_id TEXT CHECK (trace_id IS NULL OR length(trace_id) BETWEEN 8 AND 255),
   tenant_id TEXT,
-  observation_event_id TEXT NOT NULL,
+  observation_event_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','expired')),
   created_at INTEGER NOT NULL CHECK (created_at >= 0),
   expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+  expired_at INTEGER,
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
-  FOREIGN KEY (observation_event_id) REFERENCES observation_events(id) ON DELETE RESTRICT
+  FOREIGN KEY (observation_event_id) REFERENCES observation_events(id) ON DELETE RESTRICT,
+  CHECK (
+    (status = 'active' AND correlation_id IS NOT NULL AND trace_id IS NOT NULL
+      AND observation_event_id IS NOT NULL AND expired_at IS NULL)
+    OR (status = 'expired' AND correlation_id IS NULL AND trace_id IS NULL
+      AND observation_event_id IS NULL AND expired_at IS NOT NULL
+      AND expired_at >= expires_at)
+  )
 );
 
 CREATE INDEX idx_observation_environment_severity_time
@@ -186,6 +197,8 @@ CREATE INDEX idx_observation_tenant_time
   ON observation_events(tenant_id, observed_at DESC, id);
 CREATE INDEX idx_observation_reason_time
   ON observation_events(reason_code, dependency_key, observed_at DESC, id);
+CREATE INDEX idx_observation_retention
+  ON observation_events(retention_status, retention_expires_at, tenant_id, id);
 CREATE UNIQUE INDEX uq_incident_scope_fingerprint
   ON incidents(aggregation_scope_key, fingerprint);
 CREATE INDEX idx_incident_status_severity
@@ -205,9 +218,9 @@ CREATE INDEX idx_alert_delivery_incident_time
 CREATE INDEX idx_alert_delivery_retry
   ON alert_delivery_records(status, next_retry_at, id);
 CREATE INDEX idx_support_code_tenant_expiry
-  ON support_code_mappings(tenant_id, expires_at, support_code);
+  ON support_code_mappings(tenant_id, status, expires_at, support_code);
 CREATE INDEX idx_support_code_expiry
-  ON support_code_mappings(expires_at, support_code);
+  ON support_code_mappings(status, expires_at, support_code);
 
 CREATE TRIGGER trg_observation_no_delete
 BEFORE DELETE ON observation_events
@@ -215,7 +228,7 @@ BEGIN SELECT RAISE(ABORT, 'observation_event_immutable'); END;
 
 CREATE TRIGGER trg_observation_update_guard
 BEFORE UPDATE ON observation_events
-FOR EACH ROW WHEN
+FOR EACH ROW WHEN OLD.retention_status = NEW.retention_status AND (
   NEW.id IS NOT OLD.id OR NEW.correlation_id IS NOT OLD.correlation_id
   OR NEW.trace_id IS NOT OLD.trace_id OR NEW.observed_at IS NOT OLD.observed_at
   OR NEW.environment IS NOT OLD.environment OR NEW.release_id IS NOT OLD.release_id
@@ -226,10 +239,36 @@ FOR EACH ROW WHEN
   OR NEW.safe_message IS NOT OLD.safe_message OR NEW.dependency_key IS NOT OLD.dependency_key
   OR NEW.actor_reference_digest IS NOT OLD.actor_reference_digest
   OR NEW.first_seen_at IS NOT OLD.first_seen_at OR NEW.metadata_safe_json IS NOT OLD.metadata_safe_json
-  OR NEW.retention_until IS NOT OLD.retention_until OR NEW.created_at IS NOT OLD.created_at
+  OR NEW.retention_expires_at IS NOT OLD.retention_expires_at
+  OR NEW.anonymized_at IS NOT OLD.anonymized_at OR NEW.created_at IS NOT OLD.created_at
   OR NEW.occurrence_count < OLD.occurrence_count OR NEW.last_seen_at < OLD.last_seen_at
+)
 BEGIN SELECT RAISE(ABORT, 'observation_event_immutable'); END;
 
+CREATE TRIGGER trg_observation_anonymize_guard
+BEFORE UPDATE ON observation_events
+FOR EACH ROW WHEN OLD.retention_status = 'active' AND NEW.retention_status = 'anonymized' AND NOT (
+  NEW.id IS OLD.id AND NEW.correlation_id = 'retained' AND NEW.trace_id = 'retained'
+  AND NEW.observed_at IS OLD.observed_at AND NEW.environment IS OLD.environment
+  AND NEW.release_id IS OLD.release_id AND NEW.tenant_id IS OLD.tenant_id
+  AND NEW.application_id IS OLD.application_id AND NEW.module_key IS OLD.module_key
+  AND NEW.operation IS OLD.operation AND NEW.event_type IS OLD.event_type
+  AND NEW.severity IS OLD.severity AND NEW.status IS OLD.status
+  AND NEW.reason_code IS OLD.reason_code AND NEW.safe_message = 'Historical observation retained.'
+  AND NEW.dependency_key IS OLD.dependency_key AND NEW.actor_reference_digest IS NULL
+  AND NEW.occurrence_count IS OLD.occurrence_count AND NEW.first_seen_at IS OLD.first_seen_at
+  AND NEW.last_seen_at IS OLD.last_seen_at AND NEW.metadata_safe_json = '{}'
+  AND NEW.retention_expires_at IS OLD.retention_expires_at
+  AND NEW.anonymized_at >= OLD.retention_expires_at AND NEW.created_at IS OLD.created_at
+)
+BEGIN SELECT RAISE(ABORT, 'observation_retention_transition_invalid'); END;
+
+CREATE TRIGGER trg_observation_retention_transition_guard
+BEFORE UPDATE OF retention_status ON observation_events
+FOR EACH ROW WHEN NEW.retention_status <> OLD.retention_status AND NOT (
+  OLD.retention_status = 'active' AND NEW.retention_status = 'anonymized'
+)
+BEGIN SELECT RAISE(ABORT, 'observation_retention_transition_invalid'); END;
 CREATE TRIGGER trg_incident_no_delete
 BEFORE DELETE ON incidents
 BEGIN SELECT RAISE(ABORT, 'incident_history_immutable'); END;
@@ -291,7 +330,15 @@ BEGIN SELECT RAISE(ABORT, 'alert_delivery_lifecycle_invalid'); END;
 
 CREATE TRIGGER trg_support_code_no_update
 BEFORE UPDATE ON support_code_mappings
+FOR EACH ROW WHEN NOT (
+  OLD.status = 'active' AND NEW.status = 'expired'
+  AND NEW.support_code IS OLD.support_code AND NEW.tenant_id IS OLD.tenant_id
+  AND NEW.correlation_id IS NULL AND NEW.trace_id IS NULL
+  AND NEW.observation_event_id IS NULL AND NEW.created_at IS OLD.created_at
+  AND NEW.expires_at IS OLD.expires_at AND NEW.expired_at >= OLD.expires_at
+)
 BEGIN SELECT RAISE(ABORT, 'support_code_mapping_immutable'); END;
+
 CREATE TRIGGER trg_support_code_no_delete
 BEFORE DELETE ON support_code_mappings
 BEGIN SELECT RAISE(ABORT, 'support_code_mapping_immutable'); END;

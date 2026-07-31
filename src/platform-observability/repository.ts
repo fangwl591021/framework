@@ -30,7 +30,9 @@ type ObservationRow = {
   first_seen_at: number;
   last_seen_at: number;
   metadata_safe_json: string;
-  retention_until: number;
+  retention_expires_at: number;
+  retention_status: ObservationEvent["retentionStatus"];
+  anonymized_at: number | null;
 };
 
 type IncidentRow = {
@@ -102,6 +104,13 @@ export interface ObservabilityRepository {
     supportCode: string,
     now: number,
   ): Promise<SupportCodeDiagnostic | null>;
+  findIncidentForObservation(eventId: string): Promise<Incident | null>;
+  listRetentionEligible(
+    scopeType: "platform" | "tenant",
+    tenantId: string | null,
+    now: number,
+    limit: number,
+  ): Promise<readonly ObservationEvent[]>;
   listIncidents(
     access: DiagnosticAccessContext,
     page: PageRequest,
@@ -204,7 +213,7 @@ implements ObservabilityRepository, AlertHistoryPort {
   async findSupportCodeForObservation(eventId: string): Promise<string | null> {
     return await this.db.prepare(
       `SELECT support_code FROM support_code_mappings
-       WHERE observation_event_id = ?1 LIMIT 1`,
+       WHERE observation_event_id = ?1 AND status = 'active' LIMIT 1`,
     ).bind(eventId).first<string>("support_code") ?? null;
   }
 
@@ -226,11 +235,13 @@ implements ObservabilityRepository, AlertHistoryPort {
               observation.dependency_key, observation.actor_reference_digest,
               observation.occurrence_count, observation.first_seen_at,
               observation.last_seen_at, observation.metadata_safe_json,
-              observation.retention_until
+              observation.retention_expires_at, observation.retention_status,
+              observation.anonymized_at
        FROM support_code_mappings AS mapping
        JOIN observation_events AS observation
          ON observation.id = mapping.observation_event_id
-       WHERE mapping.support_code = ?1 AND mapping.expires_at > ?2`,
+       WHERE mapping.support_code = ?1 AND mapping.status = 'active'
+         AND mapping.expires_at > ?2`,
     ).bind(supportCode, now).first<ObservationRow & {
       support_code: string;
       mapping_correlation_id: string;
@@ -247,6 +258,29 @@ implements ObservabilityRepository, AlertHistoryPort {
     });
   }
 
+  async findIncidentForObservation(eventId: string): Promise<Incident | null> {
+    const incidentId = await this.db.prepare(
+      `SELECT incident_id FROM incident_events
+       WHERE observation_event_id = ?1
+       ORDER BY occurred_at DESC, id DESC LIMIT 1`,
+    ).bind(eventId).first<string>("incident_id");
+    return incidentId ? this.getIncident(incidentId) : null;
+  }
+
+  async listRetentionEligible(
+    scopeType: "platform" | "tenant",
+    tenantId: string | null,
+    now: number,
+    limit: number,
+  ): Promise<readonly ObservationEvent[]> {
+    const result = await this.db.prepare(
+      `${OBSERVATION_SELECT}
+       WHERE retention_status = 'active' AND retention_expires_at <= ?1
+         AND (?2 = 'platform' OR tenant_id = ?3)
+       ORDER BY retention_expires_at, id LIMIT ?4`,
+    ).bind(now, scopeType, tenantId, limit).all<ObservationRow>();
+    return Object.freeze(result.results.map(observation));
+  }
   async listIncidents(
     access: DiagnosticAccessContext,
     page: PageRequest,
@@ -358,7 +392,7 @@ const OBSERVATION_SELECT = `SELECT id, correlation_id, trace_id, observed_at,
   environment, release_id, tenant_id, application_id, module_key, operation,
   event_type, severity, status, reason_code, safe_message, dependency_key,
   actor_reference_digest, occurrence_count, first_seen_at, last_seen_at,
-  metadata_safe_json, retention_until
+  metadata_safe_json, retention_expires_at, retention_status, anonymized_at
   FROM observation_events`;
 
 const INCIDENT_SELECT = `SELECT id, scope_type, tenant_id, aggregation_scope_key,
@@ -397,7 +431,9 @@ function observation(row: ObservationRow): ObservationEvent {
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,
     metadataSafeJson: row.metadata_safe_json,
-    retentionUntil: row.retention_until,
+    retentionExpiresAt: row.retention_expires_at,
+    retentionStatus: row.retention_status,
+    anonymizedAt: row.anonymized_at,
   });
 }
 

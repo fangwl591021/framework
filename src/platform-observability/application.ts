@@ -6,7 +6,11 @@ import type { Clock } from "../core/clock";
 import type { UuidV7 } from "../core/uuidv7";
 import type { IdentityDigestKeyProvider } from "../persistence/crypto";
 import { sha256Hex } from "../persistence/crypto";
-import { DomainNotFoundError, TenantBoundaryError } from "../persistence/models";
+import {
+  DomainConflictError,
+  DomainNotFoundError,
+  TenantBoundaryError,
+} from "../persistence/models";
 import type { AlertCoordinator } from "./alerting";
 import {
   buildIncident,
@@ -17,6 +21,10 @@ import {
 } from "./application-builders";
 import { FailureClassifier } from "./classifier";
 import type { DependencyStatusAggregator } from "./dependency-health";
+import type {
+  IncidentAggregationGuardPort,
+  ObservabilityFailureEvidencePort,
+} from "./failure-isolation";
 import type {
   DiagnosticAccessContext,
   Incident,
@@ -31,6 +39,11 @@ import {
   D1ObservabilityRepository,
   type SupportCodeDiagnostic,
 } from "./repository";
+import {
+  ObservationRetentionEligibility,
+  type RetentionCleanupResult,
+  type RetentionExecutionScope,
+} from "./retention";
 import { OperationStatusBuilder } from "./status";
 import { SupportCodeCodec } from "./support-code";
 
@@ -49,6 +62,7 @@ export class PlatformObservabilityApplication extends CoreApplicationBase {
   private readonly classifier = new FailureClassifier();
   private readonly statusBuilder = new OperationStatusBuilder();
   private readonly supportCodes = new SupportCodeCodec();
+  private readonly retention = new ObservationRetentionEligibility();
 
   constructor(
     db: D1Database,
@@ -57,6 +71,8 @@ export class PlatformObservabilityApplication extends CoreApplicationBase {
     identityKeys: IdentityDigestKeyProvider,
     private readonly alerts: AlertCoordinator | null = null,
     private readonly dependencies: DependencyStatusAggregator | null = null,
+    private readonly incidentAggregationGuard: IncidentAggregationGuardPort | null = null,
+    private readonly failureEvidence: ObservabilityFailureEvidencePort | null = null,
   ) {
     super(db, clock, uuidv7, identityKeys);
     this.observability = new D1ObservabilityRepository(db);
@@ -169,40 +185,104 @@ export class PlatformObservabilityApplication extends CoreApplicationBase {
       )
       : null;
 
-    const result = await this.executeIdempotent(
-      normalized.tenantId
-        ? { scopeType: "tenant", tenantId: normalized.tenantId }
-        : { scopeType: "platform", tenantId: null },
-      "observability.observe",
-      {
-        ...normalized,
-        metadata: observation.metadataSafeJson,
-        category: classification.category,
-      },
-      context,
-      (timestamp) => ({
-        result: Object.freeze({ observation, incident, supportCode }),
-        statements: buildObservationStatements(
-          this.db,
-          observation,
-          existingEvent,
-          incident,
-          existingIncident,
+    const scope = normalized.tenantId
+      ? { scopeType: "tenant" as const, tenantId: normalized.tenantId }
+      : { scopeType: "platform" as const, tenantId: null };
+    const fingerprintInput = {
+      ...normalized,
+      metadata: observation.metadataSafeJson,
+      category: classification.category,
+    };
+    let result: ObservationResult;
+    try {
+      await this.incidentAggregationGuard?.assertAvailable(eventId);
+      result = await this.executeIdempotent(
+        scope,
+        "observability.observe",
+        fingerprintInput,
+        context,
+        (timestamp) => ({
+          result: Object.freeze({ observation, incident, supportCode }),
+          statements: buildObservationStatements(
+            this.db,
+            observation,
+            existingEvent,
+            incident,
+            existingIncident,
+            supportCode,
+            this.uuidv7,
+            this.supportCodes,
+            context,
+            timestamp,
+          ),
+          audit: {
+            action: "diagnostic.observation.record",
+            resourceType: "observation_event",
+            resourceReference: eventId,
+            reasonCode: classification.category,
+          },
+        }),
+      );
+    } catch (aggregationError) {
+      if (aggregationError instanceof DomainConflictError) throw aggregationError;
+      await this.recordFailureEvidence(
+        normalized.correlationId,
+        normalized.operation,
+        existingEvent
+          ? "INCIDENT_AGGREGATION_DEFERRED"
+          : "OBSERVATION_WRITE_FAILED",
+      );
+      if (existingEvent) {
+        return Object.freeze({
+          observation: existingEvent,
+          incident: existingIncident,
           supportCode,
-          this.uuidv7,
-          this.supportCodes,
+        });
+      }
+      try {
+        result = await this.executeIdempotent(
+          scope,
+          "observability.observe.unaggregated",
+          fingerprintInput,
           context,
-          timestamp,
-        ),
-        audit: {
-          action: "diagnostic.observation.record",
-          resourceType: "observation_event",
-          resourceReference: eventId,
-          reasonCode: classification.category,
-        },
-      }),
-    );
-
+          (timestamp) => ({
+            result: Object.freeze({ observation, incident: null, supportCode }),
+            statements: buildObservationStatements(
+              this.db,
+              observation,
+              null,
+              null,
+              null,
+              supportCode,
+              this.uuidv7,
+              this.supportCodes,
+              context,
+              timestamp,
+            ),
+            audit: {
+              action: "diagnostic.observation.record",
+              resourceType: "observation_event",
+              resourceReference: eventId,
+              reasonCode: "INCIDENT_AGGREGATION_DEFERRED",
+            },
+          }),
+        );
+        await this.recordFailureEvidence(
+          normalized.correlationId,
+          normalized.operation,
+          "INCIDENT_AGGREGATION_DEFERRED",
+        );
+      } catch (observationError) {
+        await this.recordFailureEvidence(
+          normalized.correlationId,
+          normalized.operation,
+          "OBSERVATION_WRITE_FAILED",
+        );
+        throw observationError instanceof Error
+          ? observationError
+          : aggregationError;
+      }
+    }
     if (this.alerts && result.incident && result.supportCode) {
       try {
         await this.alerts.evaluate(
@@ -211,10 +291,216 @@ export class PlatformObservabilityApplication extends CoreApplicationBase {
           result.supportCode,
         );
       } catch {
-        // Alert persistence and delivery are isolated from the observed operation.
+        await this.recordFailureEvidence(
+          result.observation.correlationId,
+          result.observation.operation,
+          "ALERT_SIDE_EFFECT_FAILED",
+        );
       }
     }
     return result;
+  }
+
+  async reconcileIncidentAggregation(
+    eventId: string,
+    context: MutationContext,
+  ): Promise<Incident | null> {
+    assertSafeActor(context);
+    const linked = await this.observability.findIncidentForObservation(eventId);
+    if (linked) return linked;
+    const event = await this.observability.getObservation(eventId);
+    if (!event) throw new DomainNotFoundError("OBSERVATION_NOT_FOUND");
+    if (event.severity === "info") return null;
+    const scope = incidentScopeFor(
+      event.reasonCode,
+      event.tenantId,
+      event.dependencyKey,
+    );
+    const fingerprint = await sha256Hex(JSON.stringify({
+      scope: scope.aggregationScopeKey,
+      category: event.reasonCode,
+      moduleKey: event.moduleKey,
+      operation: event.operation,
+      dependencyKey: event.dependencyKey,
+      reasonCode: event.reasonCode,
+    }));
+    const existing = await this.observability.findIncident(
+      scope.aggregationScopeKey,
+      fingerprint,
+    );
+    const tenantAlreadyAffected = existing && event.tenantId
+      ? await this.observability.incidentHasTenant(existing.incidentId, event.tenantId)
+      : false;
+    const applicationAlreadyAffected = existing && event.applicationId
+      ? await this.observability.incidentHasApplication(
+        existing.incidentId,
+        event.applicationId,
+      )
+      : false;
+    const normalized = normalizeObservation({
+      correlationId: event.correlationId,
+      traceId: event.traceId,
+      environment: event.environment,
+      releaseId: event.releaseId,
+      tenantId: event.tenantId,
+      applicationId: event.applicationId,
+      moduleKey: event.moduleKey,
+      operation: event.operation,
+      eventType: event.eventType,
+      severity: event.severity,
+      status: event.status,
+      errorCode: event.reasonCode,
+      safeMessage: event.safeMessage,
+      dependencyKey: event.dependencyKey,
+      actorReferenceDigest: event.actorReferenceDigest,
+      metadata: {},
+    }, this.clock.now().getTime());
+    const incident = buildIncident(
+      normalized,
+      event.reasonCode,
+      scope,
+      fingerprint,
+      existing?.incidentId ?? this.uuidv7.generate(),
+      existing,
+      Boolean(tenantAlreadyAffected),
+      Boolean(applicationAlreadyAffected),
+      this.clock.now().getTime(),
+    );
+    try {
+      return await this.executeIdempotent(
+        event.tenantId
+          ? { scopeType: "tenant", tenantId: event.tenantId }
+          : { scopeType: "platform", tenantId: null },
+        "observability.reconcile_incident",
+        { eventId, fingerprint },
+        context,
+        (timestamp) => ({
+          result: incident,
+          statements: [
+            existing
+              ? this.db.prepare(
+                `UPDATE incidents SET title = ?1, severity = ?2, status = ?3,
+                   last_seen_at = ?4, occurrence_count = ?5,
+                   affected_tenant_count = ?6, affected_application_count = ?7,
+                   dependency_key = ?8, release_id = ?9, resolution_code = NULL,
+                   resolved_at = NULL, reopen_count = ?10, updated_at = ?11
+                 WHERE id = ?12 AND occurrence_count = ?13`,
+              ).bind(
+                incident.title, incident.severity, incident.status,
+                incident.lastSeenAt, incident.occurrenceCount,
+                incident.affectedTenantCount, incident.affectedApplicationCount,
+                incident.dependencyKey, incident.releaseId, incident.reopenCount,
+                timestamp, incident.incidentId, existing.occurrenceCount,
+              )
+              : this.db.prepare(
+                `INSERT INTO incidents (
+                  id, scope_type, tenant_id, aggregation_scope_key, fingerprint,
+                  title, severity, status, first_seen_at, last_seen_at,
+                  occurrence_count, affected_tenant_count,
+                  affected_application_count, dependency_key, release_id,
+                  owner_reference, resolution_code, resolved_at, reopen_count,
+                  created_at, updated_at
+                ) VALUES (
+                  ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,
+                  ?13, ?14, ?15, NULL, NULL, NULL, ?16, ?17, ?17
+                )`,
+              ).bind(
+                incident.incidentId, incident.scopeType, incident.tenantId,
+                incident.aggregationScopeKey, incident.fingerprint, incident.title,
+                incident.severity, incident.status, incident.firstSeenAt,
+                incident.lastSeenAt, incident.occurrenceCount,
+                incident.affectedTenantCount, incident.affectedApplicationCount,
+                incident.dependencyKey, incident.releaseId, incident.reopenCount,
+                timestamp,
+              ),
+            this.db.prepare(
+              `INSERT INTO incident_events (
+                id, incident_id, observation_event_id, event_kind,
+                actor_reference_digest, reason_code, occurred_at, created_at
+              ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
+            ).bind(
+              this.uuidv7.generate(), incident.incidentId, eventId,
+              existing?.status === "resolved" ? "reopened" : "observed",
+              actorDigest(context), event.reasonCode, timestamp,
+            ),
+          ],
+          audit: {
+            action: "diagnostic.incident.reconcile",
+            resourceType: "observation_event",
+            resourceReference: eventId,
+            reasonCode: "INCIDENT_AGGREGATION_RECONCILED",
+          },
+        }),
+      );
+    } catch (error) {
+      const winner = await this.observability.findIncidentForObservation(eventId);
+      if (winner) return winner;
+      throw error;
+    }
+  }
+
+  async cleanupExpiredObservations(
+    execution: RetentionExecutionScope,
+    context: MutationContext,
+  ): Promise<RetentionCleanupResult> {
+    this.retention.assertExecutionScope(execution);
+    if (
+      context.actorType !== "service"
+      || context.actorReference !== "service:retention-executor"
+    ) {
+      throw new TenantBoundaryError();
+    }
+    const now = this.clock.now().getTime();
+    const eligible = await this.observability.listRetentionEligible(
+      execution.scopeType,
+      execution.tenantId,
+      now,
+      execution.limit,
+    );
+    const statements: D1PreparedStatement[] = [];
+    for (const event of eligible) {
+      statements.push(
+        this.db.prepare(
+          `UPDATE support_code_mappings
+           SET correlation_id = NULL, trace_id = NULL,
+               observation_event_id = NULL, status = 'expired', expired_at = ?1
+           WHERE observation_event_id = ?2 AND tenant_id IS ?3
+             AND status = 'active' AND expires_at <= ?1`,
+        ).bind(now, event.eventId, event.tenantId),
+        this.db.prepare(
+          `UPDATE observation_events
+           SET correlation_id = 'retained', trace_id = 'retained',
+               safe_message = 'Historical observation retained.',
+               actor_reference_digest = NULL, metadata_safe_json = '{}',
+               retention_status = 'anonymized', anonymized_at = ?1
+           WHERE id = ?2 AND tenant_id IS ?3 AND retention_status = 'active'
+             AND retention_expires_at <= ?1`,
+        ).bind(now, event.eventId, event.tenantId),
+      );
+    }
+    return this.executeIdempotent(
+      execution.scopeType === "tenant"
+        ? { scopeType: "tenant", tenantId: execution.tenantId as string }
+        : { scopeType: "platform", tenantId: null },
+      "observability.retention_cleanup",
+      { execution },
+      context,
+      () => ({
+        result: Object.freeze({
+          eligibleCount: eligible.length,
+          anonymizedCount: eligible.length,
+        }),
+        statements,
+        audit: {
+          action: "diagnostic.retention.anonymize",
+          resourceType: "observation_retention_batch",
+          resourceReference: execution.scopeType === "tenant"
+            ? `tenant:${execution.tenantId}`
+            : "platform",
+          reasonCode: "RETENTION_EXPIRED",
+        },
+      }),
+    );
   }
 
   async getIncident(
@@ -345,6 +631,25 @@ export class PlatformObservabilityApplication extends CoreApplicationBase {
   ) {
     assertPermission(access, observabilityPermissions.alertRead);
     return this.observability.listAlertHistory(access, page);
+  }
+
+  private async recordFailureEvidence(
+    correlationId: string,
+    operation: string,
+    reasonCode: "OBSERVATION_WRITE_FAILED" | "INCIDENT_AGGREGATION_DEFERRED" | "ALERT_SIDE_EFFECT_FAILED",
+  ): Promise<void> {
+    if (!this.failureEvidence) return;
+    try {
+      await this.failureEvidence.record(Object.freeze({
+        correlationId,
+        operation,
+        reasonCode,
+        occurredAt: this.clock.now().getTime(),
+        occurrenceCount: 1,
+      }));
+    } catch {
+      // Failure evidence is itself a sidecar and cannot alter the caller result.
+    }
   }
 
   private async transitionIncident(

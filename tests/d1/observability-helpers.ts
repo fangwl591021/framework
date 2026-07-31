@@ -3,7 +3,11 @@ import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";
 import type { MutationContext } from "../../src/application/core-services";
 import type { Clock } from "../../src/core/clock";
 import type { UuidV7 } from "../../src/core/uuidv7";
-import { PlatformObservabilityApplication } from "../../src/platform-observability";
+import {
+  PlatformObservabilityApplication,
+  type IncidentAggregationGuardPort,
+  type ObservabilityFailureEvidencePort,
+} from "../../src/platform-observability";
 import type { IdentityDigestKeyProvider } from "../../src/persistence/crypto";
 
 const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
@@ -54,11 +58,15 @@ export async function resetObservabilityDatabase() {
   ]);
 }
 
-export function observabilityHarness() {
+export function observabilityHarness(options: Readonly<{
+  incidentGuard?: IncidentAggregationGuardPort;
+  failureEvidence?: ObservabilityFailureEvidencePort;
+}> = {}) {
   const clock = new ObservabilityClock();
   return {
     app: new PlatformObservabilityApplication(
       env.DB, clock, new ObservabilityUuid(), new ObservabilityKeys(),
+      null, null, options.incidentGuard ?? null, options.failureEvidence ?? null,
     ),
     clock,
   };

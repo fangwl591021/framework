@@ -1,7 +1,10 @@
 import { env } from "cloudflare:workers";
 import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { observabilityPermissions } from "../../src/platform-observability";
+import {
+  LocalObservabilityFailureEvidenceAdapter,
+  observabilityPermissions,
+} from "../../src/platform-observability";
 import {
   actorDigest,
   observabilityHarness,
@@ -149,6 +152,178 @@ describe("Platform Observability Local D1", () => {
   });
 });
 
+describe("Observability failure isolation and retention", () => {
+  it("keeps unaggregated observation evidence and reconciles idempotently", async () => {
+    const evidence = new LocalObservabilityFailureEvidenceAdapter();
+    const { app } = observabilityHarness({
+      incidentGuard: {
+        assertAvailable: async () => { throw new Error("INCIDENT_STORE_UNAVAILABLE"); },
+      },
+      failureEvidence: evidence,
+    });
+    const result = await app.observe({
+      ...observationInput(),
+      eventType: "configuration.invalid",
+      errorCode: "TENANT_CONFIGURATION_INVALID",
+    }, observationContext("deferred-observation"));
+    expect(result.incident).toBeNull();
+    expect(await app.observability.findIncidentForObservation(result.observation.eventId))
+      .toBeNull();
+    expect(evidence.evidence.map(({ reasonCode }) => reasonCode))
+      .toContain("INCIDENT_AGGREGATION_DEFERRED");
+
+    const first = await app.reconcileIncidentAggregation(
+      result.observation.eventId,
+      observationContext("reconcile-once"),
+    );
+    const replay = await app.reconcileIncidentAggregation(
+      result.observation.eventId,
+      observationContext("reconcile-replay"),
+    );
+    expect(replay?.incidentId).toBe(first?.incidentId);
+    expect((await env.DB.prepare(
+      "SELECT count(*) AS count FROM incident_events WHERE observation_event_id = ?1",
+    ).bind(result.observation.eventId).first<{ count: number }>())?.count).toBe(1);
+  });
+
+  it("requires the governed retention executor and preserves Incident history", async () => {
+    const { app, clock } = observabilityHarness();
+    const created = await app.observe({
+      ...observationInput(),
+      eventType: "configuration.invalid",
+      errorCode: "TENANT_CONFIGURATION_INVALID",
+      retentionMs: 60_000,
+    }, observationContext("retention-source"));
+    const incidentId = created.incident?.incidentId;
+    const incidentCount = created.incident?.occurrenceCount;
+    const supportCode = created.supportCode;
+    if (!incidentId || !supportCode) throw new Error("retention evidence missing");
+    await expect(env.DB.prepare(
+      "DELETE FROM observation_events WHERE id = ?1",
+    ).bind(created.observation.eventId).run()).rejects.toThrow(/observation_event_immutable/);
+    clock.advance(31 * 24 * 60 * 60 * 1000);
+
+    await expect(app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantA,
+      limit: 10,
+    }, observationContext("unauthorized-retention"))).rejects.toThrow();
+
+    const tenantBRun = {
+      idempotencyKey: "retention-tenant-b",
+      actorType: "service" as const,
+      actorReference: "service:retention-executor",
+      correlationId: "retention-tenant-b-correlation",
+    };
+    expect(await app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantB,
+      limit: 10,
+    }, tenantBRun)).toEqual({ eligibleCount: 0, anonymizedCount: 0 });
+    expect((await env.DB.prepare(
+      "SELECT status FROM support_code_mappings WHERE support_code = ?1",
+    ).bind(supportCode).first<string>("status"))).toBe("active");
+
+    const executor = {
+      idempotencyKey: "retention-tenant-a",
+      actorType: "service" as const,
+      actorReference: "service:retention-executor",
+      correlationId: "retention-tenant-a-correlation",
+    };
+    const cleaned = await app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantA,
+      limit: 10,
+    }, executor);
+    const replay = await app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantA,
+      limit: 10,
+    }, executor);
+    expect(cleaned).toEqual({ eligibleCount: 1, anonymizedCount: 1 });
+    expect(replay).toEqual(cleaned);
+    expect(await app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantA,
+      limit: 10,
+    }, { ...executor, idempotencyKey: "retention-tenant-a-second" }))
+      .toEqual({ eligibleCount: 0, anonymizedCount: 0 });
+
+    expect(await env.DB.prepare(
+      "SELECT retention_status, metadata_safe_json, actor_reference_digest FROM observation_events WHERE id = ?1",
+    ).bind(created.observation.eventId).first()).toMatchObject({
+      retention_status: "anonymized",
+      metadata_safe_json: "{}",
+      actor_reference_digest: null,
+    });
+    expect(await app.observability.getIncident(incidentId)).not.toBeNull();
+    expect((await app.observability.getIncident(incidentId))?.occurrenceCount)
+      .toBe(incidentCount);
+    expect((await env.DB.prepare(
+      `SELECT count(*) AS count FROM audit_records
+       WHERE action = 'diagnostic.retention.anonymize'
+         AND tenant_id = ?1`,
+    ).bind(tenantA).first<{ count: number }>())?.count).toBe(2);
+    await expect(env.DB.prepare(
+      "UPDATE incident_events SET reason_code = 'CHANGED' WHERE incident_id = ?1",
+    ).bind(incidentId).run()).rejects.toThrow(/incident_event_immutable/);
+    await expect(app.getDiagnosticBySupportCode(supportCode, tenantAccess(tenantA)))
+      .rejects.toThrow();
+  });
+
+  it("cleans only the bounded number of eligible observations", async () => {
+    const { app, clock } = observabilityHarness();
+    for (let index = 0; index < 3; index += 1) {
+      await app.observe({
+        ...observationInput(),
+        correlationId: `bounded-correlation-${index}`,
+        traceId: `bounded-trace-${index}`,
+        operation: `bounded.operation.${index}`,
+        eventType: "configuration.invalid",
+        errorCode: "TENANT_CONFIGURATION_INVALID",
+        retentionMs: 60_000,
+      }, observationContext(`bounded-source-${index}`));
+    }
+    clock.advance(60_001);
+    const result = await app.cleanupExpiredObservations({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: tenantA,
+      limit: 2,
+    }, {
+      idempotencyKey: "bounded-retention",
+      actorType: "service",
+      actorReference: "service:retention-executor",
+      correlationId: "bounded-retention-correlation",
+    });
+    expect(result).toEqual({ eligibleCount: 2, anonymizedCount: 2 });
+    expect((await env.DB.prepare(
+      "SELECT count(*) AS count FROM observation_events WHERE retention_status = 'active'",
+    ).first<{ count: number }>())?.count).toBe(1);
+  });
+
+  it("stops resolving an expired Support Code without removing its Incident", async () => {
+    const { app, clock } = observabilityHarness();
+    const created = await app.observe({
+      ...observationInput(),
+      eventType: "configuration.invalid",
+      errorCode: "TENANT_CONFIGURATION_INVALID",
+    }, observationContext("support-expiry-source"));
+    if (!created.supportCode || !created.incident) throw new Error("support evidence missing");
+    clock.advance(31 * 24 * 60 * 60 * 1000);
+    await expect(app.getDiagnosticBySupportCode(
+      created.supportCode,
+      tenantAccess(tenantA),
+    )).rejects.toThrow();
+    expect(await app.observability.getIncident(created.incident.incidentId))
+      .not.toBeNull();
+  });
+});
 describe("Observability migration atomicity", () => {
   it("fully rolls back a forced mid-migration failure", async () => {
     await reset();

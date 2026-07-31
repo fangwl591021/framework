@@ -78,7 +78,9 @@ export function buildObservation(
     firstSeenAt: existing?.firstSeenAt ?? now,
     lastSeenAt: now,
     metadataSafeJson: existing?.metadataSafeJson ?? input.metadataSafeJson,
-    retentionUntil: existing?.retentionUntil ?? now + input.retentionMs,
+    retentionExpiresAt: existing?.retentionExpiresAt ?? now + input.retentionMs,
+    retentionStatus: existing?.retentionStatus ?? "active",
+    anonymizedAt: existing?.anonymizedAt ?? null,
   });
 }
 
@@ -152,10 +154,10 @@ export function buildObservationStatements(
         tenant_id, application_id, module_key, operation, event_type, severity,
         status, reason_code, safe_message, dependency_key,
         actor_reference_digest, occurrence_count, first_seen_at, last_seen_at,
-        metadata_safe_json, retention_until, created_at
+        metadata_safe_json, retention_expires_at, retention_status, anonymized_at, created_at
       ) VALUES (
         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
-        ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23
+        ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
       )`,
     ).bind(
       observation.eventId,
@@ -179,7 +181,9 @@ export function buildObservationStatements(
       observation.firstSeenAt,
       observation.lastSeenAt,
       observation.metadataSafeJson,
-      observation.retentionUntil,
+      observation.retentionExpiresAt,
+      observation.retentionStatus,
+      observation.anonymizedAt,
       timestamp,
     ));
 

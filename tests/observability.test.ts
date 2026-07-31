@@ -10,6 +10,10 @@ import {
   DependencyStatusAggregator,
   FailureClassifier,
   LocalAlertRetryAdapter,
+  LocalAlertFailureEvidenceAdapter,
+  LocalObservabilityFailureEvidenceAdapter,
+  ObservabilitySidecar,
+  ObservationRetentionEligibility,
   LocalCaptureAlertAdapter,
   OperationStatusBuilder,
   StaticAlertPolicy,
@@ -37,6 +41,7 @@ class TestUuid implements UuidV7 {
 }
 
 class MemoryAlertHistory implements AlertHistoryPort {
+  constructor(private readonly failSave = false) {}
   readonly records: AlertDeliveryRecord[] = [];
   async latestForIncident(incidentId: string) {
     return [...this.records].reverse().find((record) => record.incidentId === incidentId) ?? null;
@@ -46,6 +51,7 @@ class MemoryAlertHistory implements AlertHistoryPort {
   }
   async save(record: AlertDeliveryRecord, safePayloadJson: string): Promise<void> {
     expect(safePayloadJson).not.toMatch(/token|secret|stack|select\s/i);
+    if (this.failSave) throw new Error("ALERT_HISTORY_UNAVAILABLE");
     this.records.push(record);
   }
 }
@@ -73,7 +79,9 @@ function event(severity: ObservationEvent["severity"] = "error"): ObservationEve
     firstSeenAt: 1,
     lastSeenAt: 1,
     metadataSafeJson: "{}",
-    retentionUntil: 10_000,
+    retentionExpiresAt: 10_000,
+    retentionStatus: "active",
+    anonymizedAt: null,
   };
 }
 
@@ -101,9 +109,9 @@ function incident(severity: Incident["severity"] = "error", count = 3): Incident
   };
 }
 
-function coordinator(options: { severity?: "warning" | "error" | "critical"; threshold?: number; delivery?: LocalCaptureAlertAdapter | DisabledTelegramAdapter } = {}) {
+function coordinator(options: { severity?: "warning" | "error" | "critical"; threshold?: number; delivery?: LocalCaptureAlertAdapter | DisabledTelegramAdapter; history?: MemoryAlertHistory } = {}) {
   const clock = new MutableClock();
-  const history = new MemoryAlertHistory();
+  const history = options.history ?? new MemoryAlertHistory();
   const retry = new LocalAlertRetryAdapter();
   const delivery = options.delivery ?? new LocalCaptureAlertAdapter();
   const policy = new StaticAlertPolicy({
@@ -122,7 +130,8 @@ function coordinator(options: { severity?: "warning" | "error" | "critical"; thr
   });
   return {
     service: new AlertCoordinator(clock, new TestUuid(), policy, delivery,
-      new DeterministicAlertTemplate(), history, retry),
+      new DeterministicAlertTemplate(), history, retry,
+      new LocalAlertFailureEvidenceAdapter()),
     clock, history, retry, delivery,
   };
 }
@@ -271,5 +280,59 @@ describe("Trusted Telegram configuration", () => {
     const second = await codec.generate("correlation-001", "event-002");
     expect(first).toMatch(/^SUP-[0-9A-F]{10}$/);
     expect(second).not.toBe(first);
+  });
+});
+describe("Observability failure isolation", () => {
+  it("preserves a successful business result and never repeats its mutation", async () => {
+    const fallback = new LocalObservabilityFailureEvidenceAdapter();
+    const sidecar = new ObservabilitySidecar(new MutableClock(), fallback);
+    let businessMutationCount = 0;
+    businessMutationCount += 1;
+    const result = await sidecar.afterSuccessfulOperation(
+      { status: "completed", businessMutationCount },
+      {
+        correlationId: "safe-correlation-001",
+        operation: "business.complete",
+        observe: async () => { throw new Error("repository unavailable with sensitive detail"); },
+      },
+    );
+    expect(result).toEqual({ status: "completed", businessMutationCount: 1 });
+    expect(businessMutationCount).toBe(1);
+    expect(fallback.evidence).toHaveLength(1);
+    expect(JSON.stringify(fallback.evidence)).not.toMatch(/sensitive|request.?body|secret|stack|select\s/i);
+  });
+
+  it("deduplicates a delivered alert when primary history persistence fails", async () => {
+    const delivery = new LocalCaptureAlertAdapter();
+    const harness = coordinator({ delivery, history: new MemoryAlertHistory(true) });
+    const first = await harness.service.evaluate(event(), incident(), "SUP-0123456789");
+    const replay = await harness.service.evaluate(event(), incident(), "SUP-0123456789");
+    expect(first?.status).toBe("delivered");
+    expect(replay?.deliveryId).toBe(first?.deliveryId);
+    expect(delivery.deliveries).toHaveLength(1);
+  });
+});
+
+describe("Deterministic observation retention eligibility", () => {
+  const eligibility = new ObservationRetentionEligibility();
+  it("does not select an active observation before expiry", () => {
+    expect(eligibility.isEligible(event(), 9_999)).toBe(false);
+  });
+  it("selects an active observation at or after expiry", () => {
+    expect(eligibility.isEligible(event(), 10_000)).toBe(true);
+  });
+  it("requires a governed, bounded executor scope", () => {
+    expect(() => eligibility.assertExecutionScope({
+      source: "governed_retention_executor",
+      scopeType: "tenant",
+      tenantId: null,
+      limit: 10,
+    })).toThrow("INVALID_RETENTION_EXECUTION_SCOPE");
+    expect(() => eligibility.assertExecutionScope({
+      source: "governed_retention_executor",
+      scopeType: "platform",
+      tenantId: null,
+      limit: 101,
+    })).toThrow("INVALID_RETENTION_EXECUTION_SCOPE");
   });
 });

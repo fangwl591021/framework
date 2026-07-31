@@ -40,6 +40,11 @@ export interface AlertHistoryPort {
 export interface AlertRetryPort {
   schedule(deliveryId: string, retryAt: number): Promise<void>;
 }
+export interface AlertFailureEvidencePort {
+  latestForIncident(incidentId: string): Promise<AlertDeliveryRecord | null>;
+  findByDeliveryKey(deliveryKey: string): Promise<AlertDeliveryRecord | null>;
+  save(record: AlertDeliveryRecord): Promise<void>;
+}
 
 export interface TelegramAlertConfiguration {
   readonly telegramBotTokenSecretReference: string;
@@ -151,6 +156,26 @@ export class LocalAlertRetryAdapter implements AlertRetryPort {
   }
 }
 
+export class LocalAlertFailureEvidenceAdapter
+implements AlertFailureEvidencePort {
+  private readonly records = new Map<string, AlertDeliveryRecord>();
+
+  async latestForIncident(incidentId: string): Promise<AlertDeliveryRecord | null> {
+    return [...this.records.values()].reverse()
+      .find((record) => record.incidentId === incidentId) ?? null;
+  }
+
+  async findByDeliveryKey(deliveryKey: string): Promise<AlertDeliveryRecord | null> {
+    return this.records.get(deliveryKey) ?? null;
+  }
+
+  async save(record: AlertDeliveryRecord): Promise<void> {
+    if (!this.records.has(record.deliveryKey)) {
+      this.records.set(record.deliveryKey, Object.freeze({ ...record }));
+    }
+  }
+}
+
 export class AlertCoordinator {
   constructor(
     private readonly clock: Clock,
@@ -160,6 +185,7 @@ export class AlertCoordinator {
     private readonly template: AlertTemplatePort,
     private readonly history: AlertHistoryPort,
     private readonly retry: AlertRetryPort,
+    private readonly failureEvidence: AlertFailureEvidencePort,
   ) {}
 
   async evaluate(
@@ -179,7 +205,13 @@ export class AlertCoordinator {
     }
 
     const now = this.clock.now().getTime();
-    const latest = await this.history.latestForIncident(incident.incidentId);
+    let latest: AlertDeliveryRecord | null;
+    try {
+      latest = await this.history.latestForIncident(incident.incidentId);
+    } catch {
+      latest = null;
+    }
+    latest ??= await this.failureEvidence.latestForIncident(incident.incidentId);
     const escalated = latest
       ? severityRank(incident.severity) > severityRank(latest.severity)
       : false;
@@ -190,7 +222,13 @@ export class AlertCoordinator {
     const deliveryKey = await sha256Hex(
       `${incident.incidentId}:${incident.severity}:${window}`,
     );
-    const existing = await this.history.findByDeliveryKey(deliveryKey);
+    let existing: AlertDeliveryRecord | null;
+    try {
+      existing = await this.history.findByDeliveryKey(deliveryKey);
+    } catch {
+      existing = null;
+    }
+    existing ??= await this.failureEvidence.findByDeliveryKey(deliveryKey);
     if (existing) return existing;
 
     const payload = this.template.build(event, incident, supportCode);
@@ -207,28 +245,13 @@ export class AlertCoordinator {
         now,
         null,
       );
-      await this.history.save(suppressed, payloadJson);
+      await this.saveEvidence(suppressed, payloadJson);
       return suppressed;
     }
 
     const deliveryId = this.uuidv7.generate();
     try {
       await this.delivery.deliver(payload, deliveryKey);
-      const delivered: AlertDeliveryRecord = Object.freeze({
-        deliveryId,
-        incidentId: incident.incidentId,
-        deliveryKey,
-        providerKey: this.delivery.providerKey,
-        severity: incident.severity,
-        status: "delivered",
-        attemptCount: 1,
-        nextRetryAt: null,
-        failureReasonCode: null,
-        createdAt: now,
-        deliveredAt: now,
-      });
-      await this.history.save(delivered, payloadJson);
-      return delivered;
     } catch {
       const retryAt = now + Math.max(1_000, policy.escalationDelayMs);
       const failed: AlertDeliveryRecord = Object.freeze({
@@ -244,12 +267,42 @@ export class AlertCoordinator {
         createdAt: now,
         deliveredAt: null,
       });
-      await this.history.save(failed, payloadJson);
-      await this.retry.schedule(deliveryId, retryAt);
+      await this.saveEvidence(failed, payloadJson);
+      try {
+        await this.retry.schedule(deliveryId, retryAt);
+      } catch {
+        // The durable failure evidence remains the retry source of truth.
+      }
       return failed;
     }
+
+    const delivered: AlertDeliveryRecord = Object.freeze({
+      deliveryId,
+      incidentId: incident.incidentId,
+      deliveryKey,
+      providerKey: this.delivery.providerKey,
+      severity: incident.severity,
+      status: "delivered",
+      attemptCount: 1,
+      nextRetryAt: null,
+      failureReasonCode: null,
+      createdAt: now,
+      deliveredAt: now,
+    });
+    await this.saveEvidence(delivered, payloadJson);
+    return delivered;
   }
 
+  private async saveEvidence(
+    record: AlertDeliveryRecord,
+    safePayloadJson: string,
+  ): Promise<void> {
+    try {
+      await this.history.save(record, safePayloadJson);
+    } catch {
+      await this.failureEvidence.save(record);
+    }
+  }
   private record(
     incident: Incident,
     deliveryKey: string,

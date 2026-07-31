@@ -240,7 +240,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
-| [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Proposed／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -285,7 +285,7 @@ Platform Reliability Foundation 是共用 Platform Service，不是商業模組�
 - [Telegram Alert Contract](docs/platform-observability/04-TELEGRAM-ALERT-CONTRACT.md)
 - [Local Verification](docs/platform-observability/07-LOCAL-VERIFICATION.md)
 
-Platform Observability 是共用 Platform Service Candidate。Contract 仍為 Proposed；實作與證據只限 Local／CI 與隔離 Local D1。Telegram 與 AI Adapter 均 Disabled，沒有 Provider API、Remote D1、Binding、部署或 Production 使用權。
+Platform Observability 是共用 Platform Service Candidate。Contract 已由 Tony 核准，Architecture／Security Review 均為 Approved；實作與證據只限 Local／CI 與隔離 Local D1。Telegram 與 AI Adapter 均 Disabled，沒有 Provider API、Remote D1、Binding、部署或 Production 使用權。
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |
