@@ -3,6 +3,14 @@ import { EventOperationsApplication } from "./event-operations-application";
 import type { EventRosterEntry, EventStatistics } from "./models";
 
 export class EventQueryApplication extends EventOperationsApplication {
+  async listEvents(tenantId: string, actorMembershipId: string, limit = 50) {
+    await this.requireEventPermission(
+      tenantId,
+      actorMembershipId,
+      "statistics",
+    );
+    return this.eventRepository.listEvents(tenantId, limit);
+  }
   async listRoster(
     tenantId: string,
     actorMembershipId: string,

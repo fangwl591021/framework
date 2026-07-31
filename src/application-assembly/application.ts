@@ -58,6 +58,26 @@ export class ApplicationAssemblyApplication extends PlatformCoreApplication {
     super(db, clock, uuidv7, identityKeys);
     this.assemblyRepository = new ApplicationAssemblyRepository(db);
   }
+  async listAvailableModules(
+    tenantId: string,
+    applicationId: string,
+    membershipId: string,
+  ): Promise<readonly CatalogModule[]> {
+    if (
+      !(await this.checkPermission(
+        tenantId,
+        membershipId,
+        applicationAssemblyPermissions.catalogRead,
+      ))
+    ) {
+      throw new ModuleAccessError("PERMISSION_DENIED");
+    }
+    return this.assemblyRepository.listVisibleModules(
+      tenantId,
+      applicationId,
+      this.clock.now().getTime(),
+    );
+  }
   async createApplication(
     tenantId: string,
     actor: TenantManager,

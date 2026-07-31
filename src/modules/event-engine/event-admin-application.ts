@@ -13,6 +13,120 @@ import {
 } from "./models";
 
 export class EventAdminApplication extends EventEngineBase {
+  async createEventWithSession(
+    tenantId: string,
+    actorMembershipId: string,
+    eventInput: CreateEventInput,
+    sessionInput: CreateEventSessionInput,
+    context: MutationContext,
+  ): Promise<{ event: EventRecord; session: EventSession }> {
+    await this.requireEventPermission(tenantId, actorMembershipId, "manage");
+    this.validateText("event title", eventInput.title, 160);
+    this.validateText("session title", sessionInput.title, 160);
+    if (
+      (eventInput.description?.length ?? 0) > 3000 ||
+      eventInput.registrationOpensAt < 0 ||
+      eventInput.registrationClosesAt <= eventInput.registrationOpensAt ||
+      sessionInput.startsAt < 0 ||
+      sessionInput.endsAt <= sessionInput.startsAt ||
+      !Number.isInteger(sessionInput.capacity) ||
+      sessionInput.capacity <= 0 ||
+      !Number.isInteger(sessionInput.waitlistCapacity) ||
+      sessionInput.waitlistCapacity < 0
+    ) {
+      throw new TypeError("Event or session input is invalid");
+    }
+    const eventId = this.uuidv7.generate();
+    const sessionId = this.uuidv7.generate();
+    return this.executeIdempotent(
+      { scopeType: "tenant", tenantId },
+      "event.create_with_session",
+      { tenantId, actorMembershipId, eventInput, sessionInput },
+      context,
+      (timestamp) => {
+        const event: EventRecord = {
+          id: eventId,
+          tenantId,
+          title: eventInput.title.trim(),
+          description: eventInput.description ?? "",
+          status: "draft",
+          registrationOpensAt: eventInput.registrationOpensAt,
+          registrationClosesAt: eventInput.registrationClosesAt,
+          paymentMode: eventInput.paymentMode,
+          version: 1,
+        };
+        const session: EventSession = {
+          id: sessionId,
+          tenantId,
+          eventId,
+          title: sessionInput.title.trim(),
+          startsAt: sessionInput.startsAt,
+          endsAt: sessionInput.endsAt,
+          capacity: sessionInput.capacity,
+          waitlistCapacity: sessionInput.waitlistCapacity,
+          confirmedCount: 0,
+          waitlistedCount: 0,
+          reconciliationRequired: false,
+          status: "scheduled",
+          version: 1,
+        };
+        return {
+          result: { event, session },
+          statements: [
+            this.db
+              .prepare(
+                `INSERT INTO events (
+                  id, tenant_id, title, description, status,
+                  registration_opens_at, registration_closes_at, payment_mode,
+                  version, published_at, cancelled_at, created_at, updated_at
+                ) VALUES (
+                  ?1, ?2, ?3, ?4, 'draft', ?5, ?6, ?7,
+                  1, NULL, NULL, ?8, ?8
+                )`,
+              )
+              .bind(
+                eventId,
+                tenantId,
+                eventInput.title.trim(),
+                eventInput.description ?? "",
+                eventInput.registrationOpensAt,
+                eventInput.registrationClosesAt,
+                eventInput.paymentMode,
+                timestamp,
+              ),
+            this.db
+              .prepare(
+                `INSERT INTO event_sessions (
+                  id, tenant_id, event_id, title, starts_at, ends_at,
+                  capacity, waitlist_capacity, confirmed_count,
+                  waitlisted_count, status, version, created_at, updated_at
+                ) VALUES (
+                  ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0, 0,
+                  'scheduled', 1, ?9, ?9
+                )`,
+              )
+              .bind(
+                sessionId,
+                tenantId,
+                eventId,
+                sessionInput.title.trim(),
+                sessionInput.startsAt,
+                sessionInput.endsAt,
+                sessionInput.capacity,
+                sessionInput.waitlistCapacity,
+                timestamp,
+              ),
+          ],
+          audit: {
+            action: "event.create_with_session",
+            resourceType: "event",
+            resourceReference: eventId,
+            reasonCode: "CREATED_WITH_SESSION",
+          },
+        };
+      },
+    );
+  }
   async createEvent(
     tenantId: string,
     actorMembershipId: string,

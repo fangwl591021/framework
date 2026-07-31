@@ -327,7 +327,7 @@ describe("Observability failure isolation and retention", () => {
 describe("Observability migration atomicity", () => {
   it("fully rolls back a forced mid-migration failure", async () => {
     await reset();
-    const core = migrations.filter(({ name }) => !name.includes("0004_platform_observability"));
+    const core = migrations.filter(({ name }) => name < "0004_platform_observability");
     await applyD1Migrations(env.DB, [...core]);
     const migration = migrations.find(({ name }) => name.includes("0004_platform_observability"));
     if (!migration) throw new Error("observability migration missing");

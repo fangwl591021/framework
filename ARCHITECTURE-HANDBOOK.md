@@ -194,3 +194,7 @@ Current status is Platform Service Candidate, Contract Approved by Tony, Archite
 ## Application Assembly Reading Path
 
 Application 組裝與可選模組治理請從 [Application Assembly](docs/application-assembly/README.md) 開始，再閱讀 [Access Guard](docs/application-assembly/05-MODULE-ACCESS-GUARD.md) 與 [Security](docs/application-assembly/07-SECURITY.md)。此能力目前為 Platform Service Candidate、Contract Approved by Tony、Architecture Review Approved、Security Review Approved、Locally Implemented、Locally Verified、Not Deployed、Production Use Not Allowed。
+
+## Conversational Workbench Reading Path
+
+自然語言操作治理請從 [Conversational Workbench](docs/conversational-workbench/README.md) 開始，再閱讀 [Operation Plan](docs/conversational-workbench/05-OPERATION-PLAN-CONFIRMATION.md)、[Router](docs/conversational-workbench/06-OPERATION-ROUTER.md) 與 [Security Boundary](docs/conversational-workbench/08-SECURITY-BOUNDARY.md)。狀態為 Experience Platform Service Candidate、Contract Approved by Tony、Architecture／Security Review Approved、Locally Implemented／Verified、Not Deployed、Production Use Not Allowed。
