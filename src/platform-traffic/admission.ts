@@ -84,14 +84,21 @@ export class TrafficAdmissionGuard {
     }
     const rate = await failSafe(() => this.rateLimiter.evaluate(context));
     if (!rate?.admitted) {
+      const platformRate = rate?.reasonCode === "PLATFORM_RATE_LIMITED";
       await this.observeSafe({
-        eventType: "traffic.rate_limited",
-        tenantId: context.tenantId,
+        eventType: platformRate ? "traffic.platform_throttled" : "traffic.rate_limited",
+        tenantId: platformRate ? null : context.tenantId,
         operation: context.routeKey,
-        reasonCode: "RATE_LIMITED",
-        severity: "warning",
+        reasonCode: rate?.reasonCode ?? "RATE_LIMIT_GUARD_UNAVAILABLE",
+        severity: platformRate ? "error" : "warning",
       });
-      return this.result("throttled", "TENANT_RATE_LIMITED", request.correlationId, true, rate?.retryAfterSeconds ?? 1);
+      return this.result(
+        "throttled",
+        platformRate ? "RATE_LIMITED" : "TENANT_RATE_LIMITED",
+        request.correlationId,
+        true,
+        rate?.retryAfterSeconds ?? 1,
+      );
     }
     const resource = await failSafe(() => this.resources.evaluate(context));
     if (!resource?.admitted) {

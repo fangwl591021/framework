@@ -124,6 +124,37 @@ export class LocalSlidingWindowRateLimiter implements RateLimiterPort {
   }
 }
 
+export class LocalHierarchicalRateLimiter implements RateLimiterPort {
+  private readonly tenantLimiter: LocalSlidingWindowRateLimiter;
+  private readonly platformLimiter: LocalSlidingWindowRateLimiter;
+
+  constructor(
+    now: () => number,
+    tenantPolicy: RateLimitPolicy,
+    platformPolicy: RateLimitPolicy,
+  ) {
+    this.tenantLimiter = new LocalSlidingWindowRateLimiter(now, tenantPolicy);
+    this.platformLimiter = new LocalSlidingWindowRateLimiter(now, platformPolicy);
+  }
+
+  async evaluate(context: TrustedAdmissionContext): Promise<RateLimitDecision> {
+    const tenant = await this.tenantLimiter.evaluate(context);
+    if (!tenant.admitted) {
+      return Object.freeze({ ...tenant, reasonCode: "TENANT_RATE_LIMITED" as const });
+    }
+    const platform = await this.platformLimiter.evaluate(Object.freeze({
+      ...context,
+      tenantId: "trusted-platform-rate-scope",
+      applicationId: null,
+      actorDigest: null,
+      ipDigest: null,
+    }));
+    if (!platform.admitted) {
+      return Object.freeze({ ...platform, reasonCode: "PLATFORM_RATE_LIMITED" as const });
+    }
+    return tenant;
+  }
+}
 interface ResourceWindow extends TenantResourceUsageSnapshot {
   startedAt: number;
 }

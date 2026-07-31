@@ -83,7 +83,7 @@ export interface RateLimitDecision {
   readonly admitted: boolean;
   readonly observedOnly: boolean;
   readonly retryAfterSeconds: number | null;
-  readonly reasonCode: "RATE_LIMIT_OK" | "RATE_LIMITED";
+  readonly reasonCode: "RATE_LIMIT_OK" | "RATE_LIMITED" | "TENANT_RATE_LIMITED" | "PLATFORM_RATE_LIMITED";
 }
 
 export interface TenantResourcePolicy {

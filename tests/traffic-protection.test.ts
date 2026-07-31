@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { UuidV7 } from "../src/core/uuidv7";
 import {
   DisabledTrafficObservationAdapter, LocalAcceptedOperationStore, LocalCircuitBreaker,
-  LocalLoadShedding, LocalSlidingWindowRateLimiter, LocalTenantResourceIsolation,
+  LocalHierarchicalRateLimiter, LocalLoadShedding, LocalSlidingWindowRateLimiter, LocalTenantResourceIsolation,
   LocalTrafficObservationAdapter, LocalTrafficReadinessAdapter, LocalWebhookDeduplicator,
   StaticModuleGate, StaticPermissionGate, TrafficAdmissionGuard, isEmergencySafe,
   type DegradationMode, type TrustedAdmissionContext, type WebhookEventFingerprint,
@@ -38,7 +38,8 @@ describe("webhook duplicate safety",()=>{
 describe("rate and tenant isolation",()=>{
  it("admits configured capacity and burst",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,rate);await s.evaluate(ctx());await s.evaluate(ctx());expect((await s.evaluate(ctx())).admitted).toBe(true)});
  it("throttles after burst",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,rate);await s.evaluate(ctx());await s.evaluate(ctx());await s.evaluate(ctx());expect(await s.evaluate(ctx())).toMatchObject({admitted:false,retryAfterSeconds:2})});
- it("isolates tenant counters",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,{...rate,limit:1,burst:0});await s.evaluate(ctx());expect((await s.evaluate(ctx({tenantId:"019d0000-0000-7000-8000-000000000002"}))).admitted).toBe(true)});
+ it("enforces a platform rate window across tenants",async()=>{const s=new LocalHierarchicalRateLimiter(()=>timestamp,{...rate,limit:5,burst:0},{...rate,limit:1,burst:0});expect((await s.evaluate(ctx())).admitted).toBe(true);expect(await s.evaluate(ctx({tenantId:"019d0000-0000-7000-8000-000000000002"}))).toMatchObject({admitted:false,reasonCode:"PLATFORM_RATE_LIMITED"})});
+ it("keeps tenant throttling distinct from platform throttling",async()=>{const s=new LocalHierarchicalRateLimiter(()=>timestamp,{...rate,limit:1,burst:0},{...rate,limit:10,burst:0});await s.evaluate(ctx());expect(await s.evaluate(ctx())).toMatchObject({admitted:false,reasonCode:"TENANT_RATE_LIMITED"})}); it("isolates tenant counters",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,{...rate,limit:1,burst:0});await s.evaluate(ctx());expect((await s.evaluate(ctx({tenantId:"019d0000-0000-7000-8000-000000000002"}))).admitted).toBe(true)});
  it("supports observe mode",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,{...rate,limit:1,burst:0,enforcementMode:"observe"});await s.evaluate(ctx());expect(await s.evaluate(ctx())).toMatchObject({admitted:true,observedOnly:true})});
  it("rejects raw actor evidence",async()=>{const s=new LocalSlidingWindowRateLimiter(()=>timestamp,rate);await expect(s.evaluate(ctx({actorDigest:"raw-user"}))).rejects.toThrow("trusted digest")});
  it("throttles only exhausted tenant",async()=>{const s=new LocalTenantResourceIsolation(()=>timestamp,{tenant:{...resource,requestsPerWindow:1},platform:resource});await s.evaluate(ctx());expect((await s.evaluate(ctx())).reasonCode).toBe("TENANT_BUDGET_EXHAUSTED");expect((await s.evaluate(ctx({tenantId:"019d0000-0000-7000-8000-000000000002"}))).admitted).toBe(true)});
