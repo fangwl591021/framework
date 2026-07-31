@@ -221,6 +221,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 
 - [0001 Phase 1 Core](migrations/0001_phase_1_core.sql) creates exactly ten Phase 1 tables and is verified only through isolated Local D1 tests.
 - [0002 Event Engine](migrations/0002_event_engine.sql) creates exactly ten Event Domain Module tables and is verified only through isolated Local D1 tests.
+- [0003 Application Assembly](migrations/0003_application_assembly.sql) creates six tenant-scoped assembly tables and is verified only through isolated Local D1 tests.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -248,6 +249,15 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 - [LINE No-Flood Adapter Contract](docs/event-engine/03-LINE-NO-FLOOD-ADAPTER-CONTRACT.md)
 
 Event Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由 Tony 核准，Lifecycle 仍為 Candidate；實作與驗證僅限隔離 Local D1，未建立公開 API、Provider Adapter、Remote D1 或部署。
+
+### Application Assembly and Module Enablement
+
+- [Application Assembly MVP](docs/application-assembly/README.md)
+- [Application Assembly Contract](docs/application-assembly/01-APPLICATION-ASSEMBLY-CONTRACT.md)
+- [Application Assembly Local Verification](docs/application-assembly/02-LOCAL-VERIFICATION.md)
+- [Application Assembly Registry Entry](docs/registry/application-assembly.md)
+
+Application Assembly is a tenant-scoped Platform Capability Candidate. It separates module entitlement from enablement and applies one server-side guard to navigation, dashboard, Service access, and background-work eligibility. Its contract remains Proposed; it is locally implemented and verified, not deployed, and not approved for Production use.
 
 ### Runtime Phase 1 Decision Closure
 

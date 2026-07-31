@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
 
 const expectedTables = [
+  "application_configuration",
+  "application_modules",
+  "applications",
   "audit_records",
   "event_checkins",
   "event_form_fields",
@@ -18,6 +21,9 @@ const expectedTables = [
   "events",
   "idempotency_records",
   "identity_mappings",
+  "module_catalog",
+  "module_dependencies",
+  "module_entitlement_history",
   "permissions",
   "platform_users",
   "role_assignments",
@@ -28,6 +34,10 @@ const expectedTables = [
 ];
 
 const expectedIndexes = [
+  "idx_application_configuration_lookup",
+  "idx_application_modules_access",
+  "idx_application_modules_catalog",
+  "idx_applications_tenant_status",
   "idx_audit_resource_time",
   "idx_audit_tenant_time",
   "idx_event_answers_registration",
@@ -49,9 +59,15 @@ const expectedIndexes = [
   "idx_idempotency_scope_status_expiry",
   "idx_idempotency_tenant_expiry",
   "idx_identity_mappings_user",
+  "idx_module_catalog_tenant_availability",
+  "idx_module_dependencies_reverse",
+  "idx_module_entitlement_history_time",
   "idx_role_assignments_member",
   "idx_roles_tenant_status",
   "idx_tenant_memberships_tenant_status",
+  "uq_application_configuration_active",
+  "uq_application_modules_module",
+  "uq_applications_tenant_key",
   "uq_event_checkins_qr_digest",
   "uq_event_checkins_verified_registration",
   "uq_event_form_fields_active_key",
@@ -60,6 +76,8 @@ const expectedIndexes = [
   "uq_idempotency_platform",
   "uq_idempotency_tenant",
   "uq_identity_mappings_active",
+  "uq_module_catalog_tenant_key",
+  "uq_module_dependencies_pair",
   "uq_role_assignments_active",
   "uq_roles_core_key",
   "uq_roles_tenant_key",
@@ -67,6 +85,11 @@ const expectedIndexes = [
 ];
 
 const expectedTriggers = [
+  "trg_application_configuration_no_delete",
+  "trg_application_module_enable_insert_guard",
+  "trg_application_module_enable_update_guard",
+  "trg_application_modules_no_delete",
+  "trg_applications_no_delete",
   "trg_core_role_permissions_immutable_delete",
   "trg_core_role_permissions_immutable_insert",
   "trg_core_role_permissions_immutable_update",
@@ -86,6 +109,10 @@ const expectedTriggers = [
   "trg_last_owner_membership_change",
   "trg_membership_requires_active_user_activate",
   "trg_membership_requires_active_user_insert",
+  "trg_module_catalog_no_delete",
+  "trg_module_entitlement_history_consistency",
+  "trg_module_entitlement_history_no_delete",
+  "trg_module_entitlement_history_no_update",
   "trg_permissions_immutable_delete",
   "trg_permissions_immutable_insert",
   "trg_permissions_immutable_update",
@@ -161,6 +188,36 @@ describe("Phase 1 local D1 migration", () => {
     expect(await foreignKeySignatures("idempotency_records")).toEqual(["tenant_id->tenants.id"]);
     expect(await foreignKeySignatures("audit_records")).toEqual(["tenant_id->tenants.id"]);
 
+    expect(await foreignKeySignatures("applications")).toEqual([
+      "tenant_id->tenants.id",
+    ]);
+    expect(await foreignKeySignatures("module_catalog")).toEqual([
+      "access_permission_key->permissions.permission_key",
+      "tenant_id->tenants.id",
+    ]);
+    expect(await foreignKeySignatures("module_dependencies")).toEqual([
+      "depends_on_module_catalog_id->module_catalog.id",
+      "module_catalog_id->module_catalog.id",
+      "tenant_id->module_catalog.tenant_id",
+      "tenant_id->module_catalog.tenant_id",
+    ]);
+    expect(await foreignKeySignatures("application_modules")).toEqual([
+      "application_id->applications.id",
+      "module_catalog_id->module_catalog.id",
+      "tenant_id->applications.tenant_id",
+      "tenant_id->module_catalog.tenant_id",
+    ]);
+    expect(await foreignKeySignatures("module_entitlement_history")).toEqual([
+      "application_module_id->application_modules.id",
+      "changed_by_membership_id->tenant_memberships.id",
+      "tenant_id->application_modules.tenant_id",
+      "tenant_id->tenant_memberships.tenant_id",
+    ]);
+    expect(await foreignKeySignatures("application_configuration")).toEqual([
+      "application_id->applications.id",
+      "tenant_id->applications.tenant_id",
+    ]);
+
     const violations = await env.DB.prepare("PRAGMA foreign_key_check").all();
     expect(violations.results).toEqual([]);
   });
@@ -173,7 +230,7 @@ describe("Phase 1 local D1 migration", () => {
       env.DB.prepare("SELECT count(*) AS count FROM d1_migrations").first<{ count: number }>(),
     ]);
 
-    expect(counts.map((row) => row?.count)).toEqual([8, 3, 2]);
+    expect(counts.map((row) => row?.count)).toEqual([8, 3, 3]);
   });
 
   it("keeps Core Roles, Core grants, and the Permission vocabulary immutable", async () => {

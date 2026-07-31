@@ -161,7 +161,11 @@ Sprint 1～7 與 Architecture Handbook 已整合為 Framework RC1 文件基準�
 
 目前 Package 決策固定為 **NO-GO — Execution Not Yet Approved**。Package Design merge、Architecture Approval、Security Approval、Execution Approval、Migration Execution 與 Post-Migration Verification 是獨立狀態；Tony 預設只擔任 Architecture Owner。
 
-## 17. Runtime Phase 1 Boundary
+## 17. Application Assembly Boundary
+
+Application Assembly is a tenant-scoped Platform Capability Candidate that provides Applications, a runtime Module Catalog, dependency relationships, entitlement history, enablement, non-secret configuration, a server-side Module Access Guard, and dynamic navigation. It is distinct from the governance Module Registry and does not move Event Engine into Platform Core. Current status is Proposed Contract, Locally Implemented, Locally Verified, Not Deployed, and Production Use Not Allowed. See [Application Assembly](docs/application-assembly/README.md).
+
+## 18. Runtime Phase 1 Boundary
 
 Runtime Phase 1 只規劃 Identity Core、Tenant Access、Authorization、Core Operations 與 Operational Health Check。其 logical scope 限定 Platform User、Tenant、External Identity Mapping、Tenant Membership、Permission、Role、Role Assignment、Idempotency 與 Audit。
 

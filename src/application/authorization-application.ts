@@ -208,4 +208,14 @@ export class AuthorizationApplication extends TenantAccessApplication {  async c
       permissionKey,
     );
   }
+
+  async getEffectivePermissions(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<readonly string[]> {
+    return this.repositories.roleAssignments.listPermissionKeys(
+      tenantId,
+      membershipId,
+    );
+  }
 }

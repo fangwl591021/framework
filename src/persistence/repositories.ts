@@ -229,6 +229,10 @@ export interface RoleAssignmentRepository {
     membershipId: string,
     permissionKey: string,
   ): Promise<boolean>;
+  listPermissionKeys(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<readonly string[]>;
 }
 
 export interface IdempotencyRepository {
@@ -476,6 +480,38 @@ export class D1RoleAssignmentRepository
       .bind(tenantId, membershipId, permissionKey)
       .first<{ allowed: number }>();
     return row?.allowed === 1;
+  }
+
+  async listPermissionKeys(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<readonly string[]> {
+    const result = await this.db
+      .prepare(
+        `SELECT DISTINCT permission.permission_key
+         FROM role_assignments AS assignment
+         JOIN tenant_memberships AS member
+           ON member.tenant_id = assignment.tenant_id
+          AND member.id = assignment.tenant_membership_id
+         JOIN roles AS role
+           ON role.tenant_scope_key = assignment.role_scope_key
+          AND role.id = assignment.role_id
+         JOIN role_permissions AS mapping
+           ON mapping.tenant_scope_key = role.tenant_scope_key
+          AND mapping.role_id = role.id
+         JOIN permissions AS permission ON permission.id = mapping.permission_id
+         WHERE assignment.tenant_id = ?1
+           AND assignment.tenant_membership_id = ?2
+           AND assignment.status = 'active'
+           AND member.status = 'active'
+           AND role.status = 'active'
+           AND permission.status = 'active'
+         ORDER BY permission.permission_key
+         LIMIT 100`,
+      )
+      .bind(tenantId, membershipId)
+      .all<{ permission_key: string }>();
+    return result.results.map(({ permission_key }) => permission_key);
   }
 }
 
