@@ -366,3 +366,5 @@ Application Assembly 提供 Tenant Application、Module Catalog、Entitlement、
 ## Conversational Workbench
 
 Conversational Workbench 將可信 Application Context、versioned Intent、Slot revision、explicit confirmation 與既有 Application Service 組成 channel-neutral 操作流程。所有 Tool 均受 allowlist、Traffic、Permission、Module Access Fence、Audit 與 Idempotency 約束；Deterministic Resolver only，AI／LINE／Provider Adapter 均未建立。詳見 [Conversational Workbench](docs/conversational-workbench/README.md)。
+
+可操作的 [Local Conversational Workbench Demo](docs/local-workbench-demo/README.md) 使用獨立 Local Worker entry、隔離 Local D1 與 allowlisted fixture context；它不進入 Production bundle，亦不代表 Deployment 或 Production Use。

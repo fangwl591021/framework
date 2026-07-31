@@ -7,7 +7,11 @@
     "test": "vitest run && vitest run --config vitest.d1.config.ts",
     "test:d1": "vitest run --config vitest.d1.config.ts",
     "typecheck": "tsc --noEmit",
-    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js"
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js",
+    "build:local-demo": "esbuild src/local-demo/worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/local-demo.js",
+    "local:setup": "node scripts/local-demo-setup.mjs",
+    "local:reset": "node scripts/local-demo-setup.mjs --reset",
+    "local:dev": "wrangler dev --local --config wrangler.local.jsonc"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.19.1",

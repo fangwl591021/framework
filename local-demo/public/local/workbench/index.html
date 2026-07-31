@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Platform Core · Local Workbench</title>
+    <link rel="stylesheet" href="/local/workbench/styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/local/workbench"
+        ><span class="mark">PC</span><span>Platform Core</span></a
+      >
+      <div class="env">LOCAL · ISOLATED D1</div>
+    </header>
+    <main class="shell">
+      <aside class="rail">
+        <div>
+          <p class="eyebrow">Conversational Workbench</p>
+          <h1>用對話操作<br />Platform Core</h1>
+          <p class="muted">
+            這是完全本機的可操作展示。所有動作通過正式模組、權限、流量與冪等邊界。
+          </p>
+        </div>
+        <section class="context">
+          <label for="actor">測試角色</label
+          ><select id="actor">
+            <option value="owner_a">App A · Tenant Owner</option>
+            <option value="owner_b">App B · Tenant Owner</option>
+            <option value="member_a">Tenant Member</option>
+            <option value="operator_a">Platform Operator</option>
+          </select>
+          <div id="context-details" class="context-details"></div>
+          <div class="context-note">
+            <span class="dot"></span><span>伺服器 allowlist 解析</span>
+          </div>
+        </section>
+        <nav>
+          <button class="quick" data-flow="list-events">活動清單</button
+          ><button class="quick" data-flow="create-event">建立活動</button
+          ><button class="quick" data-flow="stats">報名統計</button
+          ><button class="quick" data-flow="commission">我的佣金</button
+          ><button class="quick" data-flow="performance">我的績效</button
+          ><button class="quick" data-flow="modules">可用模組</button
+          ><button class="quick" data-flow="disable-event">停用 Event</button
+          ><button class="quick" data-flow="enable-event">重新啟用 Event</button
+          ><button class="quick" data-flow="diagnostics">今日診斷</button>
+          <button class="quick" data-flow="support">查 Support Code</button>
+        </nav>
+        <a class="setup-link" href="/local/setup">Fixture setup →</a>
+      </aside>
+      <section class="workbench">
+        <div class="workbench-head">
+          <div>
+            <span class="status-dot"></span><strong>Local Assistant</strong>
+            <p>Deterministic resolver · AI disabled</p>
+          </div>
+          <button id="reset" class="ghost">重設對話</button>
+        </div>
+        <div id="messages" class="messages" aria-live="polite">
+          <article class="message assistant">
+            <div class="avatar">PC</div>
+            <div class="bubble">
+              <strong>準備好了。</strong>
+              <p>選擇左側流程，或輸入英文指令。高風險操作會先顯示確認摘要。</p>
+              <div class="chips">
+                <span>Local only</span><span>No provider calls</span
+                ><span>Always responds</span>
+              </div>
+            </div>
+          </article>
+        </div>
+        <form id="composer" class="composer">
+          <input
+            id="input"
+            autocomplete="off"
+            maxlength="2000"
+            placeholder="例如：list events"
+          /><button type="submit">送出</button>
+        </form>
+        <p id="notice" class="notice"></p>
+      </section>
+    </main>
+    <script type="module" src="/local/workbench/app.js"></script>
+  </body>
+</html>

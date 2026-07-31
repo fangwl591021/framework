@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Local Demo Setup</title>
+    <link rel="stylesheet" href="/local/workbench/styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/local/workbench"
+        ><span class="mark">PC</span><span>Platform Core</span></a
+      >
+      <div class="env">LOCAL SETUP</div>
+    </header>
+    <main class="shell" style="display: block; max-width: 760px">
+      <section
+        class="workbench"
+        style="height: auto; min-height: 0; padding: 40px"
+      >
+        <p class="eyebrow">Isolated Local D1</p>
+        <h1>建立可重播的<br />本機展示資料</h1>
+        <p class="muted">
+          Fixture 只存在本機，不屬於正式
+          Migration。重複執行會回放既有結果，不會建立重複 Tenant、Application 或
+          Module entitlement。
+        </p>
+        <div class="card">
+          <strong>包含</strong>
+          <p>
+            Tenant A、Application A/B、Owner/Member/Operator、Event/Network
+            模組、活動與網路測試資料。
+          </p>
+        </div>
+        <button
+          id="seed"
+          class="quick"
+          style="margin-top: 20px; background: #0f6b52; color: white"
+        >
+          一鍵 Seed Fixtures
+        </button>
+        <p id="result" class="notice"></p>
+        <a class="setup-link" href="/local/workbench">返回 Workbench →</a>
+      </section>
+    </main>
+    <script type="module">
+      const button = document.querySelector("#seed"),
+        result = document.querySelector("#result");
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        result.textContent = "建立中…";
+        try {
+          const response = await fetch("/local/setup", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Local-Setup": "confirm",
+                Origin: location.origin,
+              },
+              body: "{}",
+            }),
+            data = await response.json();
+          result.textContent = response.ok
+            ? "完成。Local fixtures 已就緒。"
+            : `失敗：${data.supportCode || data.code}`;
+        } catch {
+          result.textContent = "失敗：LOCAL-SETUP";
+        } finally {
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
