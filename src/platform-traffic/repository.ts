@@ -14,6 +14,12 @@ type WebhookRow = {
   payload_fingerprint: string;
   status: WebhookReceiptRecord["status"];
   safe_result_json: string | null;
+  lease_owner_token: string | null;
+  lease_expires_at: number | null;
+  attempt_count: number;
+  last_attempt_at: number;
+  safe_failure_code: string | null;
+  completed_at: number | null;
   replay_count: number;
   first_received_at: number;
   last_received_at: number;
@@ -114,7 +120,8 @@ export class D1TrafficProtectionRepository {
 const WEBHOOK_SELECT = `SELECT id, tenant_id, application_scope_key,
   provider_key, provider_event_id, issuer_context_digest,
   normalized_event_type, payload_fingerprint, status, safe_result_json,
-  replay_count, first_received_at, last_received_at, expires_at
+  lease_owner_token, lease_expires_at, attempt_count, last_attempt_at,
+  safe_failure_code, completed_at, replay_count, first_received_at, last_received_at, expires_at
   FROM webhook_receipts`;
 
 function webhook(row: WebhookRow): WebhookReceiptRecord {
@@ -131,6 +138,12 @@ function webhook(row: WebhookRow): WebhookReceiptRecord {
     safeResult: row.safe_result_json
       ? JSON.parse(row.safe_result_json) as Record<string, string | number | boolean | null>
       : null,
+    leaseOwnerToken: row.lease_owner_token,
+    leaseExpiresAt: row.lease_expires_at,
+    attemptCount: row.attempt_count,
+    lastAttemptAt: row.last_attempt_at,
+    safeFailureCode: row.safe_failure_code,
+    completedAt: row.completed_at,
     replayCount: row.replay_count,
     firstReceivedAt: row.first_received_at,
     lastReceivedAt: row.last_received_at,

@@ -13,6 +13,7 @@ export interface WebhookDeduplicationPort {
   claim(fingerprint: WebhookEventFingerprint): Promise<WebhookReplayResult>;
   complete(
     receiptId: string,
+    leaseToken: string,
     safeResult: Readonly<Record<string, string | number | boolean | null>>,
   ): Promise<void>;
 }
@@ -23,6 +24,7 @@ export interface RateLimiterPort {
 
 export interface TenantResourceIsolationPort {
   evaluate(context: TrustedAdmissionContext): Promise<ResourceIsolationDecision>;
+  release(leaseToken: string): Promise<void>;
 }
 
 export interface CircuitBreakerPort {

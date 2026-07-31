@@ -1,6 +1,6 @@
 # Registry Entry: platform-traffic-protection
 
-> Platform Service Candidate | Contract Proposed | Locally Implemented | Locally Verified | Not Deployed | Production Use Not Allowed
+> Platform Service Candidate | Contract Approved by Tony | Architecture Review Approved | Security Review Approved | Locally Implemented | Locally Verified | Not Deployed | Production Use Not Allowed
 
 | Metadata | Value |
 | --- | --- |
@@ -8,7 +8,7 @@
 | `display_name` | Platform Traffic Protection Foundation |
 | `category` | Platform Service |
 | `lifecycle_status` | Candidate |
-| `contract_status` | Proposed |
+| `contract_status` | Approved by Tony |
 | `current_version` | 0.1.0-local |
 | `owns` | Unified admission, webhook deduplication, rate decisions, Tenant resource isolation, circuit state, degradation state, backpressure receipt, bounded safe evidence |
 | `does_not_own` | Identity, Tenant authority, business policy, Module entitlement, Permission vocabulary ownership, provider credentials, billing, scheduling, deployment |

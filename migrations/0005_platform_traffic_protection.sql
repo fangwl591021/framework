@@ -23,21 +23,17 @@ CREATE TABLE webhook_receipts (
   application_scope_key TEXT NOT NULL CHECK (length(application_scope_key) BETWEEN 1 AND 100),
   provider_key TEXT NOT NULL CHECK (length(provider_key) BETWEEN 1 AND 40),
   provider_event_id TEXT NOT NULL CHECK (length(provider_event_id) BETWEEN 1 AND 200),
-  issuer_context_digest TEXT NOT NULL CHECK (
-    length(issuer_context_digest) = 71 AND substr(issuer_context_digest, 1, 7) = 'digest:'
-    AND substr(issuer_context_digest, 8) NOT GLOB '*[^0-9a-f]*'
-  ),
+  issuer_context_digest TEXT NOT NULL CHECK (length(issuer_context_digest)=71 AND substr(issuer_context_digest,1,7)='digest:' AND substr(issuer_context_digest,8) NOT GLOB '*[^0-9a-f]*'),
   normalized_event_type TEXT NOT NULL CHECK (length(normalized_event_type) BETWEEN 1 AND 80),
-  payload_fingerprint TEXT NOT NULL CHECK (
-    length(payload_fingerprint) = 64 AND payload_fingerprint NOT GLOB '*[^0-9a-f]*'
-  ),
-  status TEXT NOT NULL CHECK (status IN ('processing','completed','conflict','expired')),
-  safe_result_json TEXT CHECK (
-    safe_result_json IS NULL OR (
-      length(safe_result_json) <= 2048 AND json_valid(safe_result_json)
-      AND json_type(safe_result_json) = 'object'
-    )
-  ),
+  payload_fingerprint TEXT NOT NULL CHECK (length(payload_fingerprint)=64 AND payload_fingerprint NOT GLOB '*[^0-9a-f]*'),
+  status TEXT NOT NULL CHECK (status IN ('processing','completed','failed_retryable','failed_terminal','expired')),
+  safe_result_json TEXT CHECK (safe_result_json IS NULL OR (length(safe_result_json)<=2048 AND json_valid(safe_result_json) AND json_type(safe_result_json)='object')),
+  lease_owner_token TEXT CHECK (lease_owner_token IS NULL OR (length(lease_owner_token)=36 AND substr(lease_owner_token,15,1)='7')),
+  lease_expires_at INTEGER CHECK (lease_expires_at IS NULL OR lease_expires_at >= 0),
+  attempt_count INTEGER NOT NULL CHECK (attempt_count BETWEEN 1 AND 10),
+  last_attempt_at INTEGER NOT NULL CHECK (last_attempt_at >= 0),
+  safe_failure_code TEXT CHECK (safe_failure_code IS NULL OR length(safe_failure_code) BETWEEN 1 AND 80),
+  completed_at INTEGER CHECK (completed_at IS NULL OR completed_at >= last_attempt_at),
   replay_count INTEGER NOT NULL DEFAULT 0 CHECK (replay_count BETWEEN 0 AND 1000000000),
   first_received_at INTEGER NOT NULL CHECK (first_received_at >= 0),
   last_received_at INTEGER NOT NULL CHECK (last_received_at >= first_received_at),
@@ -47,9 +43,11 @@ CREATE TABLE webhook_receipts (
   UNIQUE (tenant_id, id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT,
   CHECK (
-    (status = 'processing' AND safe_result_json IS NULL)
-    OR (status IN ('completed','conflict') AND safe_result_json IS NOT NULL)
-    OR status = 'expired'
+    (status='processing' AND safe_result_json IS NULL AND lease_owner_token IS NOT NULL AND lease_expires_at IS NOT NULL AND safe_failure_code IS NULL AND completed_at IS NULL)
+    OR (status='completed' AND safe_result_json IS NOT NULL AND lease_owner_token IS NOT NULL AND lease_expires_at IS NULL AND safe_failure_code IS NULL AND completed_at IS NOT NULL)
+    OR (status='failed_retryable' AND safe_result_json IS NULL AND lease_owner_token IS NOT NULL AND lease_expires_at IS NOT NULL AND safe_failure_code IS NOT NULL AND completed_at IS NULL)
+    OR (status='failed_terminal' AND safe_result_json IS NULL AND lease_owner_token IS NOT NULL AND lease_expires_at IS NULL AND safe_failure_code IS NOT NULL AND completed_at IS NULL)
+    OR status='expired'
   )
 );
 
@@ -189,6 +187,10 @@ CREATE INDEX idx_webhook_tenant_expiry
   ON webhook_receipts(tenant_id, expires_at, id);
 CREATE INDEX idx_webhook_expiry_status
   ON webhook_receipts(status, expires_at, id);
+CREATE INDEX idx_webhook_processing_lease
+  ON webhook_receipts(status, lease_expires_at, attempt_count, id);
+CREATE INDEX idx_webhook_tenant_lease
+  ON webhook_receipts(tenant_id, status, lease_expires_at, id);
 CREATE INDEX idx_rate_limit_tenant_window
   ON rate_limit_evidence(tenant_id, window_started_at DESC, id);
 CREATE INDEX idx_rate_limit_scope_window
@@ -232,16 +234,28 @@ FOR EACH ROW WHEN
   OR NEW.created_at IS NOT OLD.created_at OR NEW.replay_count < OLD.replay_count
   OR NEW.last_received_at < OLD.last_received_at OR NEW.updated_at < OLD.updated_at
   OR NOT (
-    (NEW.status = OLD.status AND (
-      OLD.status = 'processing'
-      OR NEW.safe_result_json IS OLD.safe_result_json
-    ))
-    OR (OLD.status = 'processing' AND NEW.status IN ('completed','conflict'))
-    OR (
-      OLD.status <> 'expired' AND NEW.status = 'expired'
-      AND NEW.updated_at >= OLD.expires_at
-      AND NEW.safe_result_json IS OLD.safe_result_json
-    )
+    (NEW.status = OLD.status AND NEW.lease_owner_token IS OLD.lease_owner_token
+      AND NEW.lease_expires_at IS OLD.lease_expires_at AND NEW.attempt_count = OLD.attempt_count
+      AND NEW.last_attempt_at = OLD.last_attempt_at AND NEW.safe_failure_code IS OLD.safe_failure_code
+      AND NEW.safe_result_json IS OLD.safe_result_json AND NEW.completed_at IS OLD.completed_at)
+    OR (OLD.status='processing' AND NEW.status='processing'
+      AND NEW.attempt_count=OLD.attempt_count+1 AND NEW.lease_owner_token IS NOT OLD.lease_owner_token
+      AND NEW.last_attempt_at>=OLD.lease_expires_at AND NEW.lease_expires_at>NEW.last_attempt_at
+      AND NEW.safe_failure_code IS NULL AND NEW.safe_result_json IS NULL AND NEW.completed_at IS NULL)
+    OR (OLD.status='failed_retryable' AND NEW.status='processing'
+      AND NEW.attempt_count=OLD.attempt_count+1 AND NEW.lease_owner_token IS NOT OLD.lease_owner_token
+      AND NEW.last_attempt_at>=OLD.lease_expires_at AND NEW.lease_expires_at>NEW.last_attempt_at
+      AND NEW.safe_failure_code IS NULL AND NEW.safe_result_json IS NULL AND NEW.completed_at IS NULL)
+    OR (OLD.status='processing' AND NEW.status='completed'
+      AND NEW.lease_owner_token IS OLD.lease_owner_token AND NEW.attempt_count=OLD.attempt_count
+      AND NEW.safe_result_json IS NOT NULL AND NEW.completed_at>=OLD.last_attempt_at)
+    OR (OLD.status='processing' AND NEW.status IN ('failed_retryable','failed_terminal')
+      AND NEW.lease_owner_token IS OLD.lease_owner_token AND NEW.attempt_count=OLD.attempt_count
+      AND NEW.safe_failure_code IS NOT NULL)
+    OR (OLD.status='failed_retryable' AND NEW.status='failed_terminal'
+      AND NEW.lease_owner_token IS OLD.lease_owner_token AND NEW.attempt_count=OLD.attempt_count)
+    OR (OLD.status IN ('completed','failed_terminal') AND NEW.status='expired'
+      AND NEW.updated_at>=OLD.expires_at)
   )
 BEGIN SELECT RAISE(ABORT, 'webhook_receipt_immutable'); END;
 CREATE TRIGGER trg_rate_limit_evidence_no_update

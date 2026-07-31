@@ -31,8 +31,11 @@ import type {
 
 const MAX_COUNTER = 1_000_000_000;
 
-function boundedIncrement(value: number): number {
-  return Math.min(MAX_COUNTER, value + 1);
+export function boundedIncrement(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0 || value >= MAX_COUNTER) {
+    throw new TrafficProtectionError("DEPENDENCY_UNAVAILABLE", false);
+  }
+  return value + 1;
 }
 
 function assertDigest(value: string | null, name: string): void {
@@ -125,36 +128,28 @@ export class LocalSlidingWindowRateLimiter implements RateLimiterPort {
 }
 
 export class LocalHierarchicalRateLimiter implements RateLimiterPort {
-  private readonly tenantLimiter: LocalSlidingWindowRateLimiter;
-  private readonly platformLimiter: LocalSlidingWindowRateLimiter;
-
-  constructor(
-    now: () => number,
-    tenantPolicy: RateLimitPolicy,
-    platformPolicy: RateLimitPolicy,
-  ) {
-    this.tenantLimiter = new LocalSlidingWindowRateLimiter(now, tenantPolicy);
-    this.platformLimiter = new LocalSlidingWindowRateLimiter(now, platformPolicy);
+  private readonly tenantCounters = new Map<string, WindowCounter>();
+  private readonly platformCounters = new Map<string, WindowCounter>();
+  constructor(private readonly now:()=>number,private readonly tenantPolicy:RateLimitPolicy,private readonly platformPolicy:RateLimitPolicy) {}
+  async evaluate(context:TrustedAdmissionContext):Promise<RateLimitDecision>{
+    const timestamp=this.now();
+    const tenantKey=rateKey(context);
+    const platformKey=[context.environment,context.routeKey,context.moduleKey].join("|");
+    const tenant=this.current(this.tenantCounters.get(tenantKey),timestamp,this.tenantPolicy);
+    const platform=this.current(this.platformCounters.get(platformKey),timestamp,this.platformPolicy);
+    const tenantBlocked=this.blocked(tenant,timestamp,this.tenantPolicy);
+    const platformBlocked=this.blocked(platform,timestamp,this.platformPolicy);
+    if(tenantBlocked&&this.tenantPolicy.enforcementMode==="enforce"){this.tenantCounters.set(tenantKey,tenant);return this.rejected(tenant,timestamp,"TENANT_RATE_LIMITED");}
+    if(platformBlocked&&this.platformPolicy.enforcementMode==="enforce"){this.platformCounters.set(platformKey,platform);return this.rejected(platform,timestamp,"PLATFORM_RATE_LIMITED");}
+    if(!tenantBlocked){tenant.count=boundedIncrement(tenant.count);this.tenantCounters.set(tenantKey,tenant);}
+    if(!platformBlocked){platform.count=boundedIncrement(platform.count);this.platformCounters.set(platformKey,platform);}
+    return Object.freeze({admitted:true,observedOnly:tenantBlocked||platformBlocked,retryAfterSeconds:null,reasonCode:"RATE_LIMIT_OK"});
   }
-
-  async evaluate(context: TrustedAdmissionContext): Promise<RateLimitDecision> {
-    const tenant = await this.tenantLimiter.evaluate(context);
-    if (!tenant.admitted) {
-      return Object.freeze({ ...tenant, reasonCode: "TENANT_RATE_LIMITED" as const });
-    }
-    const platform = await this.platformLimiter.evaluate(Object.freeze({
-      ...context,
-      tenantId: "trusted-platform-rate-scope",
-      applicationId: null,
-      actorDigest: null,
-      ipDigest: null,
-    }));
-    if (!platform.admitted) {
-      return Object.freeze({ ...platform, reasonCode: "PLATFORM_RATE_LIMITED" as const });
-    }
-    return tenant;
-  }
+  private current(prior:WindowCounter|undefined,timestamp:number,policy:RateLimitPolicy):WindowCounter{return !prior||timestamp-prior.startedAt>=policy.windowMs?{startedAt:timestamp,count:0,blockedUntil:0}:prior;}
+  private blocked(counter:WindowCounter,timestamp:number,policy:RateLimitPolicy):boolean{if(timestamp<counter.blockedUntil||counter.count>=policy.limit+policy.burst){counter.blockedUntil=Math.max(counter.blockedUntil,counter.startedAt+policy.windowMs+policy.cooldownMs);return true;}return false;}
+  private rejected(counter:WindowCounter,timestamp:number,reasonCode:"TENANT_RATE_LIMITED"|"PLATFORM_RATE_LIMITED"):RateLimitDecision{return Object.freeze({admitted:false,observedOnly:false,retryAfterSeconds:Math.max(1,Math.ceil((counter.blockedUntil-timestamp)/1000)),reasonCode});}
 }
+
 interface ResourceWindow extends TenantResourceUsageSnapshot {
   startedAt: number;
 }
@@ -170,420 +165,66 @@ const EMPTY_USAGE: TenantResourceUsageSnapshot = Object.freeze({
 
 export class LocalTenantResourceIsolation implements TenantResourceIsolationPort {
   private readonly tenantUsage = new Map<string, ResourceWindow>();
+  private readonly leases = new Map<string, { tenantId: string; expiresAt: number }>();
   private platformUsage: ResourceWindow = { ...EMPTY_USAGE, startedAt: 0 };
-
-  constructor(
-    private readonly now: () => number,
-    private readonly budget: TenantAdmissionBudget,
-  ) {}
+  private leaseSequence = 0;
+  constructor(private readonly now: () => number, private readonly budget: TenantAdmissionBudget, private readonly leaseMs = 30_000) {}
 
   async evaluate(context: TrustedAdmissionContext): Promise<ResourceIsolationDecision> {
-    assertTrustedContext(context);
-    const timestamp = this.now();
-    const tenant = this.window(
-      this.tenantUsage.get(context.tenantId),
-      timestamp,
-      this.budget.tenant.windowMs,
-    );
-    this.platformUsage = this.window(
-      this.platformUsage,
-      timestamp,
-      this.budget.platform.windowMs,
-    );
-    const tenantExceeded = this.exceeds(tenant, this.budget.tenant, context);
-    if (tenantExceeded) {
-      this.tenantUsage.set(context.tenantId, tenant);
-      return Object.freeze({
-        admitted: false,
-        reasonCode: "TENANT_BUDGET_EXHAUSTED",
-        retryAfterSeconds: Math.max(
-          1,
-          Math.ceil((tenant.startedAt + this.budget.tenant.windowMs - timestamp) / 1000),
-        ),
-      });
-    }
-    const platformExceeded = this.exceeds(this.platformUsage, this.budget.platform, context);
-    if (platformExceeded && context.priority !== "critical") {
-      return Object.freeze({
-        admitted: false,
-        reasonCode: "PLATFORM_BUDGET_EXHAUSTED",
-        retryAfterSeconds: Math.max(
-          1,
-          Math.ceil((this.platformUsage.startedAt + this.budget.platform.windowMs - timestamp) / 1000),
-        ),
-      });
-    }
-    const nextTenant = this.increment(tenant, context);
-    this.tenantUsage.set(context.tenantId, nextTenant);
-    this.platformUsage = this.increment(this.platformUsage, context);
-    return Object.freeze({
-      admitted: true,
-      reasonCode: "RESOURCE_OK",
-      retryAfterSeconds: null,
-    });
+    assertTrustedContext(context); const timestamp=this.now(); this.expireLeases(timestamp);
+    const tenant=this.window(this.tenantUsage.get(context.tenantId),timestamp,this.budget.tenant.windowMs);
+    this.platformUsage=this.window(this.platformUsage,timestamp,this.budget.platform.windowMs);
+    if(this.exceeds(tenant,this.budget.tenant,context,0)){this.tenantUsage.set(context.tenantId,tenant);return Object.freeze({admitted:false,reasonCode:"TENANT_BUDGET_EXHAUSTED",retryAfterSeconds:1,leaseToken:null});}
+    const reserve=context.priority==="critical"?1:0;
+    if(this.exceeds(this.platformUsage,this.budget.platform,context,reserve))return Object.freeze({admitted:false,reasonCode:"PLATFORM_BUDGET_EXHAUSTED",retryAfterSeconds:1,leaseToken:null});
+    const leaseToken=`resource-lease-${++this.leaseSequence}`;
+    this.tenantUsage.set(context.tenantId,this.increment(tenant,context)); this.platformUsage=this.increment(this.platformUsage,context);
+    this.leases.set(leaseToken,{tenantId:context.tenantId,expiresAt:timestamp+this.leaseMs});
+    return Object.freeze({admitted:true,reasonCode:"RESOURCE_OK",retryAfterSeconds:null,leaseToken});
   }
-
-  snapshot(tenantId: string): TenantResourceUsageSnapshot {
-    const usage = this.tenantUsage.get(tenantId) ?? { ...EMPTY_USAGE, startedAt: 0 };
-    return Object.freeze({
-      concurrentRequests: usage.concurrentRequests,
-      requestsPerWindow: usage.requestsPerWindow,
-      expensiveMutationsPerWindow: usage.expensiveMutationsPerWindow,
-      backgroundIntentsPerWindow: usage.backgroundIntentsPerWindow,
-      providerCallsPerWindow: usage.providerCallsPerWindow,
-      databaseWritesPerWindow: usage.databaseWritesPerWindow,
-    });
-  }
-
-  release(tenantId: string): void {
-    const usage = this.tenantUsage.get(tenantId);
-    if (usage) {
-      this.tenantUsage.set(tenantId, {
-        ...usage,
-        concurrentRequests: Math.max(0, usage.concurrentRequests - 1),
-      });
-    }
-    this.platformUsage = {
-      ...this.platformUsage,
-      concurrentRequests: Math.max(0, this.platformUsage.concurrentRequests - 1),
-    };
-  }
-
-  private window(
-    existing: ResourceWindow | undefined,
-    timestamp: number,
-    windowMs: number,
-  ): ResourceWindow {
-    if (!existing || timestamp - existing.startedAt >= windowMs) {
-      return { ...EMPTY_USAGE, startedAt: timestamp };
-    }
-    return existing;
-  }
-
-  private exceeds(
-    usage: ResourceWindow,
-    policy: TenantAdmissionBudget["tenant"],
-    context: TrustedAdmissionContext,
-  ): boolean {
-    return usage.concurrentRequests >= policy.concurrentRequests
-      || usage.requestsPerWindow >= policy.requestsPerWindow
-      || (context.operationClass === "expensive_mutation"
-        && usage.expensiveMutationsPerWindow >= policy.expensiveMutationsPerWindow)
-      || (context.operationClass === "background"
-        && usage.backgroundIntentsPerWindow >= policy.backgroundIntentsPerWindow)
-      || (context.dependencyKey !== null
-        && usage.providerCallsPerWindow >= policy.providerCallsPerWindow)
-      || (context.operationClass !== "query"
-        && usage.databaseWritesPerWindow >= policy.databaseWritesPerWindow);
-  }
-
-  private increment(
-    usage: ResourceWindow,
-    context: TrustedAdmissionContext,
-  ): ResourceWindow {
-    return {
-      ...usage,
-      concurrentRequests: boundedIncrement(usage.concurrentRequests),
-      requestsPerWindow: boundedIncrement(usage.requestsPerWindow),
-      expensiveMutationsPerWindow: context.operationClass === "expensive_mutation"
-        ? boundedIncrement(usage.expensiveMutationsPerWindow)
-        : usage.expensiveMutationsPerWindow,
-      backgroundIntentsPerWindow: context.operationClass === "background"
-        ? boundedIncrement(usage.backgroundIntentsPerWindow)
-        : usage.backgroundIntentsPerWindow,
-      providerCallsPerWindow: context.dependencyKey
-        ? boundedIncrement(usage.providerCallsPerWindow)
-        : usage.providerCallsPerWindow,
-      databaseWritesPerWindow: context.operationClass === "query"
-        ? usage.databaseWritesPerWindow
-        : boundedIncrement(usage.databaseWritesPerWindow),
-    };
-  }
+  snapshot(tenantId:string):TenantResourceUsageSnapshot { const u=this.tenantUsage.get(tenantId)??{...EMPTY_USAGE,startedAt:0}; return Object.freeze({concurrentRequests:u.concurrentRequests,requestsPerWindow:u.requestsPerWindow,expensiveMutationsPerWindow:u.expensiveMutationsPerWindow,backgroundIntentsPerWindow:u.backgroundIntentsPerWindow,providerCallsPerWindow:u.providerCallsPerWindow,databaseWritesPerWindow:u.databaseWritesPerWindow}); }
+  async release(leaseToken:string):Promise<void>{const lease=this.leases.get(leaseToken);if(!lease)return;this.leases.delete(leaseToken);this.decrementConcurrency(lease.tenantId);}
+  private expireLeases(now:number){for(const [token,lease] of this.leases){if(lease.expiresAt<=now){this.leases.delete(token);this.decrementConcurrency(lease.tenantId);}}}
+  private decrementConcurrency(tenantId:string){const u=this.tenantUsage.get(tenantId);if(u)this.tenantUsage.set(tenantId,{...u,concurrentRequests:Math.max(0,u.concurrentRequests-1)});this.platformUsage={...this.platformUsage,concurrentRequests:Math.max(0,this.platformUsage.concurrentRequests-1)};}
+  private window(existing:ResourceWindow|undefined,timestamp:number,windowMs:number):ResourceWindow{return !existing||timestamp-existing.startedAt>=windowMs?{...EMPTY_USAGE,startedAt:timestamp}:existing;}
+  private exceeds(u:ResourceWindow,p:TenantAdmissionBudget["tenant"],c:TrustedAdmissionContext,reserve:number):boolean{return u.concurrentRequests>=p.concurrentRequests+reserve||u.requestsPerWindow>=p.requestsPerWindow+reserve||(c.operationClass==="expensive_mutation"&&u.expensiveMutationsPerWindow>=p.expensiveMutationsPerWindow+reserve)||(c.operationClass==="background"&&u.backgroundIntentsPerWindow>=p.backgroundIntentsPerWindow+reserve)||(c.dependencyKey!==null&&u.providerCallsPerWindow>=p.providerCallsPerWindow+reserve)||(c.operationClass!=="query"&&u.databaseWritesPerWindow>=p.databaseWritesPerWindow+reserve);}
+  private increment(u:ResourceWindow,c:TrustedAdmissionContext):ResourceWindow{return{...u,concurrentRequests:boundedIncrement(u.concurrentRequests),requestsPerWindow:boundedIncrement(u.requestsPerWindow),expensiveMutationsPerWindow:c.operationClass==="expensive_mutation"?boundedIncrement(u.expensiveMutationsPerWindow):u.expensiveMutationsPerWindow,backgroundIntentsPerWindow:c.operationClass==="background"?boundedIncrement(u.backgroundIntentsPerWindow):u.backgroundIntentsPerWindow,providerCallsPerWindow:c.dependencyKey?boundedIncrement(u.providerCallsPerWindow):u.providerCallsPerWindow,databaseWritesPerWindow:c.operationClass==="query"?u.databaseWritesPerWindow:boundedIncrement(u.databaseWritesPerWindow)};}
 }
 
 export class LocalCircuitBreaker implements CircuitBreakerPort {
-  private readonly states = new Map<string, CircuitBreakerState>();
-
-  constructor(
-    private readonly now: () => number,
-    private readonly policy: CircuitBreakerPolicy,
-    private readonly observations: TrafficObservationPort | null = null,
-  ) {
-    if (
-      policy.failureThreshold < 1 || policy.failureThreshold > 1000
-      || policy.cooldownMs < 100 || policy.cooldownMs > 604_800_000
-      || policy.halfOpenProbeLimit < 1 || policy.halfOpenProbeLimit > 100
-    ) {
-      throw new TypeError("INVALID_CIRCUIT_POLICY");
-    }
-  }
-
-  async evaluate(context: TrustedAdmissionContext): Promise<CircuitBreakerDecision> {
-    assertTrustedContext(context);
-    if (!context.dependencyKey) {
-      return Object.freeze({ admitted: true, probe: false, state: "closed", retryAfterSeconds: null });
-    }
-    const key = this.scopeKey(context);
-    const timestamp = this.now();
-    const current = this.states.get(key) ?? this.closed(key);
-    if (current.state === "open") {
-      if ((current.cooldownUntil as number) > timestamp) {
-        return Object.freeze({
-          admitted: false,
-          probe: false,
-          state: "open",
-          retryAfterSeconds: Math.max(1, Math.ceil(((current.cooldownUntil as number) - timestamp) / 1000)),
-        });
-      }
-      const halfOpen: CircuitBreakerState = Object.freeze({
-        ...current,
-        state: "half_open",
-        halfOpenProbeCount: 1,
-      });
-      this.states.set(key, halfOpen);
-      this.observeSafe("circuit.half_open", context, "CIRCUIT_COOLDOWN_ELAPSED", "warning");
-      return Object.freeze({ admitted: true, probe: true, state: "half_open", retryAfterSeconds: null });
-    }
-    if (current.state === "half_open") {
-      const admitted = current.halfOpenProbeCount < this.policy.halfOpenProbeLimit;
-      if (admitted) {
-        this.states.set(key, Object.freeze({
-          ...current,
-          halfOpenProbeCount: boundedIncrement(current.halfOpenProbeCount),
-        }));
-      }
-      return Object.freeze({
-        admitted,
-        probe: admitted,
-        state: "half_open",
-        retryAfterSeconds: admitted ? null : 1,
-      });
-    }
-    return Object.freeze({ admitted: true, probe: false, state: "closed", retryAfterSeconds: null });
-  }
-
-  recordFailure(context: TrustedAdmissionContext): CircuitBreakerState {
-    assertTrustedContext(context);
-    if (!context.dependencyKey) throw new TypeError("DEPENDENCY_REQUIRED");
-    const key = this.scopeKey(context);
-    const timestamp = this.now();
-    const current = this.states.get(key) ?? this.closed(key);
-    const failures = boundedIncrement(current.consecutiveFailureCount);
-    const opened = current.state === "half_open" || failures >= this.policy.failureThreshold;
-    const next: CircuitBreakerState = Object.freeze({
-      ...current,
-      state: opened ? "open" : "closed",
-      consecutiveFailureCount: failures,
-      halfOpenProbeCount: 0,
-      openedAt: opened ? timestamp : null,
-      cooldownUntil: opened ? timestamp + this.policy.cooldownMs : null,
-    });
-    this.states.set(key, next);
-    if (opened) this.observeSafe("circuit.opened", context, "CIRCUIT_FAILURE_THRESHOLD", "error");
-    return next;
-  }
-
-  recordSuccess(context: TrustedAdmissionContext): CircuitBreakerState {
-    assertTrustedContext(context);
-    if (!context.dependencyKey) throw new TypeError("DEPENDENCY_REQUIRED");
-    const prior = this.state(context);
-    const next = this.closed(this.scopeKey(context));
-    this.states.set(next.scopeKey, next);
-    if (prior.state !== "closed") this.observeSafe("circuit.closed", context, "CIRCUIT_PROBE_SUCCEEDED", "info");
-    return next;
-  }
-
-  state(context: TrustedAdmissionContext): CircuitBreakerState {
-    return this.states.get(this.scopeKey(context)) ?? this.closed(this.scopeKey(context));
-  }
-
-  private observeSafe(
-    eventType: "circuit.opened" | "circuit.half_open" | "circuit.closed",
-    context: TrustedAdmissionContext,
-    reasonCode: string,
-    severity: TrafficObservation["severity"],
-  ): void {
-    void this.observations?.observe({
-      eventType,
-      tenantId: context.tenantId,
-      operation: context.dependencyKey ?? "dependency",
-      reasonCode,
-      severity,
-    }).catch(() => undefined);
-  }
-  private scopeKey(context: TrustedAdmissionContext): string {
-    return context.tenantId
-      ? `tenant:${context.tenantId}:provider:${context.dependencyKey}`
-      : `provider:${context.dependencyKey}`;
-  }
-
-  private closed(scopeKey: string): CircuitBreakerState {
-    return Object.freeze({
-      scopeKey,
-      state: "closed",
-      consecutiveFailureCount: 0,
-      halfOpenProbeCount: 0,
-      openedAt: null,
-      cooldownUntil: null,
-    });
-  }
+  private readonly states=new Map<string,CircuitBreakerState>(); private probeSequence=0;
+  constructor(private readonly now:()=>number,private readonly policy:CircuitBreakerPolicy,private readonly observations:TrafficObservationPort|null=null){if(policy.failureThreshold<1||policy.cooldownMs<100||policy.halfOpenProbeLimit!==1)throw new TypeError("INVALID_CIRCUIT_POLICY");}
+  async evaluate(context:TrustedAdmissionContext):Promise<CircuitBreakerDecision>{assertTrustedContext(context);if(!context.dependencyKey)return Object.freeze({admitted:true,probe:false,state:"closed",retryAfterSeconds:null,probeToken:null});const key=this.scopeKey(context),t=this.now(),current=this.states.get(key)??this.closed(key);if(current.state==="open"){if((current.cooldownUntil as number)>t)return Object.freeze({admitted:false,probe:false,state:"open",retryAfterSeconds:Math.max(1,Math.ceil(((current.cooldownUntil as number)-t)/1000)),probeToken:null});const token=`circuit-probe-${++this.probeSequence}`,next=Object.freeze({...current,state:"half_open" as const,halfOpenProbeCount:1,version:current.version+1,probeLeaseToken:token,probeLeaseExpiresAt:t+this.policy.cooldownMs});this.states.set(key,next);this.observeSafe("circuit.half_open",context,"CIRCUIT_COOLDOWN_ELAPSED","warning");return Object.freeze({admitted:true,probe:true,state:"half_open",retryAfterSeconds:null,probeToken:token});}if(current.state==="half_open"&&(current.probeLeaseExpiresAt??0)<=t){const token=`circuit-probe-${++this.probeSequence}`,next=Object.freeze({...current,version:current.version+1,probeLeaseToken:token,probeLeaseExpiresAt:t+this.policy.cooldownMs});this.states.set(key,next);return Object.freeze({admitted:true,probe:true,state:"half_open",retryAfterSeconds:null,probeToken:token});}return current.state==="half_open"?Object.freeze({admitted:false,probe:false,state:"half_open",retryAfterSeconds:1,probeToken:null}):Object.freeze({admitted:true,probe:false,state:"closed",retryAfterSeconds:null,probeToken:null});}
+  recordFailure(context:TrustedAdmissionContext,probeToken:string|null=null):CircuitBreakerState{assertTrustedContext(context);if(!context.dependencyKey)throw new TypeError("DEPENDENCY_REQUIRED");const key=this.scopeKey(context),t=this.now(),current=this.states.get(key)??this.closed(key);if(current.state==="half_open"&&probeToken!==current.probeLeaseToken)throw new TrafficProtectionError("STALE_CIRCUIT_PROBE",false);const failures=boundedIncrement(current.consecutiveFailureCount),opened=current.state==="half_open"||failures>=this.policy.failureThreshold,next=Object.freeze({...current,state:opened?"open" as const:"closed" as const,consecutiveFailureCount:failures,halfOpenProbeCount:0,openedAt:opened?t:null,cooldownUntil:opened?t+this.policy.cooldownMs:null,version:current.version+1,probeLeaseToken:null,probeLeaseExpiresAt:null});this.states.set(key,next);if(opened&&current.state!=="open")this.observeSafe("circuit.opened",context,"CIRCUIT_FAILURE_THRESHOLD","error");return next;}
+  recordSuccess(context:TrustedAdmissionContext,probeToken:string|null=null):CircuitBreakerState{assertTrustedContext(context);if(!context.dependencyKey)throw new TypeError("DEPENDENCY_REQUIRED");const prior=this.state(context);if(prior.state!=="half_open"||probeToken!==prior.probeLeaseToken||(prior.probeLeaseExpiresAt??0)<this.now())throw new TrafficProtectionError("STALE_CIRCUIT_PROBE",false);const next=this.closed(this.scopeKey(context),prior.version+1);this.states.set(next.scopeKey,next);this.observeSafe("circuit.closed",context,"CIRCUIT_PROBE_SUCCEEDED","info");return next;}
+  state(context:TrustedAdmissionContext):CircuitBreakerState{return this.states.get(this.scopeKey(context))??this.closed(this.scopeKey(context));}
+  private observeSafe(eventType:"circuit.opened"|"circuit.half_open"|"circuit.closed",context:TrustedAdmissionContext,reasonCode:string,severity:TrafficObservation["severity"]){void this.observations?.observe({eventType,tenantId:context.tenantId,operation:context.dependencyKey??"dependency",reasonCode,severity}).catch(()=>undefined);}
+  private scopeKey(context:TrustedAdmissionContext){return `tenant:${context.tenantId}:provider:${context.dependencyKey}`;}
+  private closed(scopeKey:string,version=1):CircuitBreakerState{return Object.freeze({scopeKey,state:"closed",consecutiveFailureCount:0,halfOpenProbeCount:0,openedAt:null,cooldownUntil:null,version,probeLeaseToken:null,probeLeaseExpiresAt:null});}
 }
 
 export class LocalLoadShedding implements LoadSheddingPort {
-  private mode: DegradationMode = "normal";
-  private recoveryEligibleAt = 0;
-
-  constructor(
-    private readonly now: () => number,
-    private readonly policy: LoadSheddingPolicy,
-    private readonly observations: TrafficObservationPort | null = null,
-  ) {
-    if (policy.recoveryHysteresisMs < 100 || policy.recoveryHysteresisMs > 604_800_000) {
-      throw new TypeError("INVALID_LOAD_SHEDDING_POLICY");
-    }
-  }
-
-  activate(mode: Exclude<DegradationMode, "normal">): void {
-    this.mode = mode;
-    this.recoveryEligibleAt = this.now() + this.policy.recoveryHysteresisMs;
-    this.observeSafe("degradation.activated", `DEGRADATION_${mode.toUpperCase()}`, mode === "emergency" ? "critical" : "warning");
-  }
-
-  recover(): boolean {
-    if (this.now() < this.recoveryEligibleAt) return false;
-    this.mode = "normal";
-    this.recoveryEligibleAt = 0;
-    this.observeSafe("degradation.recovered", "DEGRADATION_RECOVERED", "info");
-    return true;
-  }
-
-  currentMode(): DegradationMode {
-    return this.mode;
-  }
-
-  async evaluate(context: TrustedAdmissionContext): Promise<AdmissionSheddingDecision> {
-    assertTrustedContext(context);
-    const decision = this.decision(context);
-    return Object.freeze(decision);
-  }
-
-  private observeSafe(
-    eventType: "degradation.activated" | "degradation.recovered",
-    reasonCode: string,
-    severity: TrafficObservation["severity"],
-  ): void {
-    void this.observations?.observe({
-      eventType,
-      tenantId: null,
-      operation: "platform.load_shedding",
-      reasonCode,
-      severity,
-    }).catch(() => undefined);
-  }
-  private decision(context: TrustedAdmissionContext): AdmissionSheddingDecision {
-    if (this.mode === "normal" || context.priority === "critical") {
-      return { admitted: true, deferred: false, reasonCode: "LOAD_OK" };
-    }
-    if (this.mode === "protect_background" && context.priority === "background") {
-      return { admitted: false, deferred: true, reasonCode: "BACKGROUND_DEFERRED" };
-    }
-    if (
-      this.mode === "protect_optional"
-      && (context.priority === "optional" || context.priority === "background")
-    ) {
-      return { admitted: false, deferred: context.priority === "background", reasonCode: "OPTIONAL_SHED" };
-    }
-    if (this.mode === "protect_writes" && context.operationClass !== "query") {
-      return { admitted: false, deferred: false, reasonCode: "WRITE_SHED" };
-    }
-    if (this.mode === "emergency" && !isEmergencySafe(context.routeKey)) {
-      return { admitted: false, deferred: false, reasonCode: "EMERGENCY_SHED" };
-    }
-    return { admitted: true, deferred: false, reasonCode: "LOAD_OK" };
-  }
+  private mode:DegradationMode="normal";private recoveryEligibleAt=0;private version=1;
+  constructor(private readonly now:()=>number,private readonly policy:LoadSheddingPolicy,private readonly observations:TrafficObservationPort|null=null){if(policy.recoveryHysteresisMs<100||policy.recoveryHysteresisMs>604800000)throw new TypeError("INVALID_LOAD_SHEDDING_POLICY");}
+  activate(mode:Exclude<DegradationMode,"normal">):number{this.transition(this.version,mode);return this.version;}
+  transition(expectedVersion:number,mode:DegradationMode):boolean{if(expectedVersion!==this.version)return false;this.mode=mode;this.version=boundedIncrement(this.version);this.recoveryEligibleAt=mode==="normal"?0:this.now()+this.policy.recoveryHysteresisMs;this.observeSafe(mode==="normal"?"degradation.recovered":"degradation.activated",mode==="normal"?"DEGRADATION_RECOVERED":`DEGRADATION_${mode.toUpperCase()}`,mode==="emergency"?"critical":mode==="normal"?"info":"warning");return true;}
+  recover(expectedVersion=this.version):boolean{if(this.now()<this.recoveryEligibleAt)return false;return this.transition(expectedVersion,"normal");}
+  snapshot(){return Object.freeze({mode:this.mode,version:this.version,recoveryEligibleAt:this.recoveryEligibleAt});}
+  currentMode(){return this.mode;}
+  async evaluate(context:TrustedAdmissionContext):Promise<AdmissionSheddingDecision>{assertTrustedContext(context);return Object.freeze(this.decision(context));}
+  private observeSafe(eventType:"degradation.activated"|"degradation.recovered",reasonCode:string,severity:TrafficObservation["severity"]){void this.observations?.observe({eventType,tenantId:null,operation:"platform.load_shedding",reasonCode,severity}).catch(()=>undefined);}
+  private decision(c:TrustedAdmissionContext):AdmissionSheddingDecision{if(this.mode==="normal"||c.priority==="critical")return{admitted:true,deferred:false,reasonCode:"LOAD_OK"};if(this.mode==="protect_background"&&c.priority==="background")return{admitted:false,deferred:true,reasonCode:"BACKGROUND_DEFERRED"};if(this.mode==="protect_optional"&&(c.priority==="optional"||c.priority==="background"))return{admitted:false,deferred:c.priority==="background",reasonCode:"OPTIONAL_SHED"};if(this.mode==="protect_writes"&&c.operationClass!=="query")return{admitted:false,deferred:false,reasonCode:"WRITE_SHED"};if(this.mode==="emergency"&&!isEmergencySafe(c.routeKey))return{admitted:false,deferred:false,reasonCode:"EMERGENCY_SHED"};return{admitted:true,deferred:false,reasonCode:"LOAD_OK"};}
 }
 
 export class LocalWebhookDeduplicator implements WebhookDeduplicationPort {
-  private readonly receipts = new Map<string, WebhookReceiptRecord>();
-
-  constructor(
-    private readonly now: () => number,
-    private readonly uuidv7: UuidV7,
-    private readonly ttlMs = 24 * 60 * 60 * 1000,
-  ) {
-    if (ttlMs < 1000 || ttlMs > 30 * 24 * 60 * 60 * 1000) {
-      throw new TypeError("INVALID_WEBHOOK_TTL");
-    }
-  }
-
-  async claim(fingerprint: WebhookEventFingerprint): Promise<WebhookReplayResult> {
-    validateFingerprint(fingerprint);
-    const key = webhookKey(fingerprint);
-    const timestamp = this.now();
-    const existing = this.receipts.get(key);
-    if (existing && existing.expiresAt > timestamp) {
-      if (existing.payloadFingerprint !== fingerprint.payloadFingerprint) {
-        return Object.freeze({
-          status: "fingerprint_conflict",
-          receiptId: existing.receiptId,
-          safeResult: Object.freeze({ code: "EVENT_FINGERPRINT_CONFLICT" }),
-          executeMutation: false,
-        });
-      }
-      const replay = Object.freeze({
-        ...existing,
-        replayCount: boundedIncrement(existing.replayCount),
-        lastReceivedAt: timestamp,
-      });
-      this.receipts.set(key, replay);
-      return Object.freeze({
-        status: "duplicate_replay",
-        receiptId: replay.receiptId,
-        safeResult: replay.safeResult,
-        executeMutation: false,
-      });
-    }
-    const receipt: WebhookReceiptRecord = Object.freeze({
-      ...fingerprint,
-      receiptId: this.uuidv7.generate(),
-      status: "processing",
-      safeResult: null,
-      replayCount: 0,
-      firstReceivedAt: timestamp,
-      lastReceivedAt: timestamp,
-      expiresAt: timestamp + this.ttlMs,
-    });
-    this.receipts.set(key, receipt);
-    return Object.freeze({
-      status: "first_seen",
-      receiptId: receipt.receiptId,
-      safeResult: null,
-      executeMutation: true,
-    });
-  }
-
-  async complete(
-    receiptId: string,
-    safeResult: Readonly<Record<string, string | number | boolean | null>>,
-  ): Promise<void> {
-    const json = JSON.stringify(safeResult);
-    if (json.length > 2048 || /token|authorization|request.?body|raw.?uid/i.test(json)) {
-      throw new TypeError("UNSAFE_WEBHOOK_RESULT");
-    }
-    const pair = [...this.receipts.entries()].find(([, receipt]) => receipt.receiptId === receiptId);
-    if (!pair) throw new TrafficProtectionError("DUPLICATE_EVENT", false);
-    const [key, receipt] = pair;
-    if (receipt.status === "completed") return;
-    this.receipts.set(key, Object.freeze({
-      ...receipt,
-      status: "completed",
-      safeResult: Object.freeze({ ...safeResult }),
-    }));
-  }
-
-  get records(): readonly WebhookReceiptRecord[] {
-    return Object.freeze([...this.receipts.values()]);
-  }
+  private readonly receipts=new Map<string,WebhookReceiptRecord>();
+  constructor(private readonly now:()=>number,private readonly uuidv7:UuidV7,private readonly ttlMs=24*60*60*1000,private readonly leaseMs=30_000,private readonly maxAttempts=3){if(ttlMs<1000||leaseMs<100)throw new TypeError("INVALID_WEBHOOK_TTL");}
+  async claim(fingerprint:WebhookEventFingerprint):Promise<WebhookReplayResult>{validateFingerprint(fingerprint);const key=webhookKey(fingerprint),t=this.now(),existing=this.receipts.get(key);if(existing&&existing.status!=="expired"){if(existing.payloadFingerprint!==fingerprint.payloadFingerprint)return this.result(existing,"fingerprint_conflict",false,null);if(existing.status==="completed")return this.result(existing,"duplicate_replay",false,null);if(existing.status==="failed_terminal")return this.result(existing,"terminal_failure",false,null);if(existing.status==="processing"&&(existing.leaseExpiresAt??0)>t)return this.result(existing,"processing_deferred",false,1);if(existing.attemptCount>=this.maxAttempts){const terminal=Object.freeze({...existing,status:"failed_terminal" as const,leaseExpiresAt:null,safeFailureCode:"WEBHOOK_MAX_ATTEMPTS",lastReceivedAt:t,replayCount:boundedIncrement(existing.replayCount)});this.receipts.set(key,terminal);return this.result(terminal,"terminal_failure",false,null);}const token=this.uuidv7.generate(),taken=Object.freeze({...existing,status:"processing" as const,leaseOwnerToken:token,leaseExpiresAt:t+this.leaseMs,attemptCount:boundedIncrement(existing.attemptCount),lastAttemptAt:t,safeFailureCode:null,lastReceivedAt:t,replayCount:boundedIncrement(existing.replayCount)});this.receipts.set(key,taken);return this.result(taken,"lease_takeover",true,null,token);}
+    const token=this.uuidv7.generate(),receipt=Object.freeze({...fingerprint,receiptId:this.uuidv7.generate(),status:"processing" as const,safeResult:null,leaseOwnerToken:token,leaseExpiresAt:t+this.leaseMs,attemptCount:1,lastAttemptAt:t,safeFailureCode:null,completedAt:null,replayCount:0,firstReceivedAt:t,lastReceivedAt:t,expiresAt:t+this.ttlMs});this.receipts.set(key,receipt);return this.result(receipt,"first_seen",true,null,token);}
+  async complete(receiptId:string,leaseToken:string,safeResult:Readonly<Record<string,string|number|boolean|null>>):Promise<void>{const json=JSON.stringify(safeResult);if(json.length>2048||/token|authorization|request.?body|raw.?uid/i.test(json))throw new TypeError("UNSAFE_WEBHOOK_RESULT");const pair=[...this.receipts.entries()].find(([,r])=>r.receiptId===receiptId);if(!pair)throw new TrafficProtectionError("DUPLICATE_EVENT",false);const[key,r]=pair;if(r.status==="completed"&&r.leaseOwnerToken===leaseToken)return;if(r.status!=="processing"||r.leaseOwnerToken!==leaseToken||(r.leaseExpiresAt??0)<=this.now())throw new TrafficProtectionError("STALE_WEBHOOK_LEASE",false);this.receipts.set(key,Object.freeze({...r,status:"completed" as const,safeResult:Object.freeze({...safeResult}),leaseExpiresAt:null,completedAt:this.now()}));}
+  async fail(receiptId:string,leaseToken:string,safeFailureCode:string):Promise<void>{const pair=[...this.receipts.entries()].find(([,r])=>r.receiptId===receiptId);if(!pair)throw new TrafficProtectionError("DUPLICATE_EVENT",false);const[key,r]=pair;if(r.status!=="processing"||r.leaseOwnerToken!==leaseToken)throw new TrafficProtectionError("STALE_WEBHOOK_LEASE",false);const terminal=r.attemptCount>=this.maxAttempts;this.receipts.set(key,Object.freeze({...r,status:terminal?"failed_terminal" as const:"failed_retryable" as const,safeFailureCode,leaseExpiresAt:terminal?null:this.now()+this.leaseMs}));}
+  get records(){return Object.freeze([...this.receipts.values()]);}
+  private result(r:WebhookReceiptRecord,status:WebhookReplayResult["status"],executeMutation:boolean,retryAfterSeconds:number|null,leaseToken:string|null=null):WebhookReplayResult{return Object.freeze({status,receiptId:r.receiptId,safeResult:r.safeResult,executeMutation,leaseToken,attemptCount:r.attemptCount,retryAfterSeconds});}
 }
 
 export class LocalAcceptedOperationStore {
@@ -639,7 +280,7 @@ export class LocalTrafficReadinessAdapter implements TrafficReadinessPort {
 
 export function isEmergencySafe(routeKey: string): boolean {
   return routeKey === "/health" || routeKey === "/ready" || routeKey === "/status"
-    || routeKey.startsWith("/security/");
+    || routeKey === "/security/recovery";
 }
 
 function validateFingerprint(fingerprint: WebhookEventFingerprint): void {

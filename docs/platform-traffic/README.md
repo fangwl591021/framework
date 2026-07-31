@@ -1,6 +1,6 @@
 # Platform Traffic Protection Foundation
 
-> Platform Service Candidate | Contract Proposed | Locally Implemented | Locally Verified | Not Deployed | Production Use Not Allowed
+> Platform Service Candidate | Contract Approved by Tony | Architecture Review Approved | Security Review Approved | Locally Implemented | Locally Verified | Not Deployed | Production Use Not Allowed
 
 Platform Traffic Protection is the provider-neutral admission and isolation layer for shared Runtime traffic. It protects business services without owning their domain rules.
 

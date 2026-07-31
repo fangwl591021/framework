@@ -243,7 +243,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
-| [platform-traffic-protection](docs/registry/platform-traffic-protection.md) | Platform Service Candidate／Contract Proposed／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-traffic-protection](docs/registry/platform-traffic-protection.md) | Platform Service Candidate / Contract Approved by Tony / Locally Implemented / Locally Verified / Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -297,7 +297,7 @@ Platform Observability 是共用 Platform Service Candidate。Contract 已由 To
 - [Security and Privacy](docs/platform-traffic/08-SECURITY-PRIVACY.md)
 - [Local Verification](docs/platform-traffic/09-LOCAL-VERIFICATION.md)
 
-Platform Traffic Protection is a shared Platform Service Candidate. Its Contract remains Proposed; implementation and verification are limited to local adapters and isolated Local D1. No provider API, Remote D1, Durable Object, Queue, Cron, Binding, deployment, or Production use is authorized.
+Platform Traffic Protection is a shared Platform Service Candidate. Its Contract is Approved by Tony with Architecture and Security review Approved; implementation and verification are limited to local adapters and isolated Local D1. No provider API, Remote D1, Durable Object, Queue, Cron, Binding, deployment, or Production use is authorized.
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |

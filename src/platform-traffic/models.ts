@@ -19,7 +19,9 @@ export type TrafficErrorCode =
   | "REQUEST_DEFERRED"
   | "SERVICE_DEGRADED"
   | "MODULE_NOT_ENABLED"
-  | "PERMISSION_DENIED";
+  | "PERMISSION_DENIED"
+  | "STALE_WEBHOOK_LEASE"
+  | "STALE_CIRCUIT_PROBE";
 
 export interface TrustedAdmissionContext {
   readonly source: "trusted_runtime_context";
@@ -54,8 +56,14 @@ export interface WebhookEventFingerprint {
 
 export interface WebhookReceiptRecord extends WebhookEventFingerprint {
   readonly receiptId: string;
-  readonly status: "processing" | "completed" | "conflict" | "expired";
+  readonly status: "processing" | "completed" | "failed_retryable" | "failed_terminal" | "expired";
   readonly safeResult: Readonly<Record<string, string | number | boolean | null>> | null;
+  readonly leaseOwnerToken: string | null;
+  readonly leaseExpiresAt: number | null;
+  readonly attemptCount: number;
+  readonly lastAttemptAt: number;
+  readonly safeFailureCode: string | null;
+  readonly completedAt: number | null;
   readonly replayCount: number;
   readonly firstReceivedAt: number;
   readonly lastReceivedAt: number;
@@ -63,10 +71,13 @@ export interface WebhookReceiptRecord extends WebhookEventFingerprint {
 }
 
 export interface WebhookReplayResult {
-  readonly status: "first_seen" | "duplicate_replay" | "fingerprint_conflict";
+  readonly status: "first_seen" | "lease_takeover" | "processing_deferred" | "duplicate_replay" | "fingerprint_conflict" | "terminal_failure";
   readonly receiptId: string;
   readonly safeResult: Readonly<Record<string, string | number | boolean | null>> | null;
   readonly executeMutation: boolean;
+  readonly leaseToken: string | null;
+  readonly attemptCount: number;
+  readonly retryAfterSeconds: number | null;
 }
 
 export interface RateLimitPolicy {
@@ -114,6 +125,7 @@ export interface ResourceIsolationDecision {
   readonly admitted: boolean;
   readonly reasonCode: "RESOURCE_OK" | "TENANT_BUDGET_EXHAUSTED" | "PLATFORM_BUDGET_EXHAUSTED";
   readonly retryAfterSeconds: number | null;
+  readonly leaseToken: string | null;
 }
 
 export interface CircuitBreakerPolicy {
@@ -129,6 +141,9 @@ export interface CircuitBreakerState {
   readonly halfOpenProbeCount: number;
   readonly openedAt: number | null;
   readonly cooldownUntil: number | null;
+  readonly version: number;
+  readonly probeLeaseToken: string | null;
+  readonly probeLeaseExpiresAt: number | null;
 }
 
 export interface CircuitBreakerDecision {
@@ -136,6 +151,7 @@ export interface CircuitBreakerDecision {
   readonly probe: boolean;
   readonly state: CircuitBreakerState["state"];
   readonly retryAfterSeconds: number | null;
+  readonly probeToken: string | null;
 }
 
 export type DegradationMode =

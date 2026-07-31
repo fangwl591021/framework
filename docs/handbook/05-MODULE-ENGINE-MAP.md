@@ -32,7 +32,7 @@
 
 | Service | Purpose | Current Status | Official Link |
 | --- | --- | --- | --- |
-| Platform Traffic Protection | Trusted admission, webhook deduplication, rate decisions, Tenant resource isolation, circuit breaker, degradation and backpressure | Platform Service Candidate; Contract Proposed; Locally Implemented; Locally Verified; Not Deployed | [Traffic Protection](../platform-traffic/README.md) |
+| Platform Traffic Protection | Trusted admission, webhook deduplication, rate decisions, Tenant resource isolation, circuit breaker, degradation and backpressure | Platform Service Candidate; Contract Approved by Tony; Architecture/Security Approved; Locally Implemented; Locally Verified; Not Deployed | [Traffic Protection](../platform-traffic/README.md) |
 ## 使用規則
 
 - 其他 Module 只能依賴 Public Command、Query 或版本化 Domain Event，不得讀寫 private table／function。

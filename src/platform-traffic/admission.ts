@@ -1,4 +1,5 @@
 import { runtimeSupportCode } from "../platform-observability/support-code";
+import { isEmergencySafe } from "./local-adapters";
 import type {
   AdmissionResult,
   TrafficObservation,
@@ -43,6 +44,9 @@ export class TrafficAdmissionGuard {
     if (context.source !== "trusted_runtime_context") {
       return this.result("rejected", "DEPENDENCY_UNAVAILABLE", request.correlationId, false, null);
     }
+    if (isEmergencySafe(context.routeKey) && context.permissionGranted) {
+      return this.result("admitted", null, request.correlationId, false, null);
+    }
     if (request.webhook) {
       if (
         request.webhook.signature.source !== "trusted_signature_verifier"
@@ -64,6 +68,9 @@ export class TrafficAdmissionGuard {
             severity: "error",
           });
           return this.result("rejected", "EVENT_FINGERPRINT_CONFLICT", request.correlationId, false, null);
+        }
+        if (replay.status === "processing_deferred" || replay.status === "terminal_failure") {
+          return this.result("shed", "REQUEST_DEFERRED", request.correlationId, replay.status === "processing_deferred", replay.retryAfterSeconds);
         }
         if (replay.status === "duplicate_replay") {
           if (replay.safeResult === null) {

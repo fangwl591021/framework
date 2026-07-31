@@ -5,7 +5,7 @@ import {
 } from "../application/core-application-base";
 import type { Clock } from "../core/clock";
 import type { UuidV7 } from "../core/uuidv7";
-import type { IdentityDigestKeyProvider } from "../persistence/crypto";
+import { sha256Hex, type IdentityDigestKeyProvider } from "../persistence/crypto";
 import { TenantBoundaryError } from "../persistence/models";
 import { TrafficProtectionError } from "./errors";
 import type {
@@ -17,6 +17,8 @@ import type {
 import { D1TrafficProtectionRepository, type TrafficEvidencePage } from "./repository";
 
 const WEBHOOK_TTL_MS = 24 * 60 * 60 * 1000;
+const WEBHOOK_LEASE_MS = 30_000;
+const WEBHOOK_MAX_ATTEMPTS = 3;
 const EVIDENCE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const trafficPermissions = Object.freeze({
@@ -54,125 +56,134 @@ export class PlatformTrafficProtectionApplication extends CoreApplicationBase {
     validateFingerprint(fingerprint);
     const now = this.clock.now().getTime();
     const existing = await this.traffic.findWebhookReceipt(fingerprint);
-    if (existing && existing.expiresAt > now) {
-      if (
-        existing.payloadFingerprint !== fingerprint.payloadFingerprint
-        || existing.normalizedEventType !== fingerprint.normalizedEventType
-      ) {
+    if (existing && existing.status !== "expired") {
+      if (existing.payloadFingerprint !== fingerprint.payloadFingerprint
+        || existing.normalizedEventType !== fingerprint.normalizedEventType) {
         throw new TrafficProtectionError("EVENT_FINGERPRINT_CONFLICT", false);
       }
-      await this.db.prepare(
-        `UPDATE webhook_receipts
-         SET replay_count = CASE
-           WHEN replay_count < 1000000000 THEN replay_count + 1
-           ELSE replay_count END,
-           last_received_at = ?1, updated_at = ?1
-         WHERE tenant_id = ?2 AND id = ?3`,
-      ).bind(now, fingerprint.tenantId, existing.receiptId).run();
-      return Object.freeze({
-        status: "duplicate_replay",
-        receiptId: existing.receiptId,
-        safeResult: existing.safeResult,
-        executeMutation: false,
-      });
+      await this.incrementReplay(existing.receiptId, fingerprint.tenantId, now);
+      if (existing.status === "completed") return replay(existing, "duplicate_replay");
+      if (existing.status === "failed_terminal") return replay(existing, "terminal_failure");
+      if (existing.status === "processing" && (existing.leaseExpiresAt ?? 0) > now) {
+        return replay(existing, "processing_deferred", Math.max(1, Math.ceil(((existing.leaseExpiresAt as number) - now) / 1000)));
+      }
+      if (existing.attemptCount >= WEBHOOK_MAX_ATTEMPTS) {
+        await this.markTerminal(existing, now);
+        return replay({ ...existing, status: "failed_terminal", safeFailureCode: "WEBHOOK_MAX_ATTEMPTS" }, "terminal_failure");
+      }
+      const leaseToken = this.uuidv7.generate();
+      const [taken] = await this.db.batch([
+        this.db.prepare(
+          `UPDATE webhook_receipts SET status='processing', lease_owner_token=?1,
+           lease_expires_at=?2, attempt_count=attempt_count+1, last_attempt_at=?3,
+           safe_failure_code=NULL, updated_at=?3
+           WHERE tenant_id=?4 AND id=?5 AND attempt_count=?6
+             AND status IN ('processing','failed_retryable') AND lease_expires_at<=?3`,
+        ).bind(leaseToken, now + WEBHOOK_LEASE_MS, now, fingerprint.tenantId, existing.receiptId, existing.attemptCount),
+        this.webhookAudit("traffic.webhook.takeover", "WEBHOOK_LEASE_TAKEOVER", fingerprint.tenantId, existing.receiptId, leaseToken, "processing", context, now),
+      ]);
+      if (taken?.meta.changes === 1) return Object.freeze({ status: "lease_takeover", receiptId: existing.receiptId, safeResult: null, executeMutation: true, leaseToken, attemptCount: existing.attemptCount + 1, retryAfterSeconds: null });
+      const winner = await this.traffic.getWebhookReceipt(fingerprint.tenantId, existing.receiptId);
+      if (!winner) throw new TenantBoundaryError();
+      return winner.status === "completed" ? replay(winner, "duplicate_replay") : replay(winner, "processing_deferred", 1);
     }
     const receiptId = this.uuidv7.generate();
-    return this.executeIdempotent(
-      { scopeType: "tenant", tenantId: fingerprint.tenantId },
-      "traffic.webhook.claim",
-      fingerprint,
-      context,
-      (timestamp) => ({
-        result: Object.freeze({
-          status: "first_seen" as const,
-          receiptId,
-          safeResult: null,
-          executeMutation: true,
-        }),
-        statements: [
-          ...(existing ? [this.db.prepare(
-            `UPDATE webhook_receipts
-             SET status = 'expired', updated_at = ?1
-             WHERE tenant_id = ?2 AND id = ?3 AND status <> 'expired'
-               AND expires_at <= ?1`,
-          ).bind(timestamp, fingerprint.tenantId, existing.receiptId)] : []),
-
-          this.db.prepare(
-            `INSERT INTO webhook_receipts (
-              id, tenant_id, application_scope_key, provider_key,
-              provider_event_id, issuer_context_digest, normalized_event_type,
-              payload_fingerprint, status, safe_result_json, replay_count,
-              first_received_at, last_received_at, expires_at, created_at, updated_at
-            ) VALUES (
-              ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'processing', NULL, 0,
-              ?9, ?9, ?10, ?9, ?9
-            )`,
-          ).bind(
-            receiptId,
-            fingerprint.tenantId,
-            fingerprint.applicationScopeKey,
-            fingerprint.providerKey,
-            fingerprint.providerEventId,
-            fingerprint.issuerContextDigest,
-            fingerprint.normalizedEventType,
-            fingerprint.payloadFingerprint,
-            timestamp,
-            timestamp + WEBHOOK_TTL_MS,
-          ),
-        ],
-        audit: {
-          action: "traffic.webhook.claim",
-          resourceType: "webhook_receipt",
-          resourceReference: receiptId,
-          reasonCode: "WEBHOOK_FIRST_SEEN",
-        },
-      }),
-    );
+    const leaseToken = this.uuidv7.generate();
+    try {
+      await this.db.batch([
+        this.db.prepare(
+          `INSERT INTO webhook_receipts (
+            id, tenant_id, application_scope_key, provider_key, provider_event_id,
+            issuer_context_digest, normalized_event_type, payload_fingerprint,
+            status, safe_result_json, lease_owner_token, lease_expires_at,
+            attempt_count, last_attempt_at, safe_failure_code, completed_at,
+            replay_count, first_received_at, last_received_at, expires_at, created_at, updated_at
+          ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,'processing',NULL,?9,?10,1,?11,NULL,NULL,0,?11,?11,?12,?11,?11)`,
+        ).bind(receiptId, fingerprint.tenantId, fingerprint.applicationScopeKey,
+          fingerprint.providerKey, fingerprint.providerEventId, fingerprint.issuerContextDigest,
+          fingerprint.normalizedEventType, fingerprint.payloadFingerprint, leaseToken,
+          now + WEBHOOK_LEASE_MS, now, now + WEBHOOK_TTL_MS),
+        this.webhookAudit("traffic.webhook.claim", "WEBHOOK_FIRST_SEEN", fingerprint.tenantId, receiptId, leaseToken, "processing", context, now),
+      ]);
+      return Object.freeze({ status: "first_seen", receiptId, safeResult: null, executeMutation: true, leaseToken, attemptCount: 1, retryAfterSeconds: null });
+    } catch (error) {
+      const winner = await this.traffic.findWebhookReceipt(fingerprint);
+      if (!winner) throw error;
+      if (winner.payloadFingerprint !== fingerprint.payloadFingerprint) throw new TrafficProtectionError("EVENT_FINGERPRINT_CONFLICT", false);
+      return winner.status === "completed" ? replay(winner, "duplicate_replay") : replay(winner, "processing_deferred", 1);
+    }
   }
 
   async completeWebhook(
     tenantId: string,
     receiptId: string,
+    leaseToken: string,
     safeResult: Readonly<Record<string, string | number | boolean | null>>,
-    context: MutationContext,
+    _context: MutationContext,
   ): Promise<Readonly<{ receiptId: string; status: "completed" }>> {
-    assertSafeText("tenantId", tenantId, 36);
-    assertSafeText("receiptId", receiptId, 36);
+    assertSafeText("tenantId", tenantId, 36); assertSafeText("receiptId", receiptId, 36); assertSafeText("leaseToken", leaseToken, 36);
     const storedResult = JSON.stringify(safeResult);
-    if (
-      storedResult.length > 2048
-      || /token|authorization|request.?body|raw.?uid|secret|stack|select\s/i.test(storedResult)
-    ) {
-      throw new TypeError("UNSAFE_WEBHOOK_RESULT");
+    if (storedResult.length > 2048 || /token|authorization|request.?body|raw.?uid|secret|stack|select\s/i.test(storedResult)) throw new TypeError("UNSAFE_WEBHOOK_RESULT");
+    const now = this.clock.now().getTime();
+    const [result] = await this.db.batch([
+      this.db.prepare(
+        `UPDATE webhook_receipts SET status='completed', safe_result_json=?1,
+         lease_expires_at=NULL, completed_at=?2, updated_at=?2
+         WHERE tenant_id=?3 AND id=?4 AND status='processing'
+           AND lease_owner_token=?5 AND lease_expires_at>?2`,
+      ).bind(storedResult, now, tenantId, receiptId, leaseToken),
+      this.webhookAudit("traffic.webhook.complete", "WEBHOOK_MUTATION_COMPLETED", tenantId, receiptId, leaseToken, "completed", _context, now),
+    ]);
+    if (result?.meta.changes !== 1) {
+      const existing = await this.traffic.getWebhookReceipt(tenantId, receiptId);
+      if (existing?.status === "completed" && existing.leaseOwnerToken === leaseToken) return Object.freeze({ receiptId, status: "completed" });
+      throw new TrafficProtectionError("STALE_WEBHOOK_LEASE", false);
     }
-    const existing = await this.traffic.getWebhookReceipt(tenantId, receiptId);
-    if (!existing) throw new TenantBoundaryError();
-    if (existing.status === "completed") {
-      return Object.freeze({ receiptId, status: "completed" });
-    }
-    return this.executeIdempotent(
-      { scopeType: "tenant", tenantId },
-      "traffic.webhook.complete",
-      { receiptId, safeResult },
-      context,
-      (timestamp) => ({
-        result: Object.freeze({ receiptId, status: "completed" as const }),
-        statements: [
+    return Object.freeze({ receiptId, status: "completed" });
+  }
 
-          this.db.prepare(
-            `UPDATE webhook_receipts
-             SET status = 'completed', safe_result_json = ?1, updated_at = ?2
-             WHERE tenant_id = ?3 AND id = ?4 AND status = 'processing'`,
-          ).bind(storedResult, timestamp, tenantId, receiptId),
-        ],
-        audit: {
-          action: "traffic.webhook.complete",
-          resourceType: "webhook_receipt",
-          resourceReference: receiptId,
-          reasonCode: "WEBHOOK_MUTATION_COMPLETED",
-        },
-      }),
-    );
+  async failWebhook(tenantId: string, receiptId: string, leaseToken: string, safeFailureCode: string, context: MutationContext): Promise<"failed_retryable" | "failed_terminal"> {
+    assertSafeText("safeFailureCode", safeFailureCode, 80);
+    if (/token|secret|stack|sql|payload/i.test(safeFailureCode)) throw new TypeError("UNSAFE_WEBHOOK_FAILURE");
+    const now = this.clock.now().getTime();
+    const current = await this.traffic.getWebhookReceipt(tenantId, receiptId);
+    if (!current) throw new TenantBoundaryError();
+    const status = current.attemptCount >= WEBHOOK_MAX_ATTEMPTS ? "failed_terminal" : "failed_retryable";
+    const retryAt = status === "failed_retryable" ? now + WEBHOOK_LEASE_MS : null;
+    const [result] = await this.db.batch([
+      this.db.prepare(
+        `UPDATE webhook_receipts SET status=?1, safe_failure_code=?2,
+         lease_expires_at=?3, updated_at=?4 WHERE tenant_id=?5 AND id=?6
+         AND status='processing' AND lease_owner_token=?7`,
+      ).bind(status, safeFailureCode, retryAt, now, tenantId, receiptId, leaseToken),
+      this.webhookAudit("traffic.webhook.fail", safeFailureCode, tenantId, receiptId, leaseToken, status, context, now),
+    ]);
+    if (result?.meta.changes !== 1) throw new TrafficProtectionError("STALE_WEBHOOK_LEASE", false);
+    return status;
+  }
+
+  async recoverWebhookCompletion(tenantId: string, receiptId: string, leaseToken: string, operation: string, businessIdempotencyKey: string, context: MutationContext) {
+    const keyHash = await sha256Hex(businessIdempotencyKey);
+    const record = await this.repositories.idempotency.findTenant(tenantId, operation, keyHash);
+    if (!record || record.status !== "completed" || !record.storedResultJson) return null;
+    const stored = JSON.parse(record.storedResultJson) as Readonly<Record<string, string | number | boolean | null>>;
+    await this.completeWebhook(tenantId, receiptId, leaseToken, stored, context);
+    return stored;
+  }
+
+  private webhookAudit(action: string, reasonCode: string, tenantId: string, receiptId: string, leaseToken: string, status: string, context: MutationContext, timestamp: number): D1PreparedStatement {
+    return this.db.prepare(`INSERT INTO audit_records (id,scope_type,tenant_id,actor_type,actor_reference,action,resource_type,resource_reference,decision,reason_code,correlation_reference,occurred_at,created_at)
+      SELECT ?1,'tenant',?2,?3,?4,?5,'webhook_receipt',?6,'changed',?7,?8,?9,?9
+      FROM webhook_receipts WHERE tenant_id=?2 AND id=?6 AND lease_owner_token=?10 AND status=?11`)
+      .bind(this.uuidv7.generate(),tenantId,context.actorType,context.actorReference,action,receiptId,reasonCode,context.correlationId,timestamp,leaseToken,status);
+  }
+
+  private async incrementReplay(receiptId: string, tenantId: string, now: number) {
+    await this.db.prepare(`UPDATE webhook_receipts SET replay_count=CASE WHEN replay_count<1000000000 THEN replay_count+1 ELSE replay_count END,last_received_at=?1,updated_at=?1 WHERE tenant_id=?2 AND id=?3`).bind(now,tenantId,receiptId).run();
+  }
+
+  private async markTerminal(existing: import("./models").WebhookReceiptRecord, now: number) {
+    await this.db.prepare(`UPDATE webhook_receipts SET status='failed_terminal',safe_failure_code='WEBHOOK_MAX_ATTEMPTS',lease_expires_at=NULL,updated_at=?1 WHERE tenant_id=?2 AND id=?3 AND status IN ('processing','failed_retryable')`).bind(now,existing.tenantId,existing.receiptId).run();
   }
 
   async recordRateLimitEvidence(
@@ -260,6 +271,10 @@ export class PlatformTrafficProtectionApplication extends CoreApplicationBase {
       limit,
     );
   }
+}
+
+function replay(record: import("./models").WebhookReceiptRecord, status: WebhookReplayResult["status"], retryAfterSeconds: number | null = null): WebhookReplayResult {
+  return Object.freeze({ status, receiptId: record.receiptId, safeResult: record.safeResult, executeMutation: false, leaseToken: null, attemptCount: record.attemptCount, retryAfterSeconds });
 }
 
 function validateFingerprint(fingerprint: WebhookEventFingerprint): void {
