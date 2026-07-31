@@ -204,3 +204,5 @@ Application 組裝與可選模組治理請從 [Application Assembly](docs/applic
 ## AI Gateway Reading Path
 
 AI 任務治理請從 [AI Gateway MVP](docs/ai-gateway/README.md) 開始，再閱讀 [Contract](docs/ai-gateway/01-CONTRACT.md)、[Routing Policy](docs/ai-gateway/04-ROUTING-POLICY.md)、[Budget／Quota](docs/ai-gateway/05-BUDGET-QUOTA.md) 與 [Security Boundary](docs/ai-gateway/11-SECURITY-BOUNDARY.md)。Production Workbench 仍使用 deterministic resolver；gateway shadow 僅限 Local Test，外部 Provider、Remote D1、Binding、Secret 與 Deployment 均未啟用。
+
+Provider 實際啟用前必須再通過 [AI Provider Enablement Readiness](docs/ai-provider-enablement-readiness/README.md) 的 Lifecycle、Compliance、Data Policy、Secret Reference、Exact Matrix、Kill Switch、Hard Ceiling、Rollback 與 separated Approval gates。本輪最高為 `approved_for_shadow`，且不具有 real Shadow、Canary 或 Production authority。

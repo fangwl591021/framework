@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI Provider Readiness - Local Lab</title>
+    <link rel="stylesheet" href="/local/ai-lab/styles.css" />
+  </head>
+  <body data-page="readiness">
+    <header class="topbar">
+      <a class="brand" href="/local/ai-lab/"><span>PC</span> AI Gateway Lab</a>
+      <nav aria-label="AI Lab navigation">
+        <a href="/local/ai-lab/">Lab</a><a href="/local/ai-lab/requests/">Requests</a><a href="/local/ai-lab/usage/">Usage</a><a class="active" href="/local/ai-lab/readiness/">Readiness</a><a href="/local/ai-lab/drills/">Drills</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero"><div><p class="kicker">LOCAL GOVERNANCE EVIDENCE</p><h1>Provider readiness.<br /><em>Execution stays disabled.</em></h1><p class="lede">A deterministic review of lifecycle, compliance, policy, secret readiness, ceilings, rollback and separated approvals.</p></div><div class="guardrails"><span>NOT PRODUCTION APPROVAL</span><span>NO SECRET VALUE</span><span>NO PROVIDER REQUEST</span></div></section>
+      <section class="evidence-grid">
+        <article class="panel"><div class="panel-title"><span>01</span><h2>Assessment</h2></div><div id="assessment" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>02</span><h2>Lifecycle / Compliance</h2></div><div id="compliance" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>03</span><h2>Secret / Data Policy</h2></div><div id="policy" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>04</span><h2>Kill Switch / Ceiling</h2></div><div id="controls" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>05</span><h2>Shadow / Canary</h2></div><div id="plans" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>06</span><h2>Rollback / Approvals</h2></div><div id="recovery" class="data"></div></article>
+        <article class="panel wide"><div class="panel-title"><span>07</span><h2>Blocking findings</h2></div><ol id="findings" class="timeline"></ol></article>
+      </section>
+      <p id="notice" class="notice" aria-live="polite"></p>
+    </main>
+    <script type="module" src="/local/ai-lab/governance.js"></script>
+  </body>
+</html>
