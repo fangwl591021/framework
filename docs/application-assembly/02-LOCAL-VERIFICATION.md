@@ -6,7 +6,7 @@ Verification is isolated to Local D1 and applies formal migrations
 
 Covered evidence:
 
-- 26 tables, 48 explicit indexes, 33 triggers, and tenant-aware foreign keys.
+- 26 tables, 48 explicit indexes, 34 triggers, and tenant-aware foreign keys.
 - Application A purchased and enabled Event Engine: navigation, dashboard, and
   guarded Event Service access succeed.
 - Application B without entitlement: navigation is empty and Service returns

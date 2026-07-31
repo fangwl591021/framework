@@ -276,6 +276,40 @@ BEGIN
   SELECT RAISE(ABORT, 'module_entitlement_history_mismatch');
 END;
 
+CREATE TRIGGER trg_application_mutation_audit_guard
+BEFORE INSERT ON audit_records
+FOR EACH ROW
+WHEN NEW.action IN (
+  'application.suspend',
+  'application.module.enable',
+  'application.module.disable'
+)
+BEGIN
+  SELECT CASE WHEN NEW.action = 'application.suspend' AND NOT EXISTS (
+    SELECT 1 FROM applications AS application
+    WHERE application.tenant_id = NEW.tenant_id
+      AND application.id = NEW.resource_reference
+      AND application.status = 'suspended'
+      AND application.updated_at = NEW.occurred_at
+  ) THEN RAISE(ABORT, 'application_suspend_effect_missing') END;
+
+  SELECT CASE WHEN NEW.action = 'application.module.enable' AND NOT EXISTS (
+    SELECT 1 FROM application_modules AS assignment
+    WHERE assignment.tenant_id = NEW.tenant_id
+      AND assignment.id = NEW.resource_reference
+      AND assignment.enablement_status = 'enabled'
+      AND assignment.updated_at = NEW.occurred_at
+  ) THEN RAISE(ABORT, 'application_module_enable_effect_missing') END;
+
+  SELECT CASE WHEN NEW.action = 'application.module.disable' AND NOT EXISTS (
+    SELECT 1 FROM application_modules AS assignment
+    WHERE assignment.tenant_id = NEW.tenant_id
+      AND assignment.id = NEW.resource_reference
+      AND assignment.enablement_status = 'disabled'
+      AND assignment.updated_at = NEW.occurred_at
+  ) THEN RAISE(ABORT, 'application_module_disable_effect_missing') END;
+END;
+
 CREATE TRIGGER trg_application_configuration_no_delete
 BEFORE DELETE ON application_configuration
 FOR EACH ROW

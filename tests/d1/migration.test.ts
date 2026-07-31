@@ -89,6 +89,7 @@ const expectedTriggers = [
   "trg_application_module_enable_insert_guard",
   "trg_application_module_enable_update_guard",
   "trg_application_modules_no_delete",
+  "trg_application_mutation_audit_guard",
   "trg_applications_no_delete",
   "trg_core_role_permissions_immutable_delete",
   "trg_core_role_permissions_immutable_insert",
