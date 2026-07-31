@@ -69,7 +69,7 @@ export interface AttributionRecord {
   readonly tenantId: string;
   readonly salesRecordId: string;
   readonly attributedPartnerId: string;
-  readonly attributionMethod: "first_valid_touch" | "manual";
+  readonly attributionMethod: "first_valid_touch";
   readonly referralTouchId: string | null;
   readonly ruleVersion: string;
   readonly attributedAt: number;

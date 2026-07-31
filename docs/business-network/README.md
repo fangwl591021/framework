@@ -7,7 +7,7 @@ Business Network Engine（商業網路引擎）是獨立、可重用的 Domain M
 | State | Value |
 | --- | --- |
 | Lifecycle | Candidate |
-| Contract | Proposed／Pending Tony Approval |
+| Contract | Approved by Tony |
 | Implementation | Locally Implemented |
 | Verification | Locally Verified |
 | Deployment | Not Deployed |

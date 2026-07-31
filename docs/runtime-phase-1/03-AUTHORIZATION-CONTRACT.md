@@ -96,7 +96,7 @@ Observe authorization decision counts, denial reason categories, stale-assignmen
 | Policies | Last-owner guard; effective-assignment evaluation |
 | Strategies | None approved |
 | Feature Flags | None approved |
-| Extension Points | Additional approved Permission vocabulary through versioned Contract change |
+| Extension Points | Additional approved Permission vocabulary through versioned Contract change and the [Module Permission Registration Gate](MODULE-PERMISSION-REGISTRATION-GATE.md) |
 
 ## 10. Testing and Compatibility
 

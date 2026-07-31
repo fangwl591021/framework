@@ -1,6 +1,6 @@
 # Business Network Engine Module Contract
 
-> Domain Module Candidate · Contract Proposed／Pending Tony Approval · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
+> Domain Module Candidate · Contract Approved by Tony · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
 
 ## Purpose and Boundary
 
@@ -61,8 +61,9 @@ The MVP uses `first-valid-touch-v1`:
 - Earliest valid touch wins deterministically by `touched_at, id`.
 - One immutable Attribution exists per Sale.
 - Referral relationship and Sale attribution remain separate concepts.
+- `first_valid_touch` is the only approved `attribution_method` in this MVP.
 
-No last-touch, weighted, multi-level or automatic correction is included.
+No last-touch, weighted, multi-level, manual attribution or automatic correction is included. A future manual correction requires a dedicated Permission, override reason, preserved original attribution, minimal Audit, and explicit correction／reversal rules under a separately approved Contract change.
 
 ## Commission
 
@@ -85,7 +86,7 @@ No last-touch, weighted, multi-level or automatic correction is included.
 
 ## Permission
 
-The module registers its own Domain Permission vocabulary through migration `0003`. Registration occurs while the Core immutable insert guard is temporarily lifted and the same guard is restored immediately. Existing Core Permissions and Core Role grants are not changed.
+Authorization owns the `permissions` table and its immutable guards. Business Network Engine owns only its reviewed Domain Permission keys. Migration `0003` registers those keys through the [Module Permission Registration Gate](../runtime-phase-1/MODULE-PERMISSION-REGISTRATION-GATE.md): guard removal, exact inserts, guard restoration, and migration ledger write must commit atomically. Runtime Services, Tenants, administrators, APIs, Workers, and Module code cannot register or mutate Permission vocabulary. Existing Core Permissions and Core Role grants are not changed.
 
 Tenant roles receive these Permissions only through explicit role creation／mapping. See [Permission and Data Boundary](03-PERMISSION-DATA-BOUNDARY.md).
 
@@ -99,4 +100,4 @@ Same key plus same fingerprint replays; same key plus another fingerprint confli
 
 ## Compatibility and Approval
 
-Version is `0.1.0-local`. Stable use cases: none. Local verification does not make this module Experimental, Stable, deployed or Production-ready. Tony approval is required before the Contract can become Approved.
+Version is `0.1.0-local`. Stable use cases: none. Local verification does not make this module Experimental, Stable, deployed or Production-ready. This Contract is Approved by Tony through PR #17 Architecture／Authorization／Security finalization. Approval does not change the Candidate lifecycle, deployment, verification scope, or Production prohibition.

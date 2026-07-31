@@ -17,7 +17,7 @@ export const businessNetworkContract = {
   displayName: "Business Network Engine",
   layer: "Domain Module",
   lifecycle: "Candidate",
-  contract: "Proposed / Pending Tony Approval",
+  contract: "Approved by Tony",
   implementation: "Locally Implemented",
   verification: "Locally Verified",
   deployment: "Not Deployed",

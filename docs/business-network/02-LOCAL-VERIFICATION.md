@@ -11,7 +11,8 @@ Evidence is limited to an isolated Local D1／SQLite-compatible environment. No 
 - 30 formal tables, 57 named indexes and 30 triggers across the complete Framework baseline.
 - Business Network contribution: 10 tables, 21 named indexes and 6 triggers.
 - Tenant-aware foreign keys and `PRAGMA foreign_key_check`.
-- Explicit Domain Permission registration followed by restored immutability.
+- Exact registration of 11 Domain Permissions followed by restored insert／update／delete immutability.
+- Forced failure before insert-guard restoration rolls back guard removal, all Domain Permission inserts, and the migration ledger write.
 - Partner A refers Partner B; earliest valid touch attributes a confirmed Sale to A.
 - 10% basis-point calculation on 1,000 minor units produces 100.
 - Calculate／approve／paid／explicit reversal lifecycle.
@@ -23,7 +24,7 @@ Evidence is limited to an isolated Local D1／SQLite-compatible environment. No 
 - Tenant-first query-plan index evidence.
 - Existing Event Engine and `/health`／`/ready` regression suite.
 
-- Full regression: 53 tests PASS (27 unit／runtime and 26 isolated Local D1).
+- Full regression: 55 tests PASS (27 unit／runtime and 28 isolated Local D1).
 
 ## Not Verified
 

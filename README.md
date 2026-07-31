@@ -235,7 +235,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | Entry | Status |
 | --- | --- |
 | [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
-| [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Proposed／Locally Implemented／Locally Verified／Not Deployed |
+| [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -258,7 +258,7 @@ Event Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由
 - [Permission and Data Boundary](docs/business-network/03-PERMISSION-DATA-BOUNDARY.md)
 - [Known Limitations](docs/business-network/04-KNOWN-LIMITATIONS.md)
 
-Business Network Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 尚待 Tony 核准；Lifecycle 為 Candidate，僅在隔離 Local D1 完成實作與驗證，未建立 provider Adapter、Remote D1 或部署。
+Business Network Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由 Tony 核准；Lifecycle 為 Candidate，僅在隔離 Local D1 完成實作與驗證，未建立 provider Adapter、Remote D1 或部署。
 
 ### Runtime Phase 1 Decision Closure
 

@@ -114,7 +114,7 @@ CREATE TABLE attribution_records (
   tenant_id TEXT NOT NULL,
   sales_record_id TEXT NOT NULL,
   attributed_partner_id TEXT NOT NULL,
-  attribution_method TEXT NOT NULL CHECK (attribution_method IN ('first_valid_touch','manual')),
+  attribution_method TEXT NOT NULL CHECK (attribution_method = 'first_valid_touch'),
   referral_touch_id TEXT,
   rule_version TEXT NOT NULL CHECK (length(rule_version) BETWEEN 1 AND 40),
   attributed_at INTEGER NOT NULL,
