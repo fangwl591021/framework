@@ -1,5 +1,9 @@
-import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
+import {
+  cloudflareTest,
+  readD1Migrations,
+} from "@cloudflare/vitest-pool-workers";
 import { defineConfig } from "vitest/config";
+import { readFile } from "node:fs/promises";
 
 export default defineConfig({
   plugins: [
@@ -9,6 +13,7 @@ export default defineConfig({
         d1Databases: ["DB"],
         bindings: {
           TEST_MIGRATIONS: await readD1Migrations("migrations"),
+          LOCAL_DEMO_SCHEMA: await readFile("local-demo/schema.sql", "utf8"),
         },
       },
     })),

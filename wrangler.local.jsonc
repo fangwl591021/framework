@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "platform-core-local-workbench-demo",
+  "main": "src/local-demo/worker.ts",
+  "compatibility_date": "2026-07-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "local-demo/public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/local/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "LOCAL_DEMO_DB",
+      "database_name": "platform-core-local-workbench-demo",
+      "database_id": "00000000-0000-0000-0000-000000000023",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": { "LOCAL_DEMO_MODE": "enabled" },
+}

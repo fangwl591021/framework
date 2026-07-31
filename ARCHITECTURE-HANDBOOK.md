@@ -159,6 +159,8 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 
 歷史 Sprint 與 RC1 治理狀態仍保留於原 Roadmap；目前可執行基準已包含本機驗證的 Runtime Foundation、Core Persistence、Event Engine 與 Business Network Engine。新的分層候選與 PR #18～#20 順序見 [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)。任何 Local Verification 仍不代表 Remote D1、Deployment 或 Production Ready。
 
+瀏覽器驗證入口見 [Local Conversational Workbench Demo](docs/local-workbench-demo/README.md)。此 Local Demo 是展示層 Candidate，正式 Domain／Platform Service contract 與 Production entry 均未因此改變。
+
 ## 16. Framework RC1 and Migration Governance
 
 [Framework RC1](docs/releases/RC1.md) 是 Architecture Release Candidate／Documentation Baseline，來源 commit 為 `6dd23c30dd496a4892660c71b33349c2695ecb67`。RC1 凍結 Accepted ADR 與三項 Physical Schema Gate 的架構邊界，但不宣稱 Runtime、Schema Execution、D1 Verification、Performance Verification 或 Production Readiness。
