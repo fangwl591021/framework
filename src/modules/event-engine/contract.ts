@@ -2,7 +2,7 @@ export const eventEngineContract = {
   id: "event-engine",
   layer: "Domain Module",
   lifecycle: "Candidate",
-  contract: "Proposed",
+  contract: "Approved by Tony",
   implementation: "Locally Implemented",
   verification: "Locally Verified",
   deployment: "Not Deployed",

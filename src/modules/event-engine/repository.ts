@@ -33,6 +33,7 @@ interface SessionRow {
   waitlist_capacity: number;
   confirmed_count: number;
   waitlisted_count: number;
+  reconciliation_required: number;
   status: EventSession["status"];
   version: number;
 }
@@ -121,6 +122,7 @@ function sessionFromRow(row: SessionRow): EventSession {
     waitlistCapacity: row.waitlist_capacity,
     confirmedCount: row.confirmed_count,
     waitlistedCount: row.waitlisted_count,
+    reconciliationRequired: row.reconciliation_required === 1,
     status: row.status,
     version: row.version,
   };
@@ -202,7 +204,8 @@ const EVENT_COLUMNS = `
 
 const SESSION_COLUMNS = `
   id, tenant_id, event_id, title, starts_at, ends_at, capacity,
-  waitlist_capacity, confirmed_count, waitlisted_count, status, version`;
+  waitlist_capacity, confirmed_count, waitlisted_count,
+  reconciliation_required, status, version`;
 
 const REGISTRATION_COLUMNS = `
   id, tenant_id, event_id, event_session_id, platform_user_id, status,
@@ -234,6 +237,21 @@ export class EventEngineRepository {
          WHERE tenant_id = ?1 AND event_id = ?2 AND id = ?3`,
       )
       .bind(tenantId, eventId, sessionId)
+      .first<SessionRow>();
+    return row ? sessionFromRow(row) : null;
+  }
+
+  async getSessionById(
+    tenantId: string,
+    sessionId: string,
+  ): Promise<EventSession | null> {
+    const row = await this.db
+      .prepare(
+        `SELECT ${SESSION_COLUMNS}
+         FROM event_sessions
+         WHERE tenant_id = ?1 AND id = ?2`,
+      )
+      .bind(tenantId, sessionId)
       .first<SessionRow>();
     return row ? sessionFromRow(row) : null;
   }

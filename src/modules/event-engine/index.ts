@@ -2,6 +2,7 @@ export { eventEngineContract, eventPermissionPolicy } from "./contract";
 export { EventQueryApplication as EventEngineApplication } from "./event-query-application";
 export { HmacEventQrTokenService } from "./hmac-qr-token";
 export type {
+  CapacityReconciliationResult,
   EventCheckin,
   EventFormField,
   EventPayment,

@@ -1,6 +1,6 @@
 # Event Engine Module Contract
 
-> Domain Module Candidate · Contract Proposed · Locally Implemented · Locally Verified · Not Deployed
+> Domain Module Candidate · Contract Approved by Tony · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
 
 ## 1. Basic Information
 
@@ -13,8 +13,8 @@
 | Business Capability | Create and publish multi-session events, accept dynamic registrations, manage capacity/waitlists, check in attendees and report statistics |
 | Lifecycle Status | Candidate |
 | Owner | Unassigned |
-| Version | `0.1.0-draft` |
-| Approval Status | Draft／Architecture Owner review pending |
+| Version | `0.1.0-local` |
+| Approval Status | Approved by Tony |
 
 Event Engine is a Domain Module. It is not Platform Core.
 
@@ -38,6 +38,7 @@ The module calls Core public application capabilities. It does not write Core-ow
 - `AddEventSession`, `AddEventFormField`
 - `CreateShareLink`, `RecordShareTouch`
 - `RegisterForEvent`, `UpdateRegistrationAnswers`, `CancelRegistration`
+- Internal operation: `ReconcileSessionCapacity`
 - `UpdatePaymentStatus`
 - `IssueCheckinQrToken`, `VerifyEventCheckin`
 
@@ -102,6 +103,9 @@ Brand and Shop scope are not included in the MVP.
 - Formal D1 Triggers select the unique capacity／waitlist winner inside the write transaction.
 - An application pre-read is only a routing hint; it is not the capacity authority.
 - Failed capacity attempts create no Registration effect.
+- Registration mutations mark a bounded reconciliation intent whenever a scheduled Session has both available capacity and a waitlist.
+- `reconcileSessionCapacity(tenantId, sessionId)` conditionally promotes only the earliest still-waitlisted Registration, is safe to retry, and cannot exceed capacity.
+- A guarded clear rejects an incomplete reconciliation, so a racing loser leaves a retryable intent instead of silently losing the vacancy.
 
 ### Check-in
 
@@ -152,7 +156,7 @@ Audit action families are `event.*`, `event.session.*`, `event.field.*`, `event.
 
 ## 9. Reliability and Operations
 
-Public errors are validation, permission, Tenant boundary, invalid state, duplicate registration, capacity full, waitlist full, Idempotency conflict, duplicate check-in, invalid QR and expired QR.
+Public errors are validation, permission, Tenant boundary, invalid state, duplicate registration, capacity full, waitlist full, Idempotency conflict, duplicate check-in, invalid QR, expired QR and reconciliation retry required.
 
 Only transient Adapter failures may be retried, always with the original Idempotency key. Domain conflicts are not automatically retried with a new key.
 
@@ -166,7 +170,7 @@ Known limitations:
 - No Google Calendar synchronization.
 - No QR image rendering.
 - No Remote D1 or Production evidence.
-- Concurrent cancellation may leave a free seat if a separately observed promotion candidate loses a race; it cannot overbook. Reconciliation／retry policy requires later review.
+- No Queue, Cron, Remote Worker or Production Scheduler invokes reconciliation. Local callers may safely retry the bounded internal operation after related Registration mutations.
 
 ## 10. Testing Requirements and Evidence
 
@@ -178,6 +182,7 @@ Known limitations:
 | Tenant isolation and Event permission | Locally Verified |
 | Idempotency replay／fingerprint conflict | Locally Verified |
 | Capacity／waitlist concurrent winners | Locally Verified |
+| Cancellation reconciliation retry／replay／no duplicate promotion | Locally Verified |
 | Duplicate registration | Locally Verified |
 | Manual／QR check-in and replay protection | Locally Verified |
 | Audit minimization and raw-token absence | Locally Verified |
@@ -198,10 +203,11 @@ Related decisions: ADR-003, ADR-013, ADR-015, ADR-016 and ADR-017. No new ADR is
 | Review | Status |
 | --- | --- |
 | Module Owner | Unassigned／Pending |
-| Platform Architect | Pending |
-| Architecture Owner | Tony／Pending |
-| Approval Date | N/A |
-| Approval Reference | Draft PR pending |
+| Platform Architect | Approved |
+| Architecture Owner | Tony／Approved |
+| Security Review | Approved |
+| Approval Date | 2026-07-31 |
+| Approval Reference | PR #15／Tony approval |
 | Implementation | Locally Implemented |
 | Verification | Locally Verified |
 | Deployment | Not Deployed |
@@ -209,7 +215,7 @@ Related decisions: ADR-003, ADR-013, ADR-015, ADR-016 and ADR-017. No new ADR is
 
 | Contract Version | Date | Author | Change | Approval |
 | --- | --- | --- | --- | --- |
-| `0.1.0-draft` | 2026-07-31 | Codex | Initial Event Engine MVP contract and Local D1 evidence | Pending |
+| `0.1.0-local` | 2026-07-31 | Codex | Event Engine MVP contract, Local D1 evidence and bounded waitlist reconciliation | Approved by Tony |
 
 ## 13. Open Questions
 
@@ -217,7 +223,6 @@ Related decisions: ADR-003, ADR-013, ADR-015, ADR-016 and ADR-017. No new ADR is
 | --- | --- | --- | --- |
 | Event-specific Permission vocabulary and Core registration mechanism | Architecture／Authorization Owner | Before Experimental | Open |
 | Registration answer retention and data-subject handling | Privacy／Security Owner | Before external pilot | Open |
-| Concurrent cancellation promotion reconciliation | Module Owner | Before external pilot | Open |
 | Payment provider status mapping and money-movement ownership | Security／Finance Owner | Before Payment Adapter | Open |
 | Transport routes, DTOs and authentication | Security／Architecture Owner | Before public API | Open |
 | Notification delivery and Calendar event contracts | Relevant Module Owners | Before Adapter implementation | Open |

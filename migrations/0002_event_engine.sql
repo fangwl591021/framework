@@ -46,6 +46,9 @@ CREATE TABLE event_sessions (
   waitlisted_count INTEGER NOT NULL DEFAULT 0 CHECK (
     waitlisted_count >= 0 AND waitlisted_count <= waitlist_capacity
   ),
+  reconciliation_required INTEGER NOT NULL DEFAULT 0 CHECK (
+    reconciliation_required IN (0, 1)
+  ),
   status TEXT NOT NULL CHECK (status IN ('scheduled', 'cancelled')),
   version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at INTEGER NOT NULL CHECK (created_at >= 0),
@@ -283,6 +286,10 @@ CREATE INDEX idx_event_sessions_event_time
 CREATE INDEX idx_event_sessions_tenant_time
   ON event_sessions(tenant_id, status, starts_at, id);
 
+CREATE INDEX idx_event_sessions_reconciliation
+  ON event_sessions(tenant_id, updated_at, id)
+  WHERE reconciliation_required = 1;
+
 CREATE UNIQUE INDEX uq_event_form_fields_active_key
   ON event_form_fields(tenant_id, event_id, field_key)
   WHERE status = 'active';
@@ -345,6 +352,10 @@ CREATE INDEX idx_event_notifications_pending
 CREATE INDEX idx_event_notifications_registration
   ON event_notifications(tenant_id, registration_id, created_at, id);
 
+CREATE UNIQUE INDEX uq_event_notifications_waitlist_promoted
+  ON event_notifications(tenant_id, registration_id, notification_type)
+  WHERE notification_type = 'waitlist_promoted';
+
 CREATE TRIGGER trg_events_terminal_status
 BEFORE UPDATE OF status ON events
 FOR EACH ROW
@@ -403,6 +414,18 @@ BEGIN
   WHERE tenant_id = NEW.tenant_id
     AND event_id = NEW.event_id
     AND id = NEW.event_session_id;
+
+  UPDATE event_sessions
+  SET reconciliation_required = 1,
+      version = version + 1,
+      updated_at = NEW.registered_at
+  WHERE tenant_id = NEW.tenant_id
+    AND event_id = NEW.event_id
+    AND id = NEW.event_session_id
+    AND status = 'scheduled'
+    AND confirmed_count < capacity
+    AND waitlisted_count > 0
+    AND reconciliation_required = 0;
 END;
 
 CREATE TRIGGER trg_event_registration_status_guard
@@ -443,6 +466,30 @@ BEGIN
   WHERE tenant_id = NEW.tenant_id
     AND event_id = NEW.event_id
     AND id = NEW.event_session_id;
+
+  UPDATE event_sessions
+  SET reconciliation_required = 1,
+      version = version + 1,
+      updated_at = NEW.updated_at
+  WHERE tenant_id = NEW.tenant_id
+    AND event_id = NEW.event_id
+    AND id = NEW.event_session_id
+    AND status = 'scheduled'
+    AND confirmed_count < capacity
+    AND waitlisted_count > 0
+    AND reconciliation_required = 0;
+END;
+
+CREATE TRIGGER trg_event_session_reconciliation_clear_guard
+BEFORE UPDATE OF reconciliation_required ON event_sessions
+FOR EACH ROW
+WHEN OLD.reconciliation_required = 1
+  AND NEW.reconciliation_required = 0
+  AND NEW.status = 'scheduled'
+  AND NEW.confirmed_count < NEW.capacity
+  AND NEW.waitlisted_count > 0
+BEGIN
+  SELECT RAISE(ABORT, 'event_reconciliation_incomplete');
 END;
 
 CREATE TRIGGER trg_event_registration_no_delete

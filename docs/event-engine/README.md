@@ -1,6 +1,6 @@
 # Event Engine MVP
 
-> Independent Domain Module Candidate · Contract Proposed · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
+> Independent Domain Module Candidate · Contract Approved by Tony · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
 
 Event Engine owns activity, session, form, registration, payment-status, check-in, share-reference, share-touch and notification-intent state. It is not Platform Core and does not change the ownership of Identity, Tenant, Authorization, Audit or Idempotency.
 
@@ -13,6 +13,7 @@ Event Engine owns activity, session, form, registration, payment-status, check-i
 - The MVP creates adapter-neutral Share Payloads and Notification Intents. It calls no external provider.
 - Payment is status-only. Event Engine does not authorize, capture or refund money.
 - QR support signs and verifies a short-lived local token. It does not render a QR image or deploy an endpoint.
+- Waitlist reconciliation uses a bounded Session intent and an idempotent internal service. It creates no Queue, Cron, Remote Worker or Production Scheduler.
 
 ## Documents
 
@@ -24,7 +25,7 @@ Event Engine owns activity, session, form, registration, payment-status, check-i
 ## Current Gate
 
 ```text
-Contract Approval: Pending Architecture Owner Review
+Contract Approval: Approved by Tony
 Implementation: Locally Implemented
 Verification: Locally Verified on Isolated Local D1
 Remote D1: Not Accessed

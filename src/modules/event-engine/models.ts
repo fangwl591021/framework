@@ -34,8 +34,15 @@ export interface EventSession {
   readonly waitlistCapacity: number;
   readonly confirmedCount: number;
   readonly waitlistedCount: number;
+  readonly reconciliationRequired: boolean;
   readonly status: EventSessionStatus;
   readonly version: number;
+}
+
+export interface CapacityReconciliationResult {
+  readonly tenantId: string;
+  readonly sessionId: string;
+  readonly reconciled: true;
 }
 
 export interface EventFormField {
@@ -198,7 +205,8 @@ export class EventEngineError extends Error {
       | "EVENT_CHECKIN_NOT_ELIGIBLE"
       | "EVENT_DUPLICATE_CHECKIN"
       | "EVENT_QR_INVALID"
-      | "EVENT_QR_EXPIRED",
+      | "EVENT_QR_EXPIRED"
+      | "EVENT_RECONCILIATION_RETRY_REQUIRED",
   ) {
     super(code);
     this.name = "EventEngineError";

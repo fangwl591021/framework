@@ -8,6 +8,7 @@
 - `migrations/0002_event_engine.sql` creates exactly ten Event-owned tables.
 - Fresh tests reset an empty database and apply only formal migrations.
 - `sqlite_master`, `PRAGMA foreign_keys` and `PRAGMA foreign_key_check` are inspected.
+- Inspection verifies ten tables, twenty-one named indexes and nine triggers.
 - Tests contain no fixture `CREATE TABLE`, `CREATE INDEX` or `CREATE TRIGGER`.
 
 ## Scenario Evidence
@@ -29,6 +30,7 @@ The Local D1 suite verifies:
 13. Replay Stored Results and reject changed fingerprints.
 14. Record minimal Audit without answer or token payload copies.
 15. Preserve existing Runtime Foundation `/health` and `/ready`.
+16. Preserve capacity during cancellation races, then idempotently reconcile a retryable vacancy without duplicate promotion, notification, Audit or Idempotency effect.
 
 ## Safety Boundary
 
@@ -44,4 +46,4 @@ Deployment: Not Performed
 Production Verification: Not Verified
 ```
 
-Passing this suite does not approve the Contract, external API, Adapter, deployment or Production use.
+Tony approved the Contract while the module remains Candidate. Passing this suite does not approve an external API, Adapter, deployment or Production use.

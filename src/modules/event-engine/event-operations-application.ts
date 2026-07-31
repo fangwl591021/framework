@@ -1,6 +1,6 @@
 import type { MutationContext } from "../../application/core-services";
 import { DomainConflictError, TenantBoundaryError } from "../../persistence/models";
-import { EventRegistrationApplication } from "./event-registration-application";
+import { EventReconciliationApplication } from "./event-reconciliation-application";
 import {
   EventEngineError,
   type EventCheckin,
@@ -29,7 +29,7 @@ function isAllowedPaymentTransition(
   return transitions[current].includes(next);
 }
 
-export class EventOperationsApplication extends EventRegistrationApplication {  async updatePaymentStatus(
+export class EventOperationsApplication extends EventReconciliationApplication {  async updatePaymentStatus(
     tenantId: string,
     actorMembershipId: string,
     registrationId: string,

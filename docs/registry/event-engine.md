@@ -1,6 +1,6 @@
 # Registry Entry: event-engine
 
-> Lifecycle Status: Candidate · Contract: Proposed · Implementation: Locally Implemented · Verification: Locally Verified · Production Use: Not Allowed
+> Lifecycle Status: Candidate · Contract: Approved by Tony · Implementation: Locally Implemented · Verification: Locally Verified · Production Use: Not Allowed
 
 | Metadata | Value |
 | --- | --- |
@@ -9,7 +9,9 @@
 | `description` | Tenant-scoped events, sessions, dynamic registration, capacity／waitlist, check-in and statistics |
 | `category` | Domain Module Candidate |
 | `lifecycle_status` | Candidate |
-| `current_version` | 0.1.0-draft |
+| `contract_status` | Approved |
+| `architecture_approval` | Approved by Tony |
+| `current_version` | 0.1.0-local |
 | `owner` | Unassigned |
 | `minimum_core_version` / `maximum_core_version` | PR #14 Runtime Phase 1 local baseline / Not bounded |
 | `dependencies` | Identity Core, Tenant Access, Authorization, Core Operations |
@@ -25,6 +27,6 @@
 | `documentation_path` | `docs/event-engine/README.md` |
 | `contract_path` | `docs/event-engine/01-EVENT-ENGINE-CONTRACT.md` |
 | `deprecation_date` / `replacement_module` | None / None |
-| `approval_reference` | Pending Architecture Owner review |
+| `approval_reference` | PR #15／Approved by Tony |
 
-Event Engine is not Platform Core. Local implementation and verification do not imply Contract approval, Experimental／Stable lifecycle, deployment or Production readiness.
+Event Engine is not Platform Core. Contract approval and Local verification do not imply Experimental／Stable lifecycle, deployment or Production readiness.

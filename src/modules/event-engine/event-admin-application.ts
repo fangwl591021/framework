@@ -191,6 +191,7 @@ export class EventAdminApplication extends EventEngineBase {
       waitlistCapacity: input.waitlistCapacity,
       confirmedCount: 0,
       waitlistedCount: 0,
+      reconciliationRequired: false,
       status: "scheduled",
       version: 1,
     };
