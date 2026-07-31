@@ -13,6 +13,7 @@
 | New Team Member | [Reading Paths](docs/handbook/14-READING-PATHS.md) |
 | Runtime Phase 1 Reviewer | [Decision Closure](docs/runtime-phase-1/README.md) |
 | Reliability Reviewer | [Platform Reliability Foundation](docs/platform-reliability/README.md) |
+| Observability Reviewer | [Platform Observability Foundation](docs/platform-observability/README.md) |
 
 Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義跨專案一致的架構語言、模組邊界、開發標準與治理原則。
 
@@ -22,7 +23,7 @@ Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義�
 Runtime Foundation Bootstrap Stage
 Runtime Foundation Implemented and Locally Verified
 Phase 1 Core Modules Locally Implemented and Verified
-Phase 1 Migration: Executed and Verified on Isolated Local D1
+Phase 1 and Platform Service Migrations: Executed and Verified on Isolated Local D1
 Remote Migration: Not Executed
 Production Migration: Not Executed
 Deployment: Not Performed
@@ -223,6 +224,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 - [0001 Phase 1 Core](migrations/0001_phase_1_core.sql) creates exactly ten Phase 1 tables and is verified only through isolated Local D1 tests.
 - [0002 Event Engine](migrations/0002_event_engine.sql) creates exactly ten Event Domain Module tables and is verified only through isolated Local D1 tests.
 - [0003 Business Network Engine](migrations/0003_business_network_engine.sql) creates exactly ten Business Network Domain Module tables and is verified only through isolated Local D1 tests.
+- [0004 Platform Observability](migrations/0004_platform_observability.sql) creates six bounded Platform Service evidence tables and registers six reviewed Permissions; it is verified only through isolated Local D1 tests.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -238,6 +240,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -272,6 +275,17 @@ Business Network Engine 是獨立 Domain Module，不屬於 Platform Core。Cont
 - [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
 
 Platform Reliability Foundation 是共用 Platform Service，不是商業模組。它目前只在 Local／CI 與隔離 Local D1 完成驗證；Contract 已由 Tony 核准，Architecture／Security Review 已通過；沒有 Remote D1、Production Binding、Provider API、部署或 Production 使用權。
+
+### Platform Observability, Diagnostics and Alerting
+
+- [Observability Documentation](docs/platform-observability/README.md)
+- [Contract](docs/platform-observability/01-CONTRACT.md)
+- [Event and Incident Model](docs/platform-observability/02-EVENT-INCIDENT-MODEL.md)
+- [Three-level Diagnostics](docs/platform-observability/03-THREE-LEVEL-DIAGNOSTICS.md)
+- [Telegram Alert Contract](docs/platform-observability/04-TELEGRAM-ALERT-CONTRACT.md)
+- [Local Verification](docs/platform-observability/07-LOCAL-VERIFICATION.md)
+
+Platform Observability 是共用 Platform Service Candidate。Contract 已由 Tony 核准，Architecture／Security Review 均為 Approved；實作與證據只限 Local／CI 與隔離 Local D1。Telegram 與 AI Adapter 均 Disabled，沒有 Provider API、Remote D1、Binding、部署或 Production 使用權。
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |
