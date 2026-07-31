@@ -8,6 +8,7 @@ export interface ReadinessChecks {
   readonly requestContext: true;
   readonly uuidv7: true;
   readonly moduleBoundaries: true;
+  readonly reliabilityFoundation: true;
 }
 
 export function createReadinessHandler(

@@ -11,6 +11,7 @@ import type { ModuleBoundary } from "../modules/module-boundary";
 import { tenantAccessBoundary } from "../modules/tenant-access";
 import type { AuditPort } from "../ports/audit-port";
 import type { IdempotencyPort } from "../ports/idempotency-port";
+import { ReleaseHealthEvaluator } from "../platform-reliability/release-health";
 import { createHealthHandler } from "./health";
 import { createReadinessHandler, type ReadinessChecks } from "./readiness";
 import { Router } from "./router";
@@ -19,6 +20,7 @@ export interface RuntimeComposition {
   readonly app: App;
   readonly modules: readonly ModuleBoundary[];
   readonly readiness: ReadinessChecks;
+  readonly releaseHealth: ReleaseHealthEvaluator;
   readonly ports: {
     readonly audit: AuditPort;
     readonly idempotency: IdempotencyPort;
@@ -43,6 +45,7 @@ export function createCompositionRoot(): RuntimeComposition {
     requestContext: true,
     uuidv7: true,
     moduleBoundaries: true,
+    reliabilityFoundation: true,
   }) satisfies ReadinessChecks;
 
   router.register({
@@ -65,6 +68,7 @@ export function createCompositionRoot(): RuntimeComposition {
     }),
     modules,
     readiness,
+    releaseHealth: new ReleaseHealthEvaluator(),
     ports: Object.freeze({
       audit: new DisabledAuditAdapter(),
       idempotency: new DisabledIdempotencyAdapter(),

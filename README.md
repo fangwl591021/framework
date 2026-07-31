@@ -12,6 +12,7 @@
 | Business Partner | [Executive Overview](docs/handbook/01-EXECUTIVE-OVERVIEW.md) |
 | New Team Member | [Reading Paths](docs/handbook/14-READING-PATHS.md) |
 | Runtime Phase 1 Reviewer | [Decision Closure](docs/runtime-phase-1/README.md) |
+| Reliability Reviewer | [Platform Reliability Foundation](docs/platform-reliability/README.md) |
 
 Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義跨專案一致的架構語言、模組邊界、開發標準與治理原則。
 
@@ -236,6 +237,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | --- | --- |
 | [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -260,6 +262,16 @@ Event Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由
 
 Business Network Engine 是獨立 Domain Module，不屬於 Platform Core。Contract 已由 Tony 核准；Lifecycle 為 Candidate，僅在隔離 Local D1 完成實作與驗證，未建立 provider Adapter、Remote D1 或部署。
 
+### Platform Reliability Foundation
+
+- [Reliability Documentation](docs/platform-reliability/README.md)
+- [Environment Separation](docs/platform-reliability/01-ENVIRONMENT-SEPARATION.md)
+- [Release and Rollback](docs/platform-reliability/02-RELEASE-ROLLBACK.md)
+- [Backup and Restore](docs/platform-reliability/03-BACKUP-RESTORE.md)
+- [Deployment Gates](docs/platform-reliability/04-DEPLOYMENT-GATES.md)
+- [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
+
+Platform Reliability Foundation 是共用 Platform Service，不是商業模組。它目前只在 Local／CI 與隔離 Local D1 完成驗證；Contract 已由 Tony 核准，Architecture／Security Review 已通過；沒有 Remote D1、Production Binding、Provider API、部署或 Production 使用權。
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |

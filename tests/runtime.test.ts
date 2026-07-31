@@ -47,6 +47,7 @@ describe("Runtime composition", () => {
       requestContext: true,
       uuidv7: true,
       moduleBoundaries: true,
+      reliabilityFoundation: true,
     });
   });
 
@@ -133,6 +134,7 @@ describe("Operational endpoints", () => {
         requestContext: true,
         uuidv7: true,
         moduleBoundaries: true,
+      reliabilityFoundation: true,
       },
       excludedReadiness: ["D1", "provider", "production"],
     });

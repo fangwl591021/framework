@@ -137,6 +137,8 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 - [Open Decisions](docs/handbook/16-OPEN-DECISIONS.md)
 - [Roadmap](docs/handbook/17-ROADMAP.md)
 - [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)
+- [Platform Reliability Foundation](docs/platform-reliability/README.md)
+- [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
 - [Repository 完整正式文件索引](README.md#文件索引)
 
 ## 14. 狀態說明
@@ -153,7 +155,7 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 
 ## 15. Roadmap
 
-Sprint 1～7 與 Architecture Handbook 已整合為 Framework RC1 文件基準；Approved Migration Package 目前只完成 Design Proposal，決策仍為 NO-GO。Framework 仍是 Not Executed／Not Verified，不批准 Runtime、Physical Schema 執行、Migration 或 Deployment。後續候選順序見 [Roadmap](docs/handbook/17-ROADMAP.md)。
+歷史 Sprint 與 RC1 治理狀態仍保留於原 Roadmap；目前可執行基準已包含本機驗證的 Runtime Foundation、Core Persistence、Event Engine 與 Business Network Engine。新的分層候選與 PR #18～#20 順序見 [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)。任何 Local Verification 仍不代表 Remote D1、Deployment 或 Production Ready。
 
 ## 16. Framework RC1 and Migration Governance
 
@@ -170,3 +172,9 @@ Runtime Phase 1 只規劃 Identity Core、Tenant Access、Authorization、Core O
 BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Referral、Product、Coupon、AI Agent、LINE Messaging Adapter 與客戶專屬流程都不屬於本階段 Runtime。Handbook 的 BookingOS Candidate 描述不是 Runtime Implementation Source。
 
 四份 Contract 與 ADR-013～ADR-017 已由 Tony 核准。Foundation Bootstrap 提供 request pipeline、operational endpoints、UUIDv7 與 safe error handling；後續 Phase 1 Core Persistence and Domain Foundation 已在隔離 Local D1 實作及驗證十張表、Repository、Domain Service、Audit、Idempotency 與 Authorization。它仍不提供公開 Domain API、Remote D1、Binding、Secret、Deployment 或 Production。正式入口與 current truth 見 [Runtime Phase 1](docs/runtime-phase-1/README.md)。
+
+## 18. Platform Reliability Foundation
+
+[Platform Reliability Foundation](docs/platform-reliability/README.md) 定義三環境隔離、可追蹤 Release、程式退版與資料復原分離、Provider-neutral Backup／Restore、Deployment Gates 與 safe release health。它是 Platform Service，不是 Business Engine。
+
+PR #18 的 Contract 已由 Tony 核准，Architecture／Security Review 已通過；Lifecycle 維持 Platform Service Candidate。證據只限 Local／CI 與隔離 Local D1。Local Filesystem 是測試 Adapter；R2、Google Drive 與外部 Object Storage 都維持 Disabled。沒有 Remote D1、Secret、Binding、Provider API、部署或 Production 使用權。
