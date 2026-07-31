@@ -34,8 +34,8 @@ This Roadmap records architecture intent only. `Not Implemented` and `Candidate`
 | Feature Flags | Govern controlled rollout | Flag lifecycle and evaluation | Release approval | Configuration | P2 | Not Implemented |
 | Integration Hub | Govern provider adapters | Adapter registration and connection state | Provider business rules | Identity, Configuration | P1 | Not Implemented |
 | Scheduler／Background Jobs | Govern asynchronous work | Job lifecycle and retry | Domain policy | Audit, Idempotency | P1 | Not Implemented |
-| Observability／Diagnostics | Explain platform health | Metrics, traces, diagnostics | Business analytics | Runtime, Release Health | P0 | Planned PR #19 |
-| Telegram Alerting | Deliver operational alerts | Alert adapter and delivery status | Incident decisions | Observability, Integration Hub | P1 | Planned PR #19 |
+| Observability／Diagnostics | Explain platform health | Bounded observations, incidents, diagnostics, Support Codes, dependency health | Business analytics | Runtime, Release Health | P0 | PR #19 Candidate／Locally Verified |
+| Telegram Alerting | Deliver operational alerts | Provider-neutral intent, safe payload, delivery evidence | Incident decisions and credentials | Observability, Integration Hub | P1 | PR #19 Disabled Adapter／Locally Verified |
 | Traffic Protection／Rate Limit／Circuit Breaker | Protect shared Runtime | Limits, breaker state, admission | Tenant billing | Runtime, Observability | P0 | Planned PR #20 |
 | Data Quality Engine | Detect data integrity drift | Quality rules and findings | Automatic business correction | D1, Audit | P1 | Not Implemented |
 | Usage Metering／Billing | Measure platform consumption | Usage facts and billing inputs | Payment collection | Analytics, Audit | P2 | Not Implemented |
@@ -68,6 +68,6 @@ This Roadmap records architecture intent only. `Not Implemented` and `Candidate`
 ## Delivery Sequence
 
 1. PR #18 — Environment Separation／Release／Rollback／Backup／Restore（Ready for Review after Local verification; not deployed）.
-2. PR #19 — Observability／Diagnostics／Telegram Alerting／Status Communication.
+2. PR #19 — Observability／Diagnostics／Telegram Alerting／Status Communication（Draft Candidate; Local verification only）.
 3. PR #20 — Traffic Protection／Webhook Deduplication／Rate Limit／Circuit Breaker／Tenant Resource Isolation.
 4. Later candidates — AI Gateway and Usage Metering; Guided Task Engine／Floating Assistant; Conversational Workbench; Adaptive Communication Engine; Application Assembly Enhancement; Integration Setup Assistant.

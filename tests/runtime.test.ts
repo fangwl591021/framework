@@ -189,7 +189,7 @@ describe("Router and safe errors", () => {
     const serialized = JSON.stringify(body);
 
     expect(response.status).toBe(500);
-    expect(body.error).toEqual({
+    expect(body.error).toMatchObject({
       code: "INTERNAL_ERROR",
       message: "The service could not complete the request.",
     });

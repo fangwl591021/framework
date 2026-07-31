@@ -77,12 +77,12 @@ describe("Module Permission Registration Gate", () => {
     const ledger = await env.DB.prepare(
       `SELECT count(*) AS count FROM d1_migrations`,
     ).first<{ count: number }>();
-    expect(ledger?.count).toBe(3);
+    expect(ledger?.count).toBe(4);
   });
 
   it("rolls back permission inserts and guard removal when registration fails", async () => {
     const coreMigrations = migrations.filter(
-      ({ name }) => !name.includes("0003_business_network_engine"),
+      ({ name }) => name.includes("0001_phase_1_core") || name.includes("0002_event_engine"),
     );
     await applyD1Migrations(env.DB, [...coreMigrations]);
     const networkMigration = migrations.find(

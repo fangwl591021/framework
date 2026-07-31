@@ -10,7 +10,7 @@ Runtime Foundation Bootstrap Stage
 Runtime Foundation: Implemented／Locally Verified
 Phase 1 Core Modules: Locally Implemented／Locally Verified／Not Deployed
 Phase 1 Physical Schema: Local D1 Only／Not Deployed
-Phase 1 Migration: Executed and Verified on Isolated Local D1
+Phase 1 and Platform Service Migrations: Executed and Verified on Isolated Local D1
 Remote Migration: Not Executed
 Production Migration: Not Executed
 Deployment: Not Performed
@@ -138,6 +138,7 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 - [Roadmap](docs/handbook/17-ROADMAP.md)
 - [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)
 - [Platform Reliability Foundation](docs/platform-reliability/README.md)
+- [Platform Observability Foundation](docs/platform-observability/README.md)
 - [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
 - [Repository 完整正式文件索引](README.md#文件索引)
 
@@ -178,3 +179,9 @@ BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Refe
 [Platform Reliability Foundation](docs/platform-reliability/README.md) 定義三環境隔離、可追蹤 Release、程式退版與資料復原分離、Provider-neutral Backup／Restore、Deployment Gates 與 safe release health。它是 Platform Service，不是 Business Engine。
 
 PR #18 的 Contract 已由 Tony 核准，Architecture／Security Review 已通過；Lifecycle 維持 Platform Service Candidate。證據只限 Local／CI 與隔離 Local D1。Local Filesystem 是測試 Adapter；R2、Google Drive 與外部 Object Storage 都維持 Disabled。沒有 Remote D1、Secret、Binding、Provider API、部署或 Production 使用權。
+
+## 19. Platform Observability Foundation
+
+[Platform Observability](docs/platform-observability/README.md) defines bounded Observation Events, deterministic failure classification, Tenant/provider/platform Incident aggregation, three-level diagnostics, Support Codes, dependency health, and provider-neutral alert intent. It is a Platform Service, not business analytics or a Business Engine.
+
+PR #19 status is Platform Service Candidate／Contract Proposed／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed. Telegram and AI adapters remain Disabled. There is no Remote D1, provider API, credential, Binding, public Admin UI, deployment, or Production verification. Traffic protection remains separate PR #20 scope.

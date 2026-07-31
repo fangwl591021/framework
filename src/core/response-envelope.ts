@@ -13,11 +13,22 @@ interface SuccessEnvelope<T> {
   readonly meta: ResponseMeta;
 }
 
+export interface ErrorDiagnosticFields {
+  readonly supportCode: string | null;
+  readonly retryable: boolean;
+  readonly actionRequired: boolean;
+  readonly statusCategory: "failed" | "action_required";
+}
+
 interface ErrorEnvelope {
   readonly ok: false;
   readonly error: {
     readonly code: string;
     readonly message: string;
+    readonly supportCode?: string | null;
+    readonly retryable?: boolean;
+    readonly actionRequired?: boolean;
+    readonly statusCategory?: "failed" | "action_required";
   };
   readonly meta: ResponseMeta;
 }
@@ -52,12 +63,14 @@ export function errorResponse(
   error: FoundationError,
   context: RequestContext,
   clock: Clock,
+  diagnostics?: ErrorDiagnosticFields,
 ): Response {
   const body: ErrorEnvelope = {
     ok: false,
     error: {
       code: error.code,
       message: error.safeMessage,
+      ...(diagnostics ?? {}),
     },
     meta: meta(context, clock),
   };
