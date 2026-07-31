@@ -1,6 +1,7 @@
 import { createCompositionRoot } from "./runtime/composition-root";
 
 export * from "./platform-traffic";
+export * from "./application-assembly";
 
 const runtime = createCompositionRoot();
 

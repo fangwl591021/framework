@@ -48,3 +48,7 @@ Framework RC1 Baseline
 | Staging／Production Migration | Future independent stage | Not Authorized |
 
 Promotion 必須依 [Environment Promotion Policy](../migration-package/09-ENVIRONMENT-PROMOTION-POLICY.md) 逐階段完成；目前 [Go／No-Go](../migration-package/11-GO-NOGO-DECISION.md) 為 NO-GO。
+
+## Application Assembly MVP
+
+Application Assembly & Module Enablement 已完成 Local MVP：8-table Migration、Event/Business Network 安裝、無副作用 Eligibility Projection、Traffic-first Module Invocation、版本化 Access Fence、Navigation/Dashboard、Tenant isolation 與 Local D1 verification。狀態為 Platform Service Candidate、Contract Approved by Tony、Architecture Review Approved、Security Review Approved、Locally Implemented、Locally Verified、Not Deployed、Production Use Not Allowed；Remote D1、Production migration 與 deployment 均未執行。

@@ -244,6 +244,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-traffic-protection](docs/registry/platform-traffic-protection.md) | Platform Service Candidate / Contract Approved by Tony / Locally Implemented / Locally Verified / Not Deployed |
+| [application-assembly](docs/registry/application-assembly.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -352,3 +353,9 @@ Framework RC1 是以 `6dd23c30dd496a4892660c71b33349c2695ecb67` 為來源的 Arc
 - [Current Go／No-Go Decision](docs/migration-package/11-GO-NOGO-DECISION.md)
 
 目前狀態：Package Designed = Proposed；Local／Isolated D1 尚未測試；Architecture／Security／Execution Approval 均未取得；決策為 **NO-GO — Execution Not Yet Approved**。Test design、approval、execution 與 verification 必須分開記錄。
+
+## Application Assembly
+
+Application Assembly 提供 Tenant Application、Module Catalog、Entitlement、Enablement、Dependency、後端 Module Gate 與動態 Navigation/Dashboard manifest。Event Engine 與 Business Network Engine 是第一批可選 Domain Module；Platform Core services 不可被購買或停用。詳見 [Application Assembly](docs/application-assembly/README.md)。
+
+目前狀態為 Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。Navigation 與 Dashboard 僅執行無副作用 eligibility projection；所有 Module invocation 必須經過 Traffic Admission、版本化 Module Access Fence 與 Domain callback 前重驗證。
