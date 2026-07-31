@@ -1,5 +1,7 @@
 export {
   ApplicationAssemblyApplication,
+  createServerApplicationBinding,
+  type ServerApplicationBinding,
   type TrustedApplicationContext,
 } from "./application";
 export { eventEngineNavigationManifest } from "./event-navigation-manifest";

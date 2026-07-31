@@ -1,4 +1,9 @@
-import type { EventEngineApplication } from "../event-engine";
+import type { MutationContext } from "../../application/core-services";
+import {
+  type EventEngineApplication,
+  type CreateEventInput,
+  type EventRecord,
+} from "../event-engine";
 import type {
   ApplicationAssemblyApplication,
   TrustedApplicationContext,
@@ -10,16 +15,29 @@ export class EventEngineModuleGateway {
     private readonly eventEngine: EventEngineApplication,
   ) {}
 
-  async execute<T>(
+  async assertAccess(
     context: TrustedApplicationContext,
     actorMembershipId: string,
-    operation: (eventEngine: EventEngineApplication) => Promise<T>,
-  ): Promise<T> {
+  ): Promise<void> {
     await this.assembly.requireModuleAccess(
       context,
       actorMembershipId,
       "event-engine",
     );
-    return operation(this.eventEngine);
+  }
+
+  async createEvent(
+    context: TrustedApplicationContext,
+    actorMembershipId: string,
+    input: CreateEventInput,
+    mutation: MutationContext,
+  ): Promise<EventRecord> {
+    await this.assertAccess(context, actorMembershipId);
+    return this.eventEngine.createEvent(
+      context.tenantId,
+      actorMembershipId,
+      input,
+      mutation,
+    );
   }
 }

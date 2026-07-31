@@ -169,8 +169,9 @@ export class ApplicationAssemblyRepository {
     tenantId: string,
     moduleKeys: readonly string[],
   ): Promise<readonly ModuleCatalogRecord[]> {
-    if (moduleKeys.length === 0) return [];
-    const placeholders = moduleKeys.map((_, index) => `?${index + 2}`).join(", ");
+    const boundedKeys = [...new Set(moduleKeys)].slice(0, 50);
+    if (boundedKeys.length === 0) return [];
+    const placeholders = boundedKeys.map((_, index) => `?${index + 2}`).join(", ");
     const result = await this.db
       .prepare(
         `SELECT ${MODULE_COLUMNS}
@@ -179,7 +180,7 @@ export class ApplicationAssemblyRepository {
          ORDER BY module_key
          LIMIT 50`,
       )
-      .bind(tenantId, ...moduleKeys)
+      .bind(tenantId, ...boundedKeys)
       .all<ModuleCatalogRow>();
     return result.results.map(moduleCatalog);
   }
@@ -347,6 +348,7 @@ export class ApplicationAssemblyRepository {
     timestamp: number,
     limit: number,
   ): Promise<readonly ModuleCatalogRecord[]> {
+    const boundedLimit = Math.min(Math.max(Math.trunc(limit), 1), 100);
     const result = await this.db
       .prepare(
         `SELECT
@@ -403,7 +405,7 @@ export class ApplicationAssemblyRepository {
          ORDER BY catalog.module_key
          LIMIT ?4`,
       )
-      .bind(tenantId, applicationId, timestamp, limit)
+      .bind(tenantId, applicationId, timestamp, boundedLimit)
       .all<ModuleCatalogRow>();
     return result.results.map(moduleCatalog);
   }

@@ -4,6 +4,7 @@ import {
   ApplicationAssemblyApplication,
   ApplicationAssemblyError,
   EventEngineModuleGateway,
+  createServerApplicationBinding,
   eventEngineNavigationManifest,
 } from "../../src/modules/application-assembly";
 import {
@@ -121,13 +122,11 @@ describe("Application Assembly and Module Enablement", () => {
 
     const contextA = await assembly.resolveTrustedApplicationContext(
       setup.tenant.id,
-      applicationA.id,
-      "server_route",
+      createServerApplicationBinding(applicationA.id),
     );
     const contextB = await assembly.resolveTrustedApplicationContext(
       setup.tenant.id,
-      applicationB.id,
-      "server_route",
+      createServerApplicationBinding(applicationB.id),
     );
     expect(await assembly.buildApplicationNavigation(
       contextA,
@@ -141,27 +140,32 @@ describe("Application Assembly and Module Enablement", () => {
       contextB,
       setup.ownerMembership.id,
     )).toEqual([]);
-    await expect(gateway.execute(
+
+
+    await expect(gateway.createEvent(
       contextB,
       setup.ownerMembership.id,
-      async () => "unreachable",
+      {
+        title: "Blocked Event",
+        description: "Must not execute",
+        registrationOpensAt: clock.current(),
+        registrationClosesAt: clock.current() + 60_000,
+        paymentMode: "free",
+      },
+      context(),
     )).rejects.toMatchObject({ code: "MODULE_NOT_ENTITLED" });
 
-    const createdEvent = await gateway.execute(
+    const createdEvent = await gateway.createEvent(
       contextA,
       setup.ownerMembership.id,
-      (service) => service.createEvent(
-        setup.tenant.id,
-        setup.ownerMembership.id,
-        {
-          title: "Assembled Event",
-          description: "Module-gated Event Engine",
-          registrationOpensAt: clock.current(),
-          registrationClosesAt: clock.current() + 60_000,
-          paymentMode: "free",
-        },
-        context(),
-      ),
+      {
+        title: "Assembled Event",
+        description: "Module-gated Event Engine",
+        registrationOpensAt: clock.current(),
+        registrationClosesAt: clock.current() + 60_000,
+        paymentMode: "free",
+      },
+      context(),
     );
     await assembly.disableModule(
       setup.tenant.id,
@@ -179,10 +183,9 @@ describe("Application Assembly and Module Enablement", () => {
       applicationA.id,
       "event-engine",
     )).toBe(false);
-    await expect(gateway.execute(
+    await expect(gateway.assertAccess(
       contextA,
       setup.ownerMembership.id,
-      async () => "unreachable",
     )).rejects.toMatchObject({ code: "MODULE_NOT_ENABLED" });
     expect(await env.DB.prepare(
       "SELECT title FROM events WHERE tenant_id = ?1 AND id = ?2",
@@ -197,11 +200,23 @@ describe("Application Assembly and Module Enablement", () => {
       "event-engine",
       context(),
     );
-    expect(await gateway.execute(
+    await expect(gateway.assertAccess(
       contextA,
       setup.ownerMembership.id,
-      async () => "restored",
-    )).toBe("restored");
+    )).resolves.toBeUndefined();
+    const suspendContext = context("application-suspend-replay");
+    const suspended = await assembly.suspendApplication(
+      setup.tenant.id,
+      setup.ownerMembership.id,
+      applicationA.id,
+      suspendContext,
+    );
+    expect(await assembly.suspendApplication(
+      setup.tenant.id,
+      setup.ownerMembership.id,
+      applicationA.id,
+      suspendContext,
+    )).toEqual(suspended);
   });
 
   it("rejects tenant crossing, client-selected context, unauthorized management, and expired trials", async () => {
@@ -228,8 +243,10 @@ describe("Application Assembly and Module Enablement", () => {
     )).rejects.toMatchObject({ code: "APPLICATION_SCOPE_DENIED" });
     await expect(assembly.resolveTrustedApplicationContext(
       tenantA.tenant.id,
-      application.id,
-      "client_header",
+      {
+        applicationId: application.id,
+        trustMarker: Symbol("client-header"),
+      } as ReturnType<typeof createServerApplicationBinding>,
     )).rejects.toMatchObject({ code: "UNTRUSTED_APPLICATION_CONTEXT" });
     await expect(assembly.createApplication(
       tenantA.tenant.id,
@@ -258,8 +275,7 @@ describe("Application Assembly and Module Enablement", () => {
     clock.advance(10_000);
     const trusted = await assembly.resolveTrustedApplicationContext(
       tenantA.tenant.id,
-      application.id,
-      "server_route",
+      createServerApplicationBinding(application.id),
     );
     expect(await assembly.checkModuleAccess(
       trusted,
@@ -408,7 +424,7 @@ describe("Application Assembly and Module Enablement", () => {
       setup.ownerMembership.id,
       application.id,
       "provider",
-      { api_token: "must-not-be-stored" },
+      { api_token: "redacted" },
       context(),
     )).rejects.toBeInstanceOf(ApplicationAssemblyError);
     await assembly.setApplicationConfiguration(
@@ -419,21 +435,45 @@ describe("Application Assembly and Module Enablement", () => {
       true,
       context(),
     );
-    const audit = await env.DB.prepare(
-      `SELECT action, resource_reference
+    await expect(assembly.setApplicationConfiguration(
+      setup.tenant.id,
+      setup.ownerMembership.id,
+      application.id,
+      "invalid.number",
+      Number.NaN,
+      context(),
+    )).rejects.toBeInstanceOf(TypeError);
+    const replayContext = context("configuration-replay");
+    const configured = await assembly.setApplicationConfiguration(
+      setup.tenant.id,
+      setup.ownerMembership.id,
+      application.id,
+      "dashboard.layout",
+      { sections: ["event-engine"], compact: true },
+      replayContext,
+    );
+    expect(await assembly.setApplicationConfiguration(
+      setup.tenant.id,
+      setup.ownerMembership.id,
+      application.id,
+      "dashboard.layout",
+      { sections: ["event-engine"], compact: true },
+      replayContext,
+    )).toEqual(configured);
+
+    const audits = await env.DB.prepare(
+      `SELECT resource_reference
        FROM audit_records
-       WHERE tenant_id = ?1 AND action = 'application.configuration.set'`,
-    ).bind(setup.tenant.id).first<{
-      action: string;
-      resource_reference: string;
-    }>();
-    expect(audit).toEqual({
-      action: "application.configuration.set",
-      resource_reference: `${application.id}:navigation.compact`,
-    });
+       WHERE tenant_id = ?1 AND action = 'application.configuration.set'
+       ORDER BY resource_reference`,
+    ).bind(setup.tenant.id).all<{ resource_reference: string }>();
+    expect(audits.results.map(({ resource_reference }) => resource_reference)).toEqual([
+      `${application.id}:dashboard.layout`,
+      `${application.id}:navigation.compact`,
+    ]);
     const stored = await env.DB.prepare(
       "SELECT value_json FROM application_configuration WHERE tenant_id = ?1",
     ).bind(setup.tenant.id).all<{ value_json: string }>();
-    expect(JSON.stringify(stored.results)).not.toContain("must-not-be-stored");
+    expect(JSON.stringify(stored.results)).not.toContain("redacted");
   });
 });

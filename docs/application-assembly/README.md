@@ -15,6 +15,7 @@ not a new business domain.
 - A module is usable only when the Application is active, the catalog entry is
   available, entitlement is valid, enablement is enabled, dependencies are
   satisfied, and the actor has the catalog-declared Core permission.
+- Trusted Application context requires a non-serializable server binding capability.
 - Navigation and dashboard visibility use the same server-side facts as the
   Service gate. Client-side hiding never grants or denies authority.
 - Disabling a module stops navigation, Service access, and background-work

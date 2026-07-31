@@ -23,14 +23,16 @@
 5. Every dependency has a valid entitlement and is enabled.
 6. Actor has the module's declared Core permission.
 
-The trusted Application context is resolved by the server route. A client
-header, URL, or DTO cannot create that context.
+The trusted Application context is resolved from a server-composition binding
+that carries a non-serializable capability marker. A client header, URL, or DTO
+cannot create that context.
 
 ## Service Boundary
 
 Domain services are invoked through a module-specific gateway. The Event
-gateway checks `event-engine` access before delegating to Event Engine, whose
-own operation permission checks remain authoritative. Background work must call
+gateway never exposes the raw Event Service callback; it binds `tenant_id` from
+the trusted Application context before delegating. Event Engine operation
+permission checks remain authoritative. Background work must call
 the same structural guard before doing module work.
 
 ## Data and Mutation Rules
