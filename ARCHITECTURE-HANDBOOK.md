@@ -177,4 +177,4 @@ BookingOS、Booking、Appointment、Calendar、Brand、Shop、CRM、Point、Refe
 
 [Platform Reliability Foundation](docs/platform-reliability/README.md) 定義三環境隔離、可追蹤 Release、程式退版與資料復原分離、Provider-neutral Backup／Restore、Deployment Gates 與 safe release health。它是 Platform Service，不是 Business Engine。
 
-PR #18 的證據只限 Local／CI 與隔離 Local D1。Local Filesystem 是測試 Adapter；R2、Google Drive 與外部 Object Storage 都維持 Disabled。沒有 Remote D1、Secret、Binding、Provider API、部署或 Production 使用權。
+PR #18 的 Contract 已由 Tony 核准，Architecture／Security Review 已通過；Lifecycle 維持 Platform Service Candidate。證據只限 Local／CI 與隔離 Local D1。Local Filesystem 是測試 Adapter；R2、Google Drive 與外部 Object Storage 都維持 Disabled。沒有 Remote D1、Secret、Binding、Provider API、部署或 Production 使用權。

@@ -1,6 +1,6 @@
 # Platform Reliability Foundation
 
-> Platform Service Foundation · Contract Proposed · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
+> Platform Service Candidate · Contract Approved by Tony · Architecture／Security Review Approved · Locally Implemented · Locally Verified · Not Deployed · Production Use Not Allowed
 
 Platform Reliability Foundation establishes reusable environment, release, rollback, backup, restore, deployment-gate, and release-health boundaries. It is not a Business Engine and owns no customer workflow.
 
@@ -19,5 +19,6 @@ Platform Reliability Foundation establishes reusable environment, release, rollb
 - No formal D1, Secret, R2, Google Drive, or Production Binding is created.
 - Local simulation repositories are test authority only and are not Production persistence.
 - Local Filesystem is a Node／CI test adapter and is not exported through the Worker-facing barrel.
-- R2, Google Drive, and external object storage adapters fail closed.
+- R2, Google Drive, and external object storage adapters fail closed, including deletion.
+- The provider-neutral Google Drive configuration contract accepts only trusted environment and Secret references; it contains no provider adapter or repository-held Folder ID.
 - No Remote D1, provider API, deployment, Production backup, or Production restore is performed.

@@ -1,4 +1,8 @@
 import type { AuditIntent, AuditPort } from "../ports/audit-port";
+import type {
+  BackupOperationalEvidence,
+  BackupOperationalEvidencePort,
+} from "./backup";
 import {
   type BackupRecord,
   type ReleaseRecord,
@@ -12,6 +16,15 @@ import type {
   ReleaseRepositoryPort,
   RollbackRepositoryPort,
 } from "./ports";
+
+export class LocalBackupOperationalEvidenceAdapter
+implements BackupOperationalEvidencePort {
+  readonly records: BackupOperationalEvidence[] = [];
+
+  async record(evidence: BackupOperationalEvidence): Promise<void> {
+    this.records.push(Object.freeze({ ...evidence }));
+  }
+}
 
 export class LocalAuditEvidenceAdapter implements AuditPort {
   readonly records: AuditIntent[] = [];

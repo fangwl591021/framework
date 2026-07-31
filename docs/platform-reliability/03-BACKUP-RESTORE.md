@@ -23,6 +23,20 @@ A Backup records its identifier, source environment, database and Release versio
 
 Secrets, Tokens, Credentials, absolute internal paths, Database IDs, and Binding names are excluded. Production strategy must store independent copies outside the primary D1 failure domain and may later use D1 → R2 → Google Drive／cross-cloud replication.
 
+## Failure Isolation and Cleanup
+
+A completed Artifact, checksum, and Catalog record remain `completed` when notification delivery fails. The failure is recorded separately as bounded `notification_retry_required` evidence, which may be consumed by a future background retry. Replaying the same Idempotency Key returns the stored result and creates no second Artifact.
+
+If storage succeeds but Catalog persistence fails, the service attempts `BackupStoragePort.delete(storageReference)`. Local Filesystem deletion is idempotent. A cleanup failure never replaces the original Catalog error and records only `orphan_cleanup_required`, Backup ID, provider name, a digest of the logical storage reference, a fixed reason code, and time. Provider error payloads, Credentials, Tokens, Secrets, and unmasked paths are forbidden.
+
+Disabled R2, Google Drive, and external storage adapters fail closed for `put`, `get`, and `delete`.
+
+## Google Drive Configuration Contract
+
+The provider-neutral configuration contains only `providerKey: google_drive`, `folderIdReference`, `credentialSecretReference`, `encryptionRequired`, `retentionPolicyReference`, and `enabled`. The Folder reference must come from trusted environment configuration; the Credential field references a Secret name and never a Secret value. Production requires encryption, and missing explicit folder authorization fails closed.
+
+Tony has confirmed that the target folder exists with Restricted access. Its actual Folder ID is injected only through deployment environment configuration and is not stored in this Repository. Google Drive remains Backup Storage only, never a primary database; public sharing links are not an accepted access mechanism. No Google Drive Adapter, OAuth flow, Service Account, API call, or upload is implemented here.
+
 ## Restore Drill
 
 The Local Restore Drill:

@@ -5,6 +5,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { AuditPort } from "../src/ports/audit-port";
 import {
   BackupService,
+  type BackupCatalogPort,
+  type BackupNotification,
+  type BackupNotificationPort,
+  type BackupOperationalEvidencePort,
+  type BackupRecord,
   type BackupSnapshot,
   type BackupStoragePort,
   defaultEnvironmentManifest,
@@ -15,8 +20,9 @@ import {
   encodeSnapshot,
   EnvironmentGuard,
   EnvironmentConfigurationService,
+  GoogleDriveBackupConfigurationGuard,
   LocalAuditEvidenceAdapter,
-
+  LocalBackupOperationalEvidenceAdapter,
   LocalIdempotencyAdapter,
   LocalReliabilityRepository,
   LocalTestEncryptionAdapter,
@@ -84,6 +90,9 @@ class MemoryBackupAdapter
 implements BackupProviderPort, BackupStoragePort, RestoreProviderPort {
   readonly providerName = "memory-test";
   readonly artifacts = new Map<string, Uint8Array>();
+  putCount = 0;
+  deleteCount = 0;
+  cleanupFails = false;
   sourceData: unknown = { tenants: ["tenant-a", "tenant-b"] };
   restoredData: unknown = null;
 
@@ -92,6 +101,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort {
   }
 
   async put(backupId: string, content: Uint8Array): Promise<string> {
+    this.putCount += 1;
     this.artifacts.set(backupId, content.slice());
     return `memory:${backupId}`;
   }
@@ -99,6 +109,12 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort {
   async get(storageReference: string): Promise<Uint8Array | null> {
     const id = storageReference.replace(/^memory:/, "");
     return this.artifacts.get(id)?.slice() ?? null;
+  }
+
+  async delete(storageReference: string): Promise<void> {
+    this.deleteCount += 1;
+    if (this.cleanupFails) throw new Error("LOCAL_CLEANUP_FAILED");
+    this.artifacts.delete(storageReference.replace(/^memory:/, ""));
   }
 
   async restore(snapshot: BackupSnapshot): Promise<void> {
@@ -109,23 +125,32 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort {
   }
 }
 
-function backupHarness(audit: AuditPort = new LocalAuditEvidenceAdapter()) {
+interface BackupHarnessOptions {
+  readonly audit?: AuditPort;
+  readonly notification?: BackupNotificationPort;
+  readonly evidence?: BackupOperationalEvidencePort;
+  readonly catalog?: BackupCatalogPort;
+}
+
+function backupHarness(options: BackupHarnessOptions = {}) {
   const adapter = new MemoryBackupAdapter();
-  const repository = new LocalReliabilityRepository();
+  const repository = options.catalog ?? new LocalReliabilityRepository();
   const idempotency = new LocalIdempotencyAdapter();
+  const evidence = options.evidence ?? new LocalBackupOperationalEvidenceAdapter();
   const service = new BackupService(
     adapter,
     adapter,
     adapter,
     new LocalTestEncryptionAdapter(),
-    new NoopBackupNotificationAdapter(),
+    options.notification ?? new NoopBackupNotificationAdapter(),
+    evidence,
     repository,
     idempotency,
-    audit,
+    options.audit ?? new LocalAuditEvidenceAdapter(),
     new FixedClock(),
     new SequenceUuidV7(),
   );
-  return { adapter, repository, idempotency, service };
+  return { adapter, repository, idempotency, evidence, service };
 }
 
 describe("Environment separation and deployment gates", () => {
@@ -351,7 +376,7 @@ describe("Backup, restore, and safe health", () => {
 
   it("creates a checksum-protected idempotent Backup", async () => {
     const audit = new LocalAuditEvidenceAdapter();
-    const { adapter, service } = backupHarness(audit);
+    const { adapter, service } = backupHarness({ audit });
     const operation = context();
     const first = await service.create({
       sourceEnvironment: "development",
@@ -369,6 +394,113 @@ describe("Backup, restore, and safe health", () => {
     expect(audit.records.filter(({ action }) => action === "backup.creation")).toHaveLength(1);
   });
 
+  it("keeps a completed Backup completed when notification fails and replays without duplication", async () => {
+    const evidence = new LocalBackupOperationalEvidenceAdapter();
+    const audit = new LocalAuditEvidenceAdapter();
+    const notification: BackupNotificationPort = {
+      async notify(_notification: BackupNotification): Promise<void> {
+        throw new Error("PROVIDER_NOTIFICATION_FAILURE");
+      },
+    };
+    const { adapter, repository, service } = backupHarness({
+      audit,
+      evidence,
+      notification,
+    });
+    const operation = context();
+    const input = {
+      sourceEnvironment: "development" as const,
+      releaseId: "release-local",
+      retentionUntil: Date.parse("2026-08-31T00:00:00Z"),
+    };
+    const completed = await service.create(input, operation);
+    const replay = await service.create(input, operation);
+
+    expect(completed.status).toBe("completed");
+    expect(replay).toEqual(completed);
+    expect(adapter.putCount).toBe(1);
+    expect(adapter.artifacts).toHaveLength(1);
+    expect(await repository.getBackup(completed.backupId)).toEqual(completed);
+    expect(audit.records.map(({ action }) => action)).toEqual([
+      "backup.creation",
+      "backup.notification.failure",
+    ]);
+    expect(evidence.records).toEqual([
+      expect.objectContaining({
+        evidenceType: "notification_retry_required",
+        backupId: completed.backupId,
+        storageReferenceDigest: null,
+        reasonCode: "BACKUP_NOTIFICATION_FAILED",
+      }),
+    ]);
+    expect(JSON.stringify(evidence.records)).not.toMatch(
+      /PROVIDER_NOTIFICATION_FAILURE|token|secret|credential/i,
+    );
+  });
+
+  it("cleans an artifact when Catalog save fails", async () => {
+    const catalogError = new Error("CATALOG_SAVE_FAILED");
+    const catalog: BackupCatalogPort = {
+      async save(_record: BackupRecord): Promise<void> {
+        throw catalogError;
+      },
+      async getBackup(_backupId: string): Promise<BackupRecord | null> {
+        return null;
+      },
+    };
+    const { adapter, service } = backupHarness({ catalog });
+    let thrown: unknown;
+    try {
+      await service.create({
+        sourceEnvironment: "development",
+        releaseId: "release-local",
+        retentionUntil: Date.parse("2026-08-31T00:00:00Z"),
+      }, context());
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBe(catalogError);
+    expect(adapter.deleteCount).toBe(1);
+    expect(adapter.artifacts).toHaveLength(0);
+  });
+
+  it("preserves the Catalog error and records safe orphan evidence when cleanup fails", async () => {
+    const catalogError = new Error("CATALOG_SAVE_FAILED");
+    const evidence = new LocalBackupOperationalEvidenceAdapter();
+    const catalog: BackupCatalogPort = {
+      async save(_record: BackupRecord): Promise<void> {
+        throw catalogError;
+      },
+      async getBackup(_backupId: string): Promise<BackupRecord | null> {
+        return null;
+      },
+    };
+    const harness = backupHarness({ catalog, evidence });
+    harness.adapter.cleanupFails = true;
+    let thrown: unknown;
+    try {
+      await harness.service.create({
+        sourceEnvironment: "development",
+        releaseId: "release-local",
+        retentionUntil: Date.parse("2026-08-31T00:00:00Z"),
+      }, context());
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBe(catalogError);
+    expect(harness.adapter.artifacts).toHaveLength(1);
+    expect(evidence.records).toEqual([
+      expect.objectContaining({
+        evidenceType: "orphan_cleanup_required",
+        storageProvider: "memory-test",
+        storageReferenceDigest: expect.stringMatching(/^[0-9a-f]{64}$/),
+        reasonCode: "BACKUP_ORPHAN_CLEANUP_FAILED",
+      }),
+    ]);
+    expect(JSON.stringify(evidence.records)).not.toMatch(
+      /LOCAL_CLEANUP_FAILED|memory:|token|secret|credential/i,
+    );
+  });
   it("rejects missing and corrupted Backup artifacts", async () => {
     const { adapter, service } = backupHarness();
     await expect(service.restore("missing", context())).rejects.toMatchObject({
@@ -402,6 +534,55 @@ describe("Backup, restore, and safe health", () => {
     expect(reference).not.toContain(root);
   });
 
+  it("deletes Local Filesystem artifacts idempotently", async () => {
+    const root = await mkdtemp(join(tmpdir(), "platform-backup-delete-"));
+    temporaryRoots.push(root);
+    const adapter = new LocalFilesystemTestAdapter(root);
+    const reference = await adapter.put(
+      "backup-00000002",
+      new TextEncoder().encode("artifact"),
+    );
+    await adapter.delete(reference);
+    await adapter.delete(reference);
+    expect(await adapter.get(reference)).toBeNull();
+  });
+
+  it("fails closed for incomplete or unsafe Google Drive configuration", () => {
+    const guard = new GoogleDriveBackupConfigurationGuard();
+    const base = {
+      providerKey: "google_drive" as const,
+      folderIdReference: "env:BACKUP_FOLDER_ID",
+      credentialSecretReference: "secret:BACKUP_DRIVE_CREDENTIAL",
+      encryptionRequired: true,
+      retentionPolicyReference: "policy:framework-backup",
+      enabled: true,
+    };
+    const localContext = {
+      source: "trusted_environment_configuration" as const,
+      environment: "development" as const,
+      folderAuthorizationConfirmed: true,
+    };
+    const { folderIdReference: _folderReference, ...missingFolderReference } = base;
+    const {
+      credentialSecretReference: _credentialReference,
+      ...missingCredentialReference
+    } = base;
+    expect(() => guard.validate(missingFolderReference, localContext))
+      .toThrowError(expect.objectContaining({ code: "INVALID_BACKUP_STORAGE_CONFIGURATION" }));
+    expect(() => guard.validate(missingCredentialReference, localContext))
+      .toThrowError(expect.objectContaining({ code: "INVALID_BACKUP_STORAGE_CONFIGURATION" }));
+    expect(() => guard.validate(base, { ...localContext, folderAuthorizationConfirmed: false }))
+      .toThrowError(expect.objectContaining({ code: "INVALID_BACKUP_STORAGE_CONFIGURATION" }));
+    expect(() => guard.validate({ ...base, encryptionRequired: false }, {
+      ...localContext,
+      environment: "production",
+    })).toThrowError(expect.objectContaining({
+      code: "INVALID_BACKUP_STORAGE_CONFIGURATION",
+    }));
+    expect(() => guard.validate({ ...base, folderIdReference: "https://drive.example/public" }, localContext))
+      .toThrowError(expect.objectContaining({ code: "INVALID_BACKUP_STORAGE_CONFIGURATION" }));
+    expect(guard.validate(base, localContext)).toEqual(base);
+  });
   it("keeps R2, Google Drive, and external storage disabled", async () => {
     for (const adapter of [
       new DisabledR2Adapter(),
@@ -410,12 +591,14 @@ describe("Backup, restore, and safe health", () => {
     ]) {
       await expect(adapter.put("backup-disabled", new Uint8Array()))
         .rejects.toMatchObject({ code: "PROVIDER_DISABLED" });
+      await expect(adapter.delete("disabled-reference"))
+        .rejects.toMatchObject({ code: "PROVIDER_DISABLED" });
     }
   });
 
   it("runs an idempotent Local Restore Drill and produces bounded evidence", async () => {
     const audit = new LocalAuditEvidenceAdapter();
-    const harness = backupHarness(audit);
+    const harness = backupHarness({ audit });
     const target: RestoreDrillTargetPort = {
       async initializeFresh() {},
       async seedTestData() {},
@@ -476,7 +659,7 @@ describe("Backup, restore, and safe health", () => {
 
   it("audits a Restore Drill integrity failure", async () => {
     const audit = new LocalAuditEvidenceAdapter();
-    const harness = backupHarness(audit);
+    const harness = backupHarness({ audit });
     const target: RestoreDrillTargetPort = {
       async initializeFresh() {},
       async seedTestData() {},

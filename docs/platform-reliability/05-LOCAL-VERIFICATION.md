@@ -8,6 +8,9 @@ Evidence scope: Node／CI tests and isolated Local D1 only.
 - Release transitions, promotion order, and nine Deployment Gates.
 - Code rollback eligibility and Schema incompatibility rejection.
 - Backup SHA-256 checksum, idempotent replay, missing and corrupted artifact rejection.
+- Notification failure isolation with retry evidence and no duplicate Artifact.
+- Catalog failure cleanup, idempotent Local deletion, and safe orphan evidence.
+- Fail-closed Google Drive configuration references and Production encryption requirement.
 - Disabled R2, Google Drive, and external storage providers.
 - Local Filesystem Test Adapter boundary.
 - Restore Drill using official `0001＋0002＋0003`.
@@ -16,6 +19,6 @@ Evidence scope: Node／CI tests and isolated Local D1 only.
 - Safe release-health output and `/health`／`/ready` regression.
 - Audit evidence for environment, Release, Rollback, Backup, and Restore operations.
 
-Current regression: 72 tests PASS（43 unit／runtime and 29 isolated Local D1）.
+Current regression: 77 tests PASS（48 unit／runtime and 29 isolated Local D1）.
 
-Not verified: Remote D1, Production Binding, provider API, R2, Google Drive, external storage, deployment, Production rollback, Production restore, RPO, RTO, load, retention, and Security approval.
+Not verified: Remote D1, Production Binding, provider API, R2, Google Drive, external storage, deployment, Production rollback, Production restore, RPO, RTO, load, and retention. Architecture and Security Review are approved only for this Local／CI Contract scope.

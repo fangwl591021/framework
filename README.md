@@ -237,7 +237,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | --- | --- |
 | [event-engine](docs/registry/event-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
-| [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Proposed／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -271,7 +271,7 @@ Business Network Engine 是獨立 Domain Module，不屬於 Platform Core。Cont
 - [Deployment Gates](docs/platform-reliability/04-DEPLOYMENT-GATES.md)
 - [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
 
-Platform Reliability Foundation 是共用 Platform Service，不是商業模組。它目前只在 Local／CI 與隔離 Local D1 完成驗證；Contract 仍為 Proposed，沒有 Remote D1、Production Binding、Provider API、部署或 Production 使用權。
+Platform Reliability Foundation 是共用 Platform Service，不是商業模組。它目前只在 Local／CI 與隔離 Local D1 完成驗證；Contract 已由 Tony 核准，Architecture／Security Review 已通過；沒有 Remote D1、Production Binding、Provider API、部署或 Production 使用權。
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |

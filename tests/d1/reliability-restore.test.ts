@@ -5,6 +5,7 @@ import {
   BackupService,
   encodeSnapshot,
   LocalAuditEvidenceAdapter,
+  LocalBackupOperationalEvidenceAdapter,
   LocalIdempotencyAdapter,
   LocalReliabilityRepository,
   LocalTestEncryptionAdapter,
@@ -113,6 +114,10 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
     return this.artifacts.get(
       storageReference.replace(/^isolated-memory:/, ""),
     )?.slice() ?? null;
+  }
+
+  async delete(storageReference: string): Promise<void> {
+    this.artifacts.delete(storageReference.replace(/^isolated-memory:/, ""));
   }
 
   async destroyTestData(): Promise<void> {
@@ -239,6 +244,7 @@ describe("Platform Reliability Local D1 Restore Drill", () => {
       harness,
       new LocalTestEncryptionAdapter(),
       new NoopBackupNotificationAdapter(),
+      new LocalBackupOperationalEvidenceAdapter(),
       repository,
       idempotency,
       audit,

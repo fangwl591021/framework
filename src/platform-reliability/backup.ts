@@ -24,6 +24,7 @@ export interface BackupStoragePort {
   readonly providerName: string;
   put(backupId: string, content: Uint8Array): Promise<string>;
   get(storageReference: string): Promise<Uint8Array | null>;
+  delete(storageReference: string): Promise<void>;
 }
 
 export interface RestoreProviderPort {
@@ -48,6 +49,23 @@ export interface BackupNotification {
 
 export interface BackupNotificationPort {
   notify(notification: BackupNotification): Promise<void>;
+}
+
+export interface BackupOperationalEvidence {
+  readonly evidenceType:
+    | "notification_retry_required"
+    | "orphan_cleanup_required";
+  readonly backupId: string;
+  readonly storageProvider: string;
+  readonly storageReferenceDigest: string | null;
+  readonly reasonCode:
+    | "BACKUP_NOTIFICATION_FAILED"
+    | "BACKUP_ORPHAN_CLEANUP_FAILED";
+  readonly occurredAt: number;
+}
+
+export interface BackupOperationalEvidencePort {
+  record(evidence: BackupOperationalEvidence): Promise<void>;
 }
 
 export interface CreateBackupInput {
@@ -78,6 +96,7 @@ export class BackupService {
     private readonly restoreProvider: RestoreProviderPort,
     private readonly encryption: BackupEncryptionPort,
     private readonly notification: BackupNotificationPort,
+    private readonly operationalEvidence: BackupOperationalEvidencePort,
     private readonly catalog: BackupCatalogPort,
     private readonly idempotency: IdempotentOperationPort,
     private readonly audit: AuditPort,
@@ -114,27 +133,62 @@ export class BackupService {
           retentionUntil: input.retentionUntil,
           restoreVerifiedAt: null,
         });
-        await this.catalog.save(record);
+        try {
+          await this.catalog.save(record);
+        } catch (catalogError) {
+          try {
+            await this.storage.delete(storageReference);
+          } catch {
+            await this.recordOperationalEvidenceSafely({
+              evidenceType: "orphan_cleanup_required",
+              backupId,
+              storageProvider: this.storage.providerName,
+              storageReferenceDigest: await this.storageReferenceDigestSafely(
+                storageReference,
+              ),
+              reasonCode: "BACKUP_ORPHAN_CLEANUP_FAILED",
+              occurredAt: this.clock.now().getTime(),
+            });
+          }
+          throw catalogError;
+        }
         await this.audit.record({
           action: "backup.creation",
           resourceType: "backup",
           resourceId: backupId,
           correlationId: context.correlationId,
         });
-        await this.notification.notify({
-          backupId,
-          status: "completed",
-          reasonCode: "BACKUP_COMPLETED",
-        });
+        try {
+          await this.notification.notify({
+            backupId,
+            status: "completed",
+            reasonCode: "BACKUP_COMPLETED",
+          });
+        } catch {
+          await this.recordOperationalEvidenceSafely({
+            evidenceType: "notification_retry_required",
+            backupId,
+            storageProvider: this.storage.providerName,
+            storageReferenceDigest: null,
+            reasonCode: "BACKUP_NOTIFICATION_FAILED",
+            occurredAt: this.clock.now().getTime(),
+          });
+          await this.recordAuditSafely({
+            action: "backup.notification.failure",
+            resourceType: "backup",
+            resourceId: backupId,
+            correlationId: context.correlationId,
+          });
+        }
         return record;
       } catch (error) {
-        await this.audit.record({
+        await this.recordAuditSafely({
           action: "backup.failure",
           resourceType: "backup",
           resourceId: backupId,
           correlationId: context.correlationId,
         });
-        await this.notification.notify({
+        await this.notifySafely({
           backupId,
           status: "failed",
           reasonCode: "BACKUP_FAILED",
@@ -142,6 +196,44 @@ export class BackupService {
         throw error;
       }
     });
+  }
+
+  private async recordAuditSafely(
+    intent: Parameters<AuditPort["record"]>[0],
+  ): Promise<void> {
+    try {
+      await this.audit.record(intent);
+    } catch {
+      // Failure reporting must never replace the primary operation result.
+    }
+  }
+
+  private async notifySafely(notification: BackupNotification): Promise<void> {
+    try {
+      await this.notification.notify(notification);
+    } catch {
+      // A failed failure-notification must not replace the primary error.
+    }
+  }
+
+  private async recordOperationalEvidenceSafely(
+    evidence: BackupOperationalEvidence,
+  ): Promise<void> {
+    try {
+      await this.operationalEvidence.record(Object.freeze({ ...evidence }));
+    } catch {
+      // Evidence storage is independently monitored by its future adapter.
+    }
+  }
+
+  private async storageReferenceDigestSafely(
+    storageReference: string,
+  ): Promise<string | null> {
+    try {
+      return await sha256Hex(new TextEncoder().encode(storageReference));
+    } catch {
+      return null;
+    }
   }
 
   async restore(
@@ -258,6 +350,10 @@ abstract class DisabledStorageAdapter implements BackupStoragePort {
   }
 
   async get(_storageReference: string): Promise<Uint8Array | null> {
+    throw new ReliabilityError("PROVIDER_DISABLED");
+  }
+
+  async delete(_storageReference: string): Promise<void> {
     throw new ReliabilityError("PROVIDER_DISABLED");
   }
 }

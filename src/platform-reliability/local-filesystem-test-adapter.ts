@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { BackupStoragePort } from "./backup";
 import { ReliabilityError } from "./models";
@@ -39,5 +39,11 @@ export class LocalFilesystemTestAdapter implements BackupStoragePort {
       if (code === "ENOENT") return null;
       throw error;
     }
+  }
+
+  async delete(storageReference: string): Promise<void> {
+    const match = SAFE_REFERENCE.exec(storageReference);
+    if (!match?.[1]) throw new ReliabilityError("BACKUP_CORRUPTED");
+    await rm(join(this.root, `${match[1]}.backup`), { force: true });
   }
 }

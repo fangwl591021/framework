@@ -39,8 +39,8 @@ This Roadmap records architecture intent only. `Not Implemented` and `Candidate`
 | Traffic Protection／Rate Limit／Circuit Breaker | Protect shared Runtime | Limits, breaker state, admission | Tenant billing | Runtime, Observability | P0 | Planned PR #20 |
 | Data Quality Engine | Detect data integrity drift | Quality rules and findings | Automatic business correction | D1, Audit | P1 | Not Implemented |
 | Usage Metering／Billing | Measure platform consumption | Usage facts and billing inputs | Payment collection | Analytics, Audit | P2 | Not Implemented |
-| Backup／Recovery | Protect and restore data | Backup evidence and Restore Drill | Primary database semantics | D1, Storage providers | P0 | PR #18 Locally Implemented |
-| Release／Rollback | Govern promotion and recovery | Release, Gates, rollback planning | Deployment provider | Build, Test, Backup | P0 | PR #18 Locally Implemented |
+| Backup／Recovery | Protect and restore data | Backup evidence and Restore Drill | Primary database semantics | D1, Storage providers | P0 | PR #18 Contract Approved／Locally Verified |
+| Release／Rollback | Govern promotion and recovery | Release, Gates, rollback planning | Deployment provider | Build, Test, Backup | P0 | PR #18 Contract Approved／Locally Verified |
 
 ## D. Experience Layer
 
@@ -67,7 +67,7 @@ This Roadmap records architecture intent only. `Not Implemented` and `Candidate`
 
 ## Delivery Sequence
 
-1. PR #18 — Environment Separation／Release／Rollback／Backup／Restore.
+1. PR #18 — Environment Separation／Release／Rollback／Backup／Restore（Ready for Review after Local verification; not deployed）.
 2. PR #19 — Observability／Diagnostics／Telegram Alerting／Status Communication.
 3. PR #20 — Traffic Protection／Webhook Deduplication／Rate Limit／Circuit Breaker／Tenant Resource Isolation.
 4. Later candidates — AI Gateway and Usage Metering; Guided Task Engine／Floating Assistant; Conversational Workbench; Adaptive Communication Engine; Application Assembly Enhancement; Integration Setup Assistant.

@@ -2,6 +2,7 @@ export * from "./backup";
 export * from "./deployment-gates";
 export * from "./environment";
 export * from "./environment-configuration-service";
+export * from "./google-drive-configuration";
 
 export * from "./local-simulation-adapters";
 export * from "./models";
