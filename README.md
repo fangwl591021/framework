@@ -14,6 +14,7 @@
 | Runtime Phase 1 Reviewer | [Decision Closure](docs/runtime-phase-1/README.md) |
 | Reliability Reviewer | [Platform Reliability Foundation](docs/platform-reliability/README.md) |
 | Observability Reviewer | [Platform Observability Foundation](docs/platform-observability/README.md) |
+| Traffic Protection Reviewer | [Platform Traffic Protection Foundation](docs/platform-traffic/README.md) |
 
 Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義跨專案一致的架構語言、模組邊界、開發標準與治理原則。
 
@@ -225,6 +226,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 - [0002 Event Engine](migrations/0002_event_engine.sql) creates exactly ten Event Domain Module tables and is verified only through isolated Local D1 tests.
 - [0003 Business Network Engine](migrations/0003_business_network_engine.sql) creates exactly ten Business Network Domain Module tables and is verified only through isolated Local D1 tests.
 - [0004 Platform Observability](migrations/0004_platform_observability.sql) creates six bounded Platform Service evidence tables and registers six reviewed Permissions; it is verified only through isolated Local D1 tests.
+- [0005 Platform Traffic Protection](migrations/0005_platform_traffic_protection.sql) creates six bounded Platform Service protection tables and registers seven reviewed Permissions; it is verified only through isolated Local D1 tests.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -241,6 +243,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [business-network-engine](docs/registry/business-network-engine.md) | Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-reliability-foundation](docs/registry/platform-reliability-foundation.md) | Platform Service Candidate／Contract Approved by Tony／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
+| [platform-traffic-protection](docs/registry/platform-traffic-protection.md) | Platform Service Candidate / Contract Approved by Tony / Locally Implemented / Locally Verified / Not Deployed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -286,6 +289,15 @@ Platform Reliability Foundation 是共用 Platform Service，不是商業模組�
 - [Local Verification](docs/platform-observability/07-LOCAL-VERIFICATION.md)
 
 Platform Observability 是共用 Platform Service Candidate。Contract 已由 Tony 核准，Architecture／Security Review 均為 Approved；實作與證據只限 Local／CI 與隔離 Local D1。Telegram 與 AI Adapter 均 Disabled，沒有 Provider API、Remote D1、Binding、部署或 Production 使用權。
+### Platform Traffic Protection Foundation
+
+- [Traffic Protection Documentation](docs/platform-traffic/README.md)
+- [Contract](docs/platform-traffic/01-CONTRACT.md)
+- [Admission Pipeline](docs/platform-traffic/02-ADMISSION-PIPELINE.md)
+- [Security and Privacy](docs/platform-traffic/08-SECURITY-PRIVACY.md)
+- [Local Verification](docs/platform-traffic/09-LOCAL-VERIFICATION.md)
+
+Platform Traffic Protection is a shared Platform Service Candidate. Its Contract is Approved by Tony with Architecture and Security review Approved; implementation and verification are limited to local adapters and isolated Local D1. No provider API, Remote D1, Durable Object, Queue, Cron, Binding, deployment, or Production use is authorized.
 ### Runtime Phase 1 Decision Closure
 
 | Document | Status |

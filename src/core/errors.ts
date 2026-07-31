@@ -3,7 +3,18 @@ export type ErrorCode =
   | "ROUTE_NOT_FOUND"
   | "METHOD_NOT_ALLOWED"
   | "INTERNAL_ERROR"
-  | "SERVICE_NOT_READY";
+  | "SERVICE_NOT_READY"
+  | "RATE_LIMITED"
+  | "TENANT_RATE_LIMITED"
+  | "PLATFORM_BUSY"
+  | "DUPLICATE_EVENT"
+  | "EVENT_FINGERPRINT_CONFLICT"
+  | "CIRCUIT_OPEN"
+  | "DEPENDENCY_UNAVAILABLE"
+  | "REQUEST_DEFERRED"
+  | "SERVICE_DEGRADED"
+  | "MODULE_NOT_ENABLED"
+  | "PERMISSION_DENIED";
 
 const STATUS_BY_CODE: Readonly<Record<ErrorCode, number>> = {
   INVALID_REQUEST: 400,
@@ -11,6 +22,17 @@ const STATUS_BY_CODE: Readonly<Record<ErrorCode, number>> = {
   METHOD_NOT_ALLOWED: 405,
   INTERNAL_ERROR: 500,
   SERVICE_NOT_READY: 503,
+  RATE_LIMITED: 429,
+  TENANT_RATE_LIMITED: 429,
+  PLATFORM_BUSY: 503,
+  DUPLICATE_EVENT: 200,
+  EVENT_FINGERPRINT_CONFLICT: 409,
+  CIRCUIT_OPEN: 503,
+  DEPENDENCY_UNAVAILABLE: 503,
+  REQUEST_DEFERRED: 202,
+  SERVICE_DEGRADED: 503,
+  MODULE_NOT_ENABLED: 403,
+  PERMISSION_DENIED: 403,
 };
 
 const MESSAGE_BY_CODE: Readonly<Record<ErrorCode, string>> = {
@@ -19,6 +41,17 @@ const MESSAGE_BY_CODE: Readonly<Record<ErrorCode, string>> = {
   METHOD_NOT_ALLOWED: "The request method is not allowed for this route.",
   INTERNAL_ERROR: "The service could not complete the request.",
   SERVICE_NOT_READY: "The service is not ready.",
+  RATE_LIMITED: "The request rate is temporarily limited.",
+  TENANT_RATE_LIMITED: "The tenant request rate is temporarily limited.",
+  PLATFORM_BUSY: "The platform is temporarily busy.",
+  DUPLICATE_EVENT: "The event was already accepted.",
+  EVENT_FINGERPRINT_CONFLICT: "The event identity conflicts with an earlier request.",
+  CIRCUIT_OPEN: "The required dependency is temporarily unavailable.",
+  DEPENDENCY_UNAVAILABLE: "A required dependency is unavailable.",
+  REQUEST_DEFERRED: "The request was accepted for deferred processing.",
+  SERVICE_DEGRADED: "The service is operating in a protected mode.",
+  MODULE_NOT_ENABLED: "The requested module is not enabled.",
+  PERMISSION_DENIED: "The requested operation is not permitted.",
 };
 
 export class FoundationError extends Error {

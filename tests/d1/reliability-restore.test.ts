@@ -67,7 +67,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
     const tenants = await env.DB.prepare(
       "SELECT count(*) AS count FROM tenants",
     ).first<{ count: number }>();
-    expect(ledger?.count).toBe(4);
+    expect(ledger?.count).toBe(5);
     expect(tenants?.count).toBe(0);
   }
 
@@ -203,7 +203,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
       tenantIsolationValid: tenantACount?.count === 1 && tenantBCount?.count === 1,
       auditEvidencePresent: audits?.count === 2,
       criticalRecordCount: 4,
-      integrityErrors: tables?.count === 36 ? [] : ["TABLE_COUNT_MISMATCH"],
+      integrityErrors: tables?.count === 42 ? [] : ["TABLE_COUNT_MISMATCH"],
     };
   }
 
@@ -273,7 +273,7 @@ describe("Platform Reliability Local D1 Restore Drill", () => {
       backupOpenable: true,
       restoredRecordCount: 4,
       integrityErrorCount: 0,
-      migrationLedgerCount: 4,
+      migrationLedgerCount: 5,
       tenantIsolationValid: true,
       auditEvidencePresent: true,
       checksumVerified: true,

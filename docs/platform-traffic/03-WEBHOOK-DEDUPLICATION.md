@@ -1,0 +1,7 @@
+# Webhook Deduplication
+
+The authoritative event key combines Tenant, Application scope, provider key, trusted issuer-context digest, and provider event ID. The payload fingerprint and normalized event type detect conflicting replays. A raw body, raw UID, signature, token, or credential is never stored.
+
+First receipt wins. Receipt lifecycle is `processing`, `completed`, `failed_retryable`, `failed_terminal`, or `expired`. Processing owns a bounded lease with an opaque owner token, expiry, attempt count, and last-attempt time. A matching completed replay returns the stored safe result without repeating the business mutation. An active lease returns retryable deferred; an expired lease permits exactly one conditional takeover. Completion and failure require the current fencing token, so a stale Worker cannot publish a result. A changed payload produces `EVENT_FINGERPRINT_CONFLICT`.
+
+Core Idempotency remains the authoritative business-result record. If the Domain mutation commits but receipt completion is interrupted, recovery reads the completed Stored Result and completes the receipt with the current lease; it never repeats the Domain mutation. Retryable attempts are bounded, and the maximum attempt becomes terminal with a safe failure code. Receipt TTL never bypasses an active processing lease. Completed or terminal historical receipts may only enter retention expiry through a separately governed path.

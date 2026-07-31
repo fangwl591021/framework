@@ -28,6 +28,11 @@
 | Idempotency Candidate | 保護 Command 重送與 Stored Result | Candidate Idempotency Record | Claim／Complete／Replay Contract TBD | 一般 Cache、Domain Truth | Platform Core Candidate；Not Implemented；Not Verified | [Idempotency Standard](../40-IDEMPOTENCY-STANDARD.md) |
 | Module Registry Candidate | 模組 Lifecycle／版本／Owner 索引 | Governance metadata only | Registry maintenance；no runtime events | 載入／部署 Module、Tenant Data | Platform Core Candidate；Not Implemented；Not Verified | [Registry Standard](../20-MODULE-REGISTRY-STANDARD.md) |
 
+## Platform Service Candidates
+
+| Service | Purpose | Current Status | Official Link |
+| --- | --- | --- | --- |
+| Platform Traffic Protection | Trusted admission, webhook deduplication, rate decisions, Tenant resource isolation, circuit breaker, degradation and backpressure | Platform Service Candidate; Contract Approved by Tony; Architecture/Security Approved; Locally Implemented; Locally Verified; Not Deployed | [Traffic Protection](../platform-traffic/README.md) |
 ## 使用規則
 
 - 其他 Module 只能依賴 Public Command、Query 或版本化 Domain Event，不得讀寫 private table／function。

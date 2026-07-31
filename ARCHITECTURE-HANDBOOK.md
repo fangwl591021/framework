@@ -139,6 +139,7 @@ Codex 在大型任務前必須確認 Repository、Branch、HEAD、Workspace，�
 - [Runtime Phase 1 Decision Closure](docs/runtime-phase-1/README.md)
 - [Platform Reliability Foundation](docs/platform-reliability/README.md)
 - [Platform Observability Foundation](docs/platform-observability/README.md)
+- [Platform Traffic Protection Foundation](docs/platform-traffic/README.md)
 - [Framework 2.0 Roadmap](docs/FRAMEWORK-2.0-ROADMAP.md)
 - [Repository 完整正式文件索引](README.md#文件索引)
 
@@ -185,3 +186,8 @@ PR #18 的 Contract 已由 Tony 核准，Architecture／Security Review 已通�
 [Platform Observability](docs/platform-observability/README.md) defines bounded Observation Events, deterministic failure classification, Tenant/provider/platform Incident aggregation, three-level diagnostics, Support Codes, dependency health, and provider-neutral alert intent. It is a Platform Service, not business analytics or a Business Engine.
 
 PR #19 status is Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed. Sidecar failures cannot change completed business results; Observation retention is governed, bounded, audited, and idempotent while Incident history remains immutable. Telegram and AI adapters remain Disabled. There is no Remote D1, provider API, credential, Binding, public Admin UI, scheduler, deployment, or Production verification. Traffic protection remains separate PR #20 scope.
+## 20. Platform Traffic Protection Foundation
+
+[Platform Traffic Protection](docs/platform-traffic/README.md) defines the trusted admission pipeline, webhook deduplication, rate decisions, Tenant resource isolation, circuit breaker, load shedding, backpressure, and bounded abuse evidence. It is a Platform Service, not a Business Engine and not a billing authority.
+
+Current status is Platform Service Candidate, Contract Approved by Tony, Architecture Review Approved, Security Review Approved, Locally Implemented, Locally Verified, Not Deployed, and Production Use Not Allowed. Verification is limited to deterministic local adapters and isolated Local D1. No Remote D1, Cloudflare Rate Limiting API, Durable Object, Queue, Cron, provider credential, Binding, deployment, or Production verification exists.
