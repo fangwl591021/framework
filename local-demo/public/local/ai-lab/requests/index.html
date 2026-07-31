@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI Lab - Requests</title>
+    <link rel="stylesheet" href="/local/ai-lab/styles.css" />
+  </head>
+  <body data-page="requests">
+    <header class="topbar">
+      <a class="brand" href="/local/ai-lab/"><span>PC</span> AI Gateway Lab</a>
+      <nav><a href="/local/ai-lab/">Lab</a><a class="active" href="/local/ai-lab/requests/">Requests</a><a href="/local/ai-lab/usage/">Usage</a><a href="/local/workbench/">Workbench</a></nav>
+    </header>
+    <main>
+      <section class="hero compact"><div><p class="kicker">BOUNDED SAFE EVIDENCE</p><h1>Request ledger</h1><p class="lede">Digest prefixes, status and safe timeline only. No prompt or complete provider response.</p></div><div class="guardrails"><span>MAX 50 / PAGE</span><span>TENANT SCOPED</span></div></section>
+      <section class="context-strip">
+        <label>Trusted Local Context<select id="actor"><option value="owner_a">Tenant A - Owner</option><option value="owner_tenant_b">Tenant B - Owner</option><option value="operator_a">Platform Operator</option></select></label>
+        <div id="trusted-context" class="context-value">Resolving on server...</div>
+      </section>
+      <section class="panel table-panel">
+        <div class="panel-title"><span>R</span><h2>Latest requests</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Task</th><th>Scenario</th><th>Status</th><th>Support code</th></tr></thead><tbody id="requests"></tbody></table></div>
+        <p id="notice" class="notice" aria-live="polite"></p>
+      </section>
+      <section class="panel"><div class="panel-title"><span>D</span><h2>Selected request</h2></div><div id="request-detail" class="data">Select a request row.</div></section>
+    </main>
+    <script type="module" src="/local/ai-lab/app.js"></script>
+  </body>
+</html>

@@ -20,6 +20,16 @@ const localEnv = {
         return new Response("<!doctype html><title>Setup</title>", {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
+      if (
+        pathname === "/local/ai-lab/" ||
+        pathname === "/local/ai-lab/requests/" ||
+        pathname === "/local/ai-lab/usage/"
+      )
+        return new Response("<!doctype html><title>AI Lab</title>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      if (pathname.startsWith("/local/ai-lab/"))
+        return new Response("ai-lab-asset");
       if (pathname.startsWith("/local/workbench/"))
         return new Response("asset");
       return new Response("Not Found", { status: 404 });
@@ -30,7 +40,7 @@ const request = (path: string, init: RequestInit = {}) =>
   new Request(`http://localhost${path}`, init);
 let cookie = "",
   csrf = "";
-async function createSession() {
+async function createSession(fixtureKey = "owner_a") {
   const response = await worker.fetch(
     request("/local/api/session", {
       method: "POST",
@@ -38,7 +48,7 @@ async function createSession() {
         Origin: "http://localhost",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fixtureKey: "owner_a" }),
+      body: JSON.stringify({ fixtureKey }),
     }),
     localEnv,
   );
@@ -151,21 +161,21 @@ describe("Local Conversational Workbench integration", () => {
       second = await seedFixture(env.DB);
     expect(second).toEqual(first);
   });
-  it("seeds one tenant and two applications", async () => {
+  it("seeds two isolated tenants and three applications", async () => {
     expect(
       (
         await env.DB.prepare("SELECT count(*) n FROM tenants").first<{
           n: number;
         }>()
       )?.n,
-    ).toBe(1);
+    ).toBe(2);
     expect(
       (
         await env.DB.prepare("SELECT count(*) n FROM applications").first<{
           n: number;
         }>()
       )?.n,
-    ).toBe(2);
+    ).toBe(3);
   });
   it("seeds module entitlements and enabled states only for Application A", async () => {
     expect(

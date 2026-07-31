@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Platform Core - Local AI Gateway Shadow Lab</title>
+    <link rel="stylesheet" href="/local/ai-lab/styles.css" />
+  </head>
+  <body data-page="lab">
+    <header class="topbar">
+      <a class="brand" href="/local/ai-lab/"><span>PC</span> AI Gateway Lab</a>
+      <nav aria-label="AI Lab navigation">
+        <a class="active" href="/local/ai-lab/">Lab</a>
+        <a href="/local/ai-lab/requests/">Requests</a>
+        <a href="/local/ai-lab/usage/">Usage</a>
+        <a href="/local/workbench/">Workbench</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="kicker">LOCAL SHADOW SIMULATION</p>
+          <h1>See every safe decision.<br /><em>Grant no authority.</em></h1>
+          <p class="lede">Deterministic resolution stays final while the local AI Gateway exposes route, budget, cache, validation and usage evidence.</p>
+        </div>
+        <div class="guardrails" aria-label="Guardrails">
+          <span>NO EXTERNAL PROVIDER</span>
+          <span>NO PRODUCTION AUTHORITY</span>
+          <span>NO TOOL EXECUTION</span>
+        </div>
+      </section>
+
+      <section class="context-strip">
+        <label>Trusted Local Context
+          <select id="actor">
+            <option value="owner_a">Tenant A - Owner</option>
+            <option value="owner_tenant_b">Tenant B - Owner</option>
+            <option value="operator_a">Platform Operator</option>
+            <option value="member_a">Tenant A - Member (denied)</option>
+          </select>
+        </label>
+        <div id="trusted-context" class="context-value">Resolving on server...</div>
+        <button id="reset" class="secondary" type="button">Reset local evidence</button>
+      </section>
+
+      <section class="lab-grid">
+        <form id="simulation" class="console panel">
+          <div class="panel-title"><span>01</span><h2>Shadow request</h2></div>
+          <label>Task<select id="task" required></select></label>
+          <div class="two">
+            <label>Quality tier<input id="quality" value="server-selected" readonly /></label>
+            <label>Latency class<input value="local deterministic" readonly /></label>
+          </div>
+          <label>Simulation scenario
+            <select id="scenario">
+              <option value="deterministic_shortcut_hit">deterministic shortcut hit</option>
+              <option value="cache_miss_local_provider_success">cache miss - local provider success</option>
+              <option value="cache_hit">cache hit</option>
+              <option value="cache_expired">expired cache - miss</option>
+              <option value="cross_tenant_cache_isolation">cross-Tenant cache isolation</option>
+              <option value="retired_task_cache_rejected">retired task rejects cache</option>
+              <option value="budget_exceeded">budget exceeded</option>
+              <option value="provider_disabled">provider disabled</option>
+              <option value="provider_timeout">provider timeout</option>
+              <option value="fallback_to_deterministic_local">fallback to deterministic local</option>
+              <option value="invalid_structured_output">invalid structured output</option>
+              <option value="unsafe_output">unsafe output</option>
+              <option value="low_confidence">low confidence</option>
+              <option value="unallowlisted_intent">unallowlisted intent</option>
+              <option value="circuit_open">circuit open</option>
+              <option value="stale_provider_completion">stale provider completion</option>
+              <option value="idempotent_replay">idempotent replay</option>
+              <option value="request_conflict">request conflict</option>
+            </select>
+          </label>
+          <label>Input editor<textarea id="input" maxlength="2000" rows="5">create event</textarea></label>
+          <div class="two">
+            <label>Budget fixture<select id="budget"><option>generous</option><option>tight</option><option>exhausted</option><option>concurrency_limited</option><option>premium_blocked</option></select></label>
+            <label>Cache directive<select id="cache"><option>allow</option><option>bypass</option></select></label>
+          </div>
+          <button class="primary" type="submit">Execute shadow simulation</button>
+          <p id="notice" class="notice" aria-live="polite"></p>
+        </form>
+
+        <section class="panel timeline-panel">
+          <div class="panel-title"><span>02</span><h2>Request timeline</h2></div>
+          <ol id="timeline" class="timeline"><li class="empty">Run a scenario to inspect safe evidence.</li></ol>
+        </section>
+      </section>
+
+      <section class="evidence-grid" aria-live="polite">
+        <article class="panel"><div class="panel-title"><span>03</span><h2>Authority comparison</h2></div><div id="comparison" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>04</span><h2>Route decision</h2></div><div id="route" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>04A</span><h2>Provider attempt</h2></div><div id="provider-attempt" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>05</span><h2>Budget claim</h2></div><div id="budget-card" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>06</span><h2>Cache / shortcut</h2></div><div id="cache-card" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>07</span><h2>Output validation</h2></div><div id="validation" class="data"></div></article>
+        <article class="panel"><div class="panel-title"><span>08</span><h2>Usage evidence</h2></div><div id="usage-card" class="data"></div></article>
+        <article class="panel wide"><div class="panel-title"><span>09</span><h2>Safe result</h2></div><div id="safe-result" class="data"></div></article>
+      </section>
+
+      <section class="catalog-section">
+        <div class="section-head"><div><p class="kicker">READ ONLY</p><h2>Provider / model catalog</h2></div><p>No enable control. No API key field. No dynamic endpoint.</p></div>
+        <div id="catalog" class="catalog-grid"></div>
+      </section>
+    </main>
+    <script type="module" src="/local/ai-lab/app.js"></script>
+  </body>
+</html>

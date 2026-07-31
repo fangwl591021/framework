@@ -22,9 +22,12 @@ import { LocalIdentityKeys, LocalQrKeys } from "./keys";
 
 export interface DemoFixtureState {
   tenantA: string;
+  tenantB: string;
   appA: string;
   appB: string;
+  tenantBApp: string;
   ownerMembership: string;
+  tenantBOwnerMembership: string;
   memberMembership: string;
   operatorMembership: string;
   eventReference: string;
@@ -45,12 +48,97 @@ const platformOperator = {
   ],
 };
 
+async function seedAiLabFixtures(
+  db: D1Database,
+  values: {
+    tenantA: string;
+    appA: string;
+    appB: string;
+    tenantB: string;
+    tenantBApp: string;
+  },
+): Promise<void> {
+  const budgetSql = `INSERT OR IGNORE INTO ai_budgets(
+    id,scope_type,scope_key,tenant_id,application_id,window_key,
+    window_started_at,window_ends_at,max_requests,max_input_units,max_output_units,
+    max_cost_micros,max_concurrent,used_requests,used_input_units,used_output_units,
+    used_cost_micros,concurrent_claims,status,version,created_at,updated_at
+  ) VALUES(?1,?2,?3,?4,?5,'local-shadow-lab',0,4102444800000,
+    1000,1000000,1000000,1000000,20,0,0,0,0,0,'active',1,1,1)`;
+  const policySql = `INSERT OR IGNORE INTO ai_route_policies(
+    id,scope_type,tenant_id,application_id,task_key,task_version,quality_tier,
+    route_chain_json,max_cost_micros,max_latency_ms,cache_allowed,status,version,
+    created_at,updated_at
+  ) VALUES(?1,'application',?2,?3,'workbench.intent_resolution',1,'deterministic',
+    '[{"providerKey":"deterministic_local_adapter","modelKey":"deterministic-fixture","modelVersion":"1"},{"providerKey":"disabled_generic_adapter","modelKey":"disabled","modelVersion":"1"}]',
+    0,5000,1,'active',1,1,1)`;
+  await db.batch([
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009101",
+      "platform",
+      "platform",
+      null,
+      null,
+    ),
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009102",
+      "tenant",
+      `tenant:${values.tenantA}`,
+      values.tenantA,
+      null,
+    ),
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009103",
+      "application",
+      `application:${values.tenantA}:${values.appA}`,
+      values.tenantA,
+      values.appA,
+    ),
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009104",
+      "application",
+      `application:${values.tenantA}:${values.appB}`,
+      values.tenantA,
+      values.appB,
+    ),
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009105",
+      "tenant",
+      `tenant:${values.tenantB}`,
+      values.tenantB,
+      null,
+    ),
+    db.prepare(budgetSql).bind(
+      "019f0000-0000-7000-8000-000000009106",
+      "application",
+      `application:${values.tenantB}:${values.tenantBApp}`,
+      values.tenantB,
+      values.tenantBApp,
+    ),
+    db.prepare(policySql).bind(
+      "019f0000-0000-7000-8000-000000009121",
+      values.tenantA,
+      values.appA,
+    ),
+    db.prepare(policySql).bind(
+      "019f0000-0000-7000-8000-000000009122",
+      values.tenantA,
+      values.appB,
+    ),
+    db.prepare(policySql).bind(
+      "019f0000-0000-7000-8000-000000009123",
+      values.tenantB,
+      values.tenantBApp,
+    ),
+  ]);
+}
+
 export async function readFixture(
   db: D1Database,
 ): Promise<DemoFixtureState | null> {
   const row = await db
     .prepare(
-      "SELECT state_json FROM local_demo_state WHERE state_key='fixture_v1'",
+      "SELECT state_json FROM local_demo_state WHERE state_key='fixture_v2'",
     )
     .first<{ state_json: string }>();
   return row ? (JSON.parse(row.state_json) as DemoFixtureState) : null;
@@ -100,6 +188,12 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
       "tenant:update",
       "membership:read",
       "membership:manage",
+      "ai_gateway:invoke",
+      "ai_task:read",
+      "ai_provider:read",
+      "ai_policy:read",
+      "ai_budget:read",
+      "ai_usage:read_tenant",
       ...Object.values(applicationAssemblyPermissions),
       ...Object.values(eventPermissionPolicy),
       ...Object.values(businessNetworkPermissions),
@@ -165,6 +259,52 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
     },
     ctx("app-b"),
   );
+  const tenantB = await core.createTenant(
+    "Local Demo Tenant B",
+    ctx("tenant-b"),
+  );
+  const tenantBOwnerMembership = await core.addTenantMembership(
+    tenantB.id,
+    owner.id,
+    "local-owner-b",
+    ctx("owner-membership-b"),
+  );
+  await core.assignRole(
+    tenantB.id,
+    tenantBOwnerMembership.id,
+    "tenant_owner",
+    ctx("owner-core-role-b"),
+  );
+  await core.createTenantRole(
+    tenantB.id,
+    "local_demo_manager",
+    "Local Demo Manager",
+    permissions,
+    ctx("manager-role-b"),
+  );
+  await core.assignRole(
+    tenantB.id,
+    tenantBOwnerMembership.id,
+    "local_demo_manager",
+    ctx("owner-manager-b"),
+  );
+  const tenantBApp = await core.createApplication(
+    tenantB.id,
+    { membershipId: tenantBOwnerMembership.id },
+    {
+      applicationKey: "local-tenant-b",
+      name: "Local Tenant B Application",
+      defaultLocale: "zh-TW",
+    },
+    ctx("app-tenant-b"),
+  );
+  await seedAiLabFixtures(db, {
+    tenantA: tenant.id,
+    tenantB: tenantB.id,
+    appA: appA.id,
+    appB: appB.id,
+    tenantBApp: tenantBApp.id,
+  });
   for (const module of [
     { moduleKey: "event_engine", displayName: "Event Engine" },
     {
@@ -360,9 +500,12 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
     throw new Error("Local diagnostic support code was not created");
   const state: DemoFixtureState = {
     tenantA: tenant.id,
+    tenantB: tenantB.id,
     appA: appA.id,
     appB: appB.id,
+    tenantBApp: tenantBApp.id,
     ownerMembership: ownerMembership.id,
+    tenantBOwnerMembership: tenantBOwnerMembership.id,
     memberMembership: memberMembership.id,
     operatorMembership: operatorMembership.id,
     eventReference: seeded.event.id,
@@ -370,7 +513,7 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
   };
   await db
     .prepare(
-      "INSERT INTO local_demo_state(state_key,state_json,updated_at) VALUES('fixture_v1',?1,?2)",
+      "INSERT INTO local_demo_state(state_key,state_json,updated_at) VALUES('fixture_v2',?1,?2)",
     )
     .bind(JSON.stringify(state), Date.now())
     .run();
