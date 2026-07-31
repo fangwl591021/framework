@@ -200,3 +200,7 @@ Application 組裝與可選模組治理請從 [Application Assembly](docs/applic
 ## Conversational Workbench Reading Path
 
 自然語言操作治理請從 [Conversational Workbench](docs/conversational-workbench/README.md) 開始，再閱讀 [Operation Plan](docs/conversational-workbench/05-OPERATION-PLAN-CONFIRMATION.md)、[Router](docs/conversational-workbench/06-OPERATION-ROUTER.md) 與 [Security Boundary](docs/conversational-workbench/08-SECURITY-BOUNDARY.md)。狀態為 Experience Platform Service Candidate、Contract Approved by Tony、Architecture／Security Review Approved、Locally Implemented／Verified、Not Deployed、Production Use Not Allowed。
+
+## AI Gateway Reading Path
+
+AI 任務治理請從 [AI Gateway MVP](docs/ai-gateway/README.md) 開始，再閱讀 [Contract](docs/ai-gateway/01-CONTRACT.md)、[Routing Policy](docs/ai-gateway/04-ROUTING-POLICY.md)、[Budget／Quota](docs/ai-gateway/05-BUDGET-QUOTA.md) 與 [Security Boundary](docs/ai-gateway/11-SECURITY-BOUNDARY.md)。Production Workbench 仍使用 deterministic resolver；gateway shadow 僅限 Local Test，外部 Provider、Remote D1、Binding、Secret 與 Deployment 均未啟用。

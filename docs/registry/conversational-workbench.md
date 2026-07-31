@@ -12,5 +12,5 @@
 - Production Use: Not Allowed
 - Dependencies: Identity Core, Tenant Access, Authorization, Core Operations, Application Assembly, Traffic Protection, Observability
 - Optional modules: Event Engine, Business Network Engine
-- AI Resolver: Disabled
+- AI Resolver: Production Disabled; AI Gateway shadow is Local Test only
 - Documentation: [Conversational Workbench](../conversational-workbench/README.md)
