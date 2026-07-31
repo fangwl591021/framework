@@ -18,4 +18,4 @@ Identity, Tenant authority, Module enablement, Permission policy, Core Audit, bu
 
 Trusted Runtime context, signature verifier evidence, Module Gate, Authorization, Core Audit and Idempotency, Platform Observability, UUIDv7, and D1.
 
-Observability is a sidecar. Its failure cannot turn an admitted or completed business operation into a failure, and it never replaces Core Audit.
+Circuit open/half-open/closed and degradation activation/recovery emit bounded PR #19 Observation events for existing Incident and alert-policy aggregation. Observability is a sidecar. Its failure cannot turn an admitted or completed business operation into a failure, and it never replaces Core Audit.

@@ -307,6 +307,7 @@ export class LocalCircuitBreaker implements CircuitBreakerPort {
   constructor(
     private readonly now: () => number,
     private readonly policy: CircuitBreakerPolicy,
+    private readonly observations: TrafficObservationPort | null = null,
   ) {
     if (
       policy.failureThreshold < 1 || policy.failureThreshold > 1000
@@ -340,6 +341,7 @@ export class LocalCircuitBreaker implements CircuitBreakerPort {
         halfOpenProbeCount: 1,
       });
       this.states.set(key, halfOpen);
+      this.observeSafe("circuit.half_open", context, "CIRCUIT_COOLDOWN_ELAPSED", "warning");
       return Object.freeze({ admitted: true, probe: true, state: "half_open", retryAfterSeconds: null });
     }
     if (current.state === "half_open") {
@@ -377,14 +379,17 @@ export class LocalCircuitBreaker implements CircuitBreakerPort {
       cooldownUntil: opened ? timestamp + this.policy.cooldownMs : null,
     });
     this.states.set(key, next);
+    if (opened) this.observeSafe("circuit.opened", context, "CIRCUIT_FAILURE_THRESHOLD", "error");
     return next;
   }
 
   recordSuccess(context: TrustedAdmissionContext): CircuitBreakerState {
     assertTrustedContext(context);
     if (!context.dependencyKey) throw new TypeError("DEPENDENCY_REQUIRED");
+    const prior = this.state(context);
     const next = this.closed(this.scopeKey(context));
     this.states.set(next.scopeKey, next);
+    if (prior.state !== "closed") this.observeSafe("circuit.closed", context, "CIRCUIT_PROBE_SUCCEEDED", "info");
     return next;
   }
 
@@ -392,6 +397,20 @@ export class LocalCircuitBreaker implements CircuitBreakerPort {
     return this.states.get(this.scopeKey(context)) ?? this.closed(this.scopeKey(context));
   }
 
+  private observeSafe(
+    eventType: "circuit.opened" | "circuit.half_open" | "circuit.closed",
+    context: TrustedAdmissionContext,
+    reasonCode: string,
+    severity: TrafficObservation["severity"],
+  ): void {
+    void this.observations?.observe({
+      eventType,
+      tenantId: context.tenantId,
+      operation: context.dependencyKey ?? "dependency",
+      reasonCode,
+      severity,
+    }).catch(() => undefined);
+  }
   private scopeKey(context: TrustedAdmissionContext): string {
     return context.tenantId
       ? `tenant:${context.tenantId}:provider:${context.dependencyKey}`
@@ -417,6 +436,7 @@ export class LocalLoadShedding implements LoadSheddingPort {
   constructor(
     private readonly now: () => number,
     private readonly policy: LoadSheddingPolicy,
+    private readonly observations: TrafficObservationPort | null = null,
   ) {
     if (policy.recoveryHysteresisMs < 100 || policy.recoveryHysteresisMs > 604_800_000) {
       throw new TypeError("INVALID_LOAD_SHEDDING_POLICY");
@@ -426,12 +446,14 @@ export class LocalLoadShedding implements LoadSheddingPort {
   activate(mode: Exclude<DegradationMode, "normal">): void {
     this.mode = mode;
     this.recoveryEligibleAt = this.now() + this.policy.recoveryHysteresisMs;
+    this.observeSafe("degradation.activated", `DEGRADATION_${mode.toUpperCase()}`, mode === "emergency" ? "critical" : "warning");
   }
 
   recover(): boolean {
     if (this.now() < this.recoveryEligibleAt) return false;
     this.mode = "normal";
     this.recoveryEligibleAt = 0;
+    this.observeSafe("degradation.recovered", "DEGRADATION_RECOVERED", "info");
     return true;
   }
 
@@ -445,6 +467,19 @@ export class LocalLoadShedding implements LoadSheddingPort {
     return Object.freeze(decision);
   }
 
+  private observeSafe(
+    eventType: "degradation.activated" | "degradation.recovered",
+    reasonCode: string,
+    severity: TrafficObservation["severity"],
+  ): void {
+    void this.observations?.observe({
+      eventType,
+      tenantId: null,
+      operation: "platform.load_shedding",
+      reasonCode,
+      severity,
+    }).catch(() => undefined);
+  }
   private decision(context: TrustedAdmissionContext): AdmissionSheddingDecision {
     if (this.mode === "normal" || context.priority === "critical") {
       return { admitted: true, deferred: false, reasonCode: "LOAD_OK" };
