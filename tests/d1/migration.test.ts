@@ -10,8 +10,10 @@ const expectedTables = [
   "attribution_records",
   "audit_records",
   "business_relationships",
+  "circuit_breaker_states",
   "commission_records",
   "commission_rules",
+  "degradation_states",
   "event_checkins",
   "event_form_fields",
   "event_notifications",
@@ -32,6 +34,7 @@ const expectedTables = [
   "partner_teams",
   "permissions",
   "platform_users",
+  "rate_limit_evidence",
   "referral_links",
   "referral_touches",
   "role_assignments",
@@ -40,7 +43,10 @@ const expectedTables = [
   "sales_records",
   "support_code_mappings",
   "tenant_memberships",
+  "tenant_resource_snapshots",
   "tenants",
+  "traffic_policy_records",
+  "webhook_receipts",
 ];
 
 const expectedIndexes = [
@@ -53,6 +59,9 @@ const expectedIndexes = [
   "idx_commission_partner_time",
   "idx_commission_rule_match",
   "idx_commission_status_time",
+  "idx_circuit_dependency_state",
+  "idx_circuit_tenant_state",
+  "idx_degradation_scope_time",
   "idx_event_answers_registration",
   "idx_event_checkins_session_time",
   "idx_event_form_fields_event_order",
@@ -85,6 +94,9 @@ const expectedIndexes = [
   "idx_referral_touch_link_time",
   "idx_referral_touch_partner_time",
   "idx_referral_touch_visitor_time",
+  "idx_rate_limit_expiry",
+  "idx_rate_limit_scope_window",
+  "idx_rate_limit_tenant_window",
   "idx_relationship_source_status",
   "idx_relationship_target_status",
   "idx_role_assignments_member",
@@ -93,14 +105,20 @@ const expectedIndexes = [
   "idx_sales_tenant_time",
   "idx_support_code_expiry",
   "idx_support_code_tenant_expiry",
+  "idx_tenant_resource_expiry",
   "idx_team_membership_partner",
   "idx_team_tenant_status",
+  "idx_traffic_policy_selection",
+  "idx_webhook_expiry_status",
+  "idx_webhook_tenant_expiry",
   "idx_tenant_memberships_tenant_status",
   "uq_alert_delivery_key",
   "uq_business_relationship_active",
   "uq_business_relationship_target_active",
+  "uq_circuit_scope",
   "uq_commission_primary_sale",
   "uq_commission_reversal",
+  "uq_degradation_active",
   "uq_event_checkins_qr_digest",
   "uq_event_checkins_verified_registration",
   "uq_event_form_fields_active_key",
@@ -116,6 +134,9 @@ const expectedIndexes = [
   "uq_roles_tenant_key",
   "uq_team_membership_active",
   "uq_tenant_memberships_active",
+  "uq_tenant_resource_window",
+  "uq_traffic_policy_active",
+  "uq_webhook_event",
 ];
 
 const expectedTriggers = [
@@ -126,6 +147,9 @@ const expectedTriggers = [
   "trg_attribution_immutable_delete",
   "trg_attribution_immutable_update",
   "trg_business_relationship_no_delete",
+  "trg_circuit_state_identity_guard",
+  "trg_circuit_state_no_delete",
+  "trg_circuit_state_transition_guard",
   "trg_commission_no_delete",
   "trg_commission_paid_immutable",
   "trg_core_role_permissions_immutable_delete",
@@ -133,6 +157,8 @@ const expectedTriggers = [
   "trg_core_role_permissions_immutable_update",
   "trg_core_roles_immutable_delete",
   "trg_core_roles_immutable_update",
+  "trg_degradation_state_lifecycle_guard",
+  "trg_degradation_state_no_delete",
   "trg_event_checkin_guard",
   "trg_event_checkin_no_delete",
   "trg_event_registration_insert_count",
@@ -160,10 +186,18 @@ const expectedTriggers = [
   "trg_permissions_immutable_insert",
   "trg_permissions_immutable_update",
   "trg_platform_users_terminal_state",
+  "trg_rate_limit_evidence_no_delete",
+  "trg_rate_limit_evidence_no_update",
   "trg_role_assignment_active_membership",
   "trg_sales_no_delete",
   "trg_support_code_no_delete",
   "trg_support_code_no_update",
+  "trg_tenant_resource_snapshot_no_delete",
+  "trg_tenant_resource_snapshot_no_update",
+  "trg_traffic_policy_lifecycle_guard",
+  "trg_traffic_policy_no_delete",
+  "trg_webhook_receipt_no_delete",
+  "trg_webhook_receipt_update_guard",
 ];
 
 interface ForeignKeyRow {
@@ -198,9 +232,9 @@ describe("Phase 1 local D1 migration", () => {
       `SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name`,
     ).all<{ name: string }>();
 
-    expect(tables.results.map(({ name }) => name)).toEqual(expectedTables);
-    expect(indexes.results.map(({ name }) => name)).toEqual(expectedIndexes);
-    expect(triggers.results.map(({ name }) => name)).toEqual(expectedTriggers);
+    expect(tables.results.map(({ name }) => name)).toEqual([...expectedTables].sort());
+    expect(indexes.results.map(({ name }) => name)).toEqual([...expectedIndexes].sort());
+    expect(triggers.results.map(({ name }) => name)).toEqual([...expectedTriggers].sort());
   });
 
   it("defines every expected tenant-aware foreign key in the formal migration", async () => {
@@ -233,6 +267,12 @@ describe("Phase 1 local D1 migration", () => {
     ]);
     expect(await foreignKeySignatures("idempotency_records")).toEqual(["tenant_id->tenants.id"]);
     expect(await foreignKeySignatures("audit_records")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("webhook_receipts")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("rate_limit_evidence")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("tenant_resource_snapshots")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("circuit_breaker_states")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("degradation_states")).toEqual(["tenant_id->tenants.id"]);
+    expect(await foreignKeySignatures("traffic_policy_records")).toEqual(["tenant_id->tenants.id"]);
 
     const violations = await env.DB.prepare("PRAGMA foreign_key_check").all();
     expect(violations.results).toEqual([]);
@@ -246,7 +286,7 @@ describe("Phase 1 local D1 migration", () => {
       env.DB.prepare("SELECT count(*) AS count FROM d1_migrations").first<{ count: number }>(),
     ]);
 
-    expect(counts.map((row) => row?.count)).toEqual([25, 3, 4]);
+    expect(counts.map((row) => row?.count)).toEqual([32, 3, 5]);
   });
 
   it("keeps Core Roles, Core grants, and the Permission vocabulary immutable", async () => {

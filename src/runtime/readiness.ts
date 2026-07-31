@@ -4,6 +4,7 @@ import type { RequestContext } from "../core/request-context";
 import { errorResponse, successResponse } from "../core/response-envelope";
 import { runtimeSupportCode } from "../platform-observability/support-code";
 import type { DependencyStatusAggregator } from "../platform-observability/dependency-health";
+import type { TrafficReadinessPort } from "../platform-traffic/ports";
 import type { RouteHandler } from "./router";
 
 export interface ReadinessChecks {
@@ -18,10 +19,12 @@ export function createReadinessHandler(
   clock: Clock,
   checks: ReadinessChecks,
   dependencies?: DependencyStatusAggregator,
+  traffic?: TrafficReadinessPort,
 ): RouteHandler {
   return async (_request: Request, context: RequestContext) => {
     const snapshot = dependencies ? await dependencies.snapshot() : null;
-    if (snapshot && !snapshot.ready) {
+    const trafficSnapshot = traffic ? await traffic.snapshot() : null;
+    if ((snapshot && !snapshot.ready) || trafficSnapshot?.emergency) {
       return errorResponse(
         new FoundationError("SERVICE_NOT_READY"),
         context,
@@ -40,6 +43,7 @@ export function createReadinessHandler(
         scope: "runtime-foundation-only",
         checks,
         dependencyHealth: snapshot,
+        trafficProtection: trafficSnapshot,
         excludedReadiness: ["D1", "provider", "production"],
         correlationId: context.correlationId,
       },
