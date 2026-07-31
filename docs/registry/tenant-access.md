@@ -1,6 +1,6 @@
-﻿# Registry Entry: Tenant Access
+# Registry Entry: Tenant Access
 
-> Candidate · Contract Approved · Not Implemented · Not Verified · Production Use Not Allowed
+> Candidate · Contract Approved · Locally Implemented · Locally Verified · Production Use Not Allowed
 
 | Metadata | Value |
 | --- | --- |
@@ -10,12 +10,12 @@
 | `category` | Platform Core Module |
 | `lifecycle_status` | Candidate |
 | `contract_status` | Approved |
-| `implementation_status` | Not Implemented |
-| `verification_status` | Not Verified |
+| `implementation_status` | Locally Implemented |
+| `verification_status` | Locally Verified |
 | `deployment_status` | Not Deployed |
 | `production_use` | Not Allowed |
 | `architecture_approval` | Approved by Tony |
-| `current_version` | `0.1.0-draft` |
+| `current_version` | `0.1.0-local` |
 | `owner` | Unassigned |
 | `minimum_core_version` | N/A |
 | `maximum_core_version` | N/A |
@@ -28,7 +28,7 @@
 | `contains_pii` | Yes; only Tenant-specific membership references |
 | `audit_required` | Yes |
 | `idempotency_required` | Yes for mutations |
-| `stable_use_cases` | None |
+| `stable_use_cases` | Local Phase 1 integration tests only |
 | `source_assets` | None; no Legacy Runtime source approved |
 | `documentation_path` | `docs/runtime-phase-1/00-DECISION-CLOSURE.md` |
 | `contract_path` | `docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md` |

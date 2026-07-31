@@ -20,16 +20,17 @@ Platform Core Framework 是未來 SaaS 產品共用的母框架，用來定義�
 ```text
 Runtime Foundation Bootstrap Stage
 Runtime Foundation Implemented and Locally Verified
-Domain Modules Not Implemented
-No D1 Schema Implemented
-No Migration Executed
-No Deployment
-No Production Verification
+Phase 1 Core Modules Locally Implemented and Verified
+Phase 1 Migration: Executed and Verified on Isolated Local D1
+Remote Migration: Not Executed
+Production Migration: Not Executed
+Deployment: Not Performed
+Production Verification: Not Verified
 ```
 
-目前 Repository 包含架構、治理、D1 Logical Design、Physical Schema Proposal，以及最小 Cloudflare Workers Runtime Foundation。Foundation 只提供 request pipeline、operational health／readiness、UUIDv7、safe error envelope 與 Module boundary skeleton；沒有 Binding、Domain CRUD、Module persistence 或部署。SQL 與 Migration Draft 只供審查，尚未對 SQLite 或 D1 執行。
+目前 Repository 包含架構、治理、D1 Logical Design、Physical Schema Proposal，以及最小 Cloudflare Workers Runtime Foundation。Foundation 保留 request pipeline、operational health／readiness、UUIDv7 與 safe error envelope；Phase 1 Core 已加入十張表的正式 Migration、D1 Repository、Domain Service、Audit、Idempotency 與 Authorization，並只在隔離 Local D1 驗證。沒有公開 Domain API、Remote D1、Production Binding、Secret 或部署。
 
-Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份 Module Contract 已由 Tony 核准。Runtime Foundation 與 Operational Health／Readiness 已在 review branch 完成並通過本機驗證；四個 Domain Module 仍為 Candidate／Not Implemented；既有 SQL Proposal／Migration Draft 未修改且未執行，D1／Binding／Secret／Deployment 也未建立或執行。
+Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份 Module Contract 已由 Tony 核准。Runtime Foundation 與 Operational Health／Readiness 已在 review branch 完成並通過本機驗證；四個 Phase 1 Core Module 維持 Candidate／Contract Approved，現為 Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。舊 SQL Proposal／Draft 仍為歷史設計；新的 Phase 1 Migration 僅在 Local D1 執行。Remote D1／Production Binding／Secret／Deployment 均未建立或執行。
 
 ## 目的
 
@@ -86,11 +87,11 @@ Runtime Phase 1 的 [Decision Closure](docs/runtime-phase-1/README.md) 與四份
 
 | ADR | Status | Decision | Implementation | Verification |
 | --- | --- | --- | --- | --- |
-| [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md) | Accepted | Core Entity ID 採 UUIDv7 | Not Implemented | Not Verified |
-| [ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md) | Accepted | External Identity 使用版本化 HMAC Digest | Not Implemented | Not Verified |
-| [ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md) | Accepted | Trusted Tenant Context 與 Internal Administration 分離 | Not Implemented | Not Verified |
-| [ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) | Accepted | Audit／Idempotency 為 Phase 1 橫切契約 | Not Implemented | Not Verified |
-| [ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md) | Accepted | 固定 Phase 1 Lifecycle 與 Authorization Vocabulary | Not Implemented | Not Verified |
+| [ADR-013](docs/adr/ADR-013-UUIDV7-CORE-ENTITY-IDS.md) | Accepted | Core Entity ID 採 UUIDv7 | Locally Implemented | Locally Verified |
+| [ADR-014](docs/adr/ADR-014-EXTERNAL-IDENTITY-SUBJECT-DIGEST.md) | Accepted | External Identity 使用版本化 HMAC Digest | Locally Implemented | Locally Verified |
+| [ADR-015](docs/adr/ADR-015-TENANT-CONTEXT-INTERNAL-ADMIN.md) | Accepted | Trusted Tenant Context 與 Internal Administration 分離 | Locally Implemented | Locally Verified |
+| [ADR-016](docs/adr/ADR-016-PHASE-1-AUDIT-IDEMPOTENCY.md) | Accepted | Audit／Idempotency 為 Phase 1 橫切契約 | Locally Implemented | Locally Verified |
+| [ADR-017](docs/adr/ADR-017-PHASE-1-LIFECYCLE-AUTHORIZATION-VOCABULARY.md) | Accepted | 固定 Phase 1 Lifecycle 與 Authorization Vocabulary | Locally Implemented | Locally Verified |
 
 ## Module Contract and Registry
 
@@ -216,6 +217,11 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [004-attendance-redemption.sql](docs/schema/proposals/004-attendance-redemption.sql) | Attendance／Redemption |
 | [005-audit-idempotency.sql](docs/schema/proposals/005-audit-idempotency.sql) | Audit／Idempotency |
 
+### Phase 1 Executable Local Migration
+
+- [0001 Phase 1 Core](migrations/0001_phase_1_core.sql) creates exactly ten Phase 1 tables and is verified only through isolated Local D1 tests.
+- No remote database identifier, Production Binding, Secret or deployment configuration is present.
+
 ### Migration Strategy
 
 - [Migration Draft Safety](docs/schema/migrations/README.md)
@@ -237,15 +243,16 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | Document | Status |
 | --- | --- |
 | [Decision Closure](docs/runtime-phase-1/00-DECISION-CLOSURE.md) | Approved by Tony |
-| [Identity Core Contract](docs/runtime-phase-1/01-IDENTITY-CORE-CONTRACT.md) | Contract Approved／Not Implemented |
-| [Tenant Access Contract](docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md) | Contract Approved／Not Implemented |
-| [Authorization Contract](docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md) | Contract Approved／Not Implemented |
-| [Core Operations Contract](docs/runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) | Contract Approved／Not Implemented |
+| [Identity Core Contract](docs/runtime-phase-1/01-IDENTITY-CORE-CONTRACT.md) | Contract Approved／Locally Implemented／Locally Verified |
+| [Tenant Access Contract](docs/runtime-phase-1/02-TENANT-ACCESS-CONTRACT.md) | Contract Approved／Locally Implemented／Locally Verified |
+| [Authorization Contract](docs/runtime-phase-1/03-AUTHORIZATION-CONTRACT.md) | Contract Approved／Locally Implemented／Locally Verified |
+| [Core Operations Contract](docs/runtime-phase-1/04-CORE-OPERATIONS-CONTRACT.md) | Contract Approved／Locally Implemented／Locally Verified |
 | [Runtime Operational Endpoints](docs/runtime-phase-1/05-RUNTIME-OPERATIONAL-ENDPOINTS.md) | Implemented／Locally Verified／Not Deployed |
 | [Core Foundation Local Technical Decision](docs/runtime-phase-1/07-CORE-FOUNDATION-LOCAL-TECHNICAL-DECISION.md) | Local Runtime Decision |
-| [Core Foundation Status](docs/runtime-phase-1/08-CORE-FOUNDATION-STATUS.md) | Foundation Implemented／Domain Modules Not Implemented |
+| [Core Foundation Status](docs/runtime-phase-1/08-CORE-FOUNDATION-STATUS.md) | Historical Foundation Bootstrap evidence |
+| [Core Persistence and Domain Status](docs/runtime-phase-1/09-CORE-PERSISTENCE-DOMAIN-STATUS.md) | Phase 1 Local D1／Domain current truth |
 
-Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-access](docs/registry/tenant-access.md)、[authorization](docs/registry/authorization.md)、[core-operations](docs/registry/core-operations.md)。四者均為 Candidate／Contract Approved／Not Implemented／Not Verified／Not Deployed／Production Use Not Allowed；Health Check 不是 Domain Module，不建立 Registry Entry。
+Registry Entries：[identity-core](docs/registry/identity-core.md)、[tenant-access](docs/registry/tenant-access.md)、[authorization](docs/registry/authorization.md)、[core-operations](docs/registry/core-operations.md)。四者均為 Candidate／Contract Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed；Health Check 不是 Domain Module，不建立 Registry Entry。
 
 ### ADR Index
 

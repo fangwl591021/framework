@@ -1,6 +1,6 @@
-﻿# Identity Core Module Contract
+# Identity Core Module Contract
 
-> Contract Approved · Approved by Tony · Not Implemented · Not Verified · Not Deployed
+> Contract Approved · Approved by Tony · Locally Implemented · Locally Verified · Not Deployed
 
 ## 1. Basic Information
 
@@ -117,8 +117,8 @@ Breaking public-contract changes require a MAJOR version and Architecture Owner 
 | Platform Architect | Reviewed through PR #12 Decision Closure |
 | Architecture Owner | Tony／Approved |
 | Approval Reference | PR #12／Approved by Tony |
-| Implementation | Not Implemented |
-| Verification | Not Verified |
+| Implementation | Locally Implemented |
+| Verification | Locally Verified |
 | Deployment | Not Deployed |
 | Production Use | Not Allowed |
 
