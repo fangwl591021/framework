@@ -1,4 +1,10 @@
 import { createLocalWorkbench } from "./composition";
+import { LocalAiLabService } from "./ai-lab-service";
+import {
+  aiLabContext,
+  parseAiLabSimulation,
+  type LocalFixtureKey,
+} from "./ai-lab-models";
 import { readFixture, seedFixture, type DemoFixtureState } from "./seed";
 import {
   assertSafePayload,
@@ -17,7 +23,7 @@ interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
 }
 interface SessionRow {
-  fixture_key: "owner_a" | "owner_b" | "member_a" | "operator_a";
+  fixture_key: LocalFixtureKey;
   channel_version: number;
   expires_at: number;
 }
@@ -70,8 +76,13 @@ const redactFixtureIds = (
   return value;
 };
 const contextSummary = (key: SessionRow["fixture_key"]) => ({
-  tenant: "Tenant A",
-  application: key === "owner_b" ? "Application B" : "Application A",
+  tenant: key === "owner_tenant_b" ? "Tenant B" : "Tenant A",
+  application:
+    key === "owner_tenant_b"
+      ? "Tenant B Application"
+      : key === "owner_b"
+        ? "Application B"
+        : "Application A",
   actor: key,
   roles:
     key === "member_a"
@@ -85,8 +96,21 @@ const contextSummary = (key: SessionRow["fixture_key"]) => ({
           "tenant:update",
           "module_enablement:manage",
           "diagnostics:read_tenant",
+          "ai_gateway:invoke",
+          "ai_task:read",
+          "ai_provider:read",
+          "ai_policy:read",
+          "ai_budget:read",
+          key === "operator_a"
+            ? "ai_usage:read_platform"
+            : "ai_usage:read_tenant",
         ],
-  modules: key === "owner_b" ? [] : ["event_engine", "business_network_engine"],
+  modules: key === "owner_b" || key === "owner_tenant_b" ? [] : ["event_engine", "business_network_engine"],
+  aiLab: {
+    mode: "gateway_shadow",
+    authority: "deterministic_only",
+    externalProviders: "disabled",
+  },
 });
 const safeError = (code: string, status = 400) =>
   json(
@@ -94,7 +118,7 @@ const safeError = (code: string, status = 400) =>
       ok: false,
       code,
       message: "此操作未完成，請依畫面提示重試。",
-      supportCode: `LOCAL-${code.slice(0, 12)}`,
+      supportCode: `LOCAL-${randomToken().slice(0, 16).toUpperCase()}`,
     },
     status,
   );
@@ -124,16 +148,22 @@ async function session(
   return row ? { row, token } : null;
 }
 function contextFor(fixture: DemoFixtureState, row: SessionRow) {
-  const membership =
-    row.fixture_key === "member_a"
+  const tenantB = row.fixture_key === "owner_tenant_b";
+  const membership = tenantB
+    ? fixture.tenantBOwnerMembership
+    : row.fixture_key === "member_a"
       ? fixture.memberMembership
       : row.fixture_key === "operator_a"
         ? fixture.operatorMembership
         : fixture.ownerMembership;
   return {
     source: "trusted_runtime_context" as const,
-    tenantId: fixture.tenantA,
-    applicationId: row.fixture_key === "owner_b" ? fixture.appB : fixture.appA,
+    tenantId: tenantB ? fixture.tenantB : fixture.tenantA,
+    applicationId: tenantB
+      ? fixture.tenantBApp
+      : row.fixture_key === "owner_b"
+        ? fixture.appB
+        : fixture.appA,
     actorMembershipId: membership,
     channelKey: `local-browser:${row.fixture_key}:${row.channel_version}`,
     correlationId: `local-${crypto.randomUUID()}`,
@@ -163,6 +193,18 @@ export default {
     if (!localOnly(request, env.LOCAL_DEMO_MODE))
       return new Response("Not Found", { status: 404 });
     const isApiRoute = url.pathname.startsWith("/local/api/");
+    const aiLabPage = /^\/local\/ai-lab(?:\/(requests|usage))?\/*$/.exec(
+      url.pathname,
+    );
+    if (request.method === "GET" && !isApiRoute && aiLabPage) {
+      const section = aiLabPage[1];
+      const canonical = section
+        ? `/local/ai-lab/${section}/`
+        : "/local/ai-lab/";
+      const target = canonicalPath(url, canonical);
+      if (target) return Response.redirect(target.href, 307);
+      return env.ASSETS.fetch(request);
+    }
     if (request.method === "GET" && !isApiRoute) {
       if (/^\/local\/workbench\/*$/.test(url.pathname)) {
         const target = canonicalPath(url, "/local/workbench/");
@@ -180,7 +222,8 @@ export default {
     if (
       request.method === "GET" &&
       !isApiRoute &&
-      url.pathname.startsWith("/local/workbench/")
+      (url.pathname.startsWith("/local/workbench/") ||
+        url.pathname.startsWith("/local/ai-lab/"))
     )
       return env.ASSETS.fetch(request);
     if (request.method === "GET" && url.pathname === "/local/status") {
@@ -191,7 +234,7 @@ export default {
           mode: "local",
           database: "isolated-local-d1",
           seeded: Boolean(fixture),
-          routes: ["/local/setup", "/local/workbench"],
+          routes: ["/local/setup", "/local/workbench", "/local/ai-lab"],
         });
       } catch {
         return json({
@@ -229,7 +272,7 @@ export default {
         const data = await body(request),
           key = data.fixtureKey;
         if (
-          !(["owner_a", "owner_b", "member_a", "operator_a"] as const).includes(
+          !(["owner_a", "owner_b", "owner_tenant_b", "member_a", "operator_a"] as const).includes(
             key as never,
           )
         )
@@ -264,6 +307,104 @@ export default {
         );
       } catch {
         return safeError("SESSION_FAILED", 400);
+      }
+    }
+    if (
+      request.method === "GET" &&
+      url.pathname.startsWith("/local/api/ai-lab/")
+    ) {
+      try {
+        const current = await session(request, env.LOCAL_DEMO_DB);
+        if (!current) return safeError("SESSION_REQUIRED", 403);
+        const fixture = await readFixture(env.LOCAL_DEMO_DB);
+        if (!fixture) return safeError("SETUP_REQUIRED", 409);
+        const context = aiLabContext(fixture, current.row.fixture_key);
+        if (!context.permissionGranted)
+          return safeError("AI_PERMISSION_DENIED", 403);
+        const lab = new LocalAiLabService(env.LOCAL_DEMO_DB, fixture);
+        if (url.pathname === "/local/api/ai-lab/catalog")
+          return json({ ok: true, providers: await lab.catalog() });
+        if (url.pathname === "/local/api/ai-lab/tasks")
+          return json({ ok: true, tasks: await lab.tasks() });
+        if (url.pathname === "/local/api/ai-lab/policies")
+          return json({ ok: true, policies: await lab.policies(context) });
+        if (url.pathname === "/local/api/ai-lab/budgets")
+          return json({ ok: true, budgets: await lab.budgets(context) });
+        if (url.pathname === "/local/api/ai-lab/requests") {
+          const beforeValue = Number(url.searchParams.get("before") ?? Date.now() + 1);
+          const limitValue = Number(url.searchParams.get("limit") ?? 25);
+          const before = Number.isFinite(beforeValue) ? beforeValue : Date.now() + 1;
+          const limit = Number.isFinite(limitValue) ? limitValue : 25;
+          return json({
+            ok: true,
+            requests: await lab.listRequests(context, before, limit),
+          });
+        }
+        const detail = /^\/local\/api\/ai-lab\/requests\/([0-9a-f-]{36})$/i.exec(
+          url.pathname,
+        );
+        if (detail) {
+          const requestDetail = await lab.requestDetail(context, detail[1] ?? "");
+          return requestDetail
+            ? json({ ok: true, request: requestDetail })
+            : safeError("AI_REQUEST_NOT_FOUND", 404);
+        }
+        if (url.pathname === "/local/api/ai-lab/usage") {
+          const now = Date.now();
+          const maximumRange = 90 * 86_400_000;
+          const untilValue = Number(url.searchParams.get("until") ?? now + 1);
+          const until = Number.isFinite(untilValue) ? Math.min(untilValue, now + 1) : now + 1;
+          const fromValue = Number(url.searchParams.get("from") ?? until - 30 * 86_400_000);
+          const from = Number.isFinite(fromValue)
+            ? Math.max(fromValue, until - maximumRange)
+            : until - 30 * 86_400_000;
+          if (from >= until) return safeError("DATE_RANGE_INVALID", 400);
+          return json({ ok: true, usage: await lab.usage(context, from, until) });
+        }
+        return new Response("Not Found", { status: 404 });
+      } catch (error) {
+        return safeError(
+          error instanceof Error ? error.message : "AI_LAB_READ_FAILED",
+          400,
+        );
+      }
+    }
+    if (
+      request.method === "POST" &&
+      (url.pathname === "/local/api/ai-lab/simulate" ||
+        url.pathname === "/local/api/ai-lab/reset")
+    ) {
+      try {
+        const current = await requireMutation(request, env.LOCAL_DEMO_DB);
+        const fixture = await readFixture(env.LOCAL_DEMO_DB);
+        if (!fixture) return safeError("SETUP_REQUIRED", 409);
+        const context = aiLabContext(fixture, current.row.fixture_key);
+        if (!context.permissionGranted)
+          return safeError("AI_PERMISSION_DENIED", 403);
+        const lab = new LocalAiLabService(env.LOCAL_DEMO_DB, fixture);
+        if (url.pathname === "/local/api/ai-lab/reset") {
+          await lab.reset(context);
+          return json({
+            ok: true,
+            reset: "local_ai_lab_evidence",
+            immutableUsageRetained: true,
+          });
+        }
+        const simulation = parseAiLabSimulation(await body(request));
+        return json({ ok: true, result: await lab.simulate(context, simulation) });
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "AI_LAB_FAILED";
+        return safeError(
+          code,
+          code === "AI_PERMISSION_DENIED" ||
+            code === "ORIGIN_REJECTED" ||
+            code === "SESSION_REQUIRED" ||
+            code === "CSRF_REJECTED"
+            ? 403
+            : code === "AI_IDEMPOTENCY_CONFLICT"
+              ? 409
+              : 400,
+        );
       }
     }
     if (

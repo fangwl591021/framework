@@ -18,3 +18,4 @@ npm run local:dev
 - [Security Boundary](./SECURITY-BOUNDARY.md)
 - [Test Matrix](./TEST-MATRIX.md)
 - [Known Limitations](./KNOWN-LIMITATIONS.md)
+- [Local AI Gateway Shadow Lab](../local-ai-gateway-shadow-lab/README.md)

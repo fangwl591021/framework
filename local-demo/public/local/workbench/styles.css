@@ -162,7 +162,7 @@ nav {
   background: var(--panel);
   box-shadow: var(--shadow);
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto auto 1fr auto auto;
   overflow: hidden;
 }
 .workbench-head {
@@ -380,3 +380,28 @@ nav {
   background: var(--ink);
   color: white;
 }
+
+.shadow-panel {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #f5faf7;
+}
+.shadow-head,
+.shadow-head > div,
+.shadow-comparison {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.shadow-head { justify-content: space-between; }
+.shadow-head span {
+  color: var(--green);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: .08em;
+}
+.shadow-toggle { display: flex; align-items: center; gap: 7px; margin: 0; }
+.shadow-toggle input { accent-color: var(--green); }
+.shadow-comparison { margin-top: 8px; color: var(--muted); font-size: 11px; }
+.shadow-comparison strong { color: var(--ink); }
+.shadow-comparison .mismatch { color: #a74a27; }

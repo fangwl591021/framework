@@ -48,6 +48,7 @@
           ><button class="quick" data-flow="diagnostics">今日診斷</button>
           <button class="quick" data-flow="support">查 Support Code</button>
         </nav>
+        <a class="setup-link" href="/local/ai-lab/">Open AI Shadow Lab →</a>
         <a class="setup-link" href="/local/setup">Fixture setup →</a>
       </aside>
       <section class="workbench">
@@ -58,6 +59,15 @@
           </div>
           <button id="reset" class="ghost">重設對話</button>
         </div>
+        <section class="shadow-panel" aria-label="Local AI shadow comparison">
+          <div class="shadow-head">
+            <div><strong>Shadow Comparison</strong><span>LOCAL · NO AUTHORITY</span></div>
+            <label class="shadow-toggle"><input id="shadow-enabled" type="checkbox" checked /> Run local shadow</label>
+          </div>
+          <div id="shadow-comparison" class="shadow-comparison">
+            <span>Deterministic result remains the only formal authority.</span>
+          </div>
+        </section>
         <div id="messages" class="messages" aria-live="polite">
           <article class="message assistant">
             <div class="avatar">PC</div>

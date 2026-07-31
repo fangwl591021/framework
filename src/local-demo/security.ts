@@ -68,3 +68,12 @@ export function assertSafePayload(value: unknown): void {
   };
   walk(value, 0);
 }
+
+export function assertExactKeys(
+  value: Readonly<Record<string, unknown>>,
+  allowed: ReadonlySet<string>,
+): void {
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw new TypeError("UNTRUSTED_OVERRIDE_FIELD");
+  }
+}

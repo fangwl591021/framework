@@ -187,6 +187,47 @@ async function createSession() {
     details.append(row);
   }
 }
+async function runShadowComparison(text, messageKey) {
+  const target = document.querySelector("#shadow-comparison"),
+    enabled = document.querySelector("#shadow-enabled")?.checked;
+  if (!target || !enabled) return;
+  target.replaceChildren(el("span", "", "Running isolated local shadow…"));
+  try {
+    const data = await api("/local/api/ai-lab/simulate", {
+      method: "POST",
+      body: JSON.stringify({
+        taskKey: "workbench.intent_resolution",
+        scenario: "cache_miss_local_provider_success",
+        budgetFixture: "generous",
+        cacheDirective: "allow",
+        text,
+        idempotencyKey: `workbench-shadow:${messageKey}`,
+      }),
+    });
+    const comparison = data.result.summary.comparison;
+    target.replaceChildren();
+    for (const [label, value, className] of [
+      ["Deterministic", comparison.deterministicIntent || "clarification", ""],
+      ["Confidence", comparison.deterministicConfidence, ""],
+      ["Shadow", comparison.shadowIntent || "clarification", ""],
+      ["Shadow confidence", comparison.shadowConfidence, ""],
+      ["Comparison", comparison.match ? "MATCH" : "MISMATCH", comparison.match ? "" : "mismatch"],
+      ["Validation", data.result.summary.validation.status, ""],
+      ["Route", data.result.summary.route.provider || "shortcut", ""],
+      ["Usage / cost", `${data.result.summary.usage.input_units || 0} / ${data.result.summary.usage.estimated_cost_micros || 0} μ estimate`, ""],
+      ["Final authority", comparison.finalAuthority, ""],
+    ]) {
+      const item = el("span", className);
+      item.append(el("strong", "", `${label}: `), document.createTextNode(String(value)));
+      target.append(item);
+    }
+  } catch (error) {
+    target.replaceChildren(
+      el("span", "mismatch", `Shadow unavailable · ${error.payload?.supportCode || "LOCAL-SHADOW"}`),
+      el("strong", "", "Final authority: deterministic_only"),
+    );
+  }
+}
 async function send(text, slots = {}, messageKey = crypto.randomUUID()) {
   if (busy || !text.trim()) return;
   busy = true;
@@ -202,6 +243,7 @@ async function send(text, slots = {}, messageKey = crypto.randomUUID()) {
     });
     pending.remove();
     addMessage("assistant", data.response.message || "已完成。", data.response);
+    void runShadowComparison(request.text, request.messageKey);
   } catch (error) {
     pending.remove();
     addMessage("assistant", error.payload?.message || "操作未完成。", {
