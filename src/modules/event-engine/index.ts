@@ -3,6 +3,7 @@ export { EventQueryApplication as EventEngineApplication } from "./event-query-a
 export { HmacEventQrTokenService } from "./hmac-qr-token";
 export type {
   CapacityReconciliationResult,
+  CreateEventInput,
   EventCheckin,
   EventFormField,
   EventPayment,

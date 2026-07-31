@@ -16,7 +16,7 @@ import type { IdentityDigestKeyProvider } from "../../src/persistence/crypto";
 const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
 const encoder = new TextEncoder();
 
-class TestClock implements Clock {
+export class TestClock implements Clock {
   private value = Date.parse("2026-08-01T00:00:00.000Z");
 
   now(): Date {
@@ -27,9 +27,13 @@ class TestClock implements Clock {
   current(): number {
     return this.value;
   }
+
+  advance(milliseconds: number): void {
+    this.value += milliseconds;
+  }
 }
 
-class TestUuidV7 implements UuidV7 {
+export class TestUuidV7 implements UuidV7 {
   private value = 20_000;
 
   generate(): string {
@@ -38,7 +42,7 @@ class TestUuidV7 implements UuidV7 {
   }
 }
 
-class TestIdentityKeys implements IdentityDigestKeyProvider {
+export class TestIdentityKeys implements IdentityDigestKeyProvider {
   current() {
     return {
       version: 1,
@@ -51,7 +55,7 @@ class TestIdentityKeys implements IdentityDigestKeyProvider {
   }
 }
 
-class TestQrKeys implements EventQrKeyProvider {
+export class TestQrKeys implements EventQrKeyProvider {
   private readonly key = {
     version: 1,
     secret: encoder.encode("event-qr-test-key-is-at-least-32-bytes"),
