@@ -1,6 +1,11 @@
 import { sha256Hex } from "../persistence/crypto";
 
 export const LOCAL_COOKIE = "pc_local_demo";
+export function canonicalPath(url: URL, pathname: string): URL | null {
+  const target = new URL(url);
+  target.pathname = pathname;
+  return target.href === url.href ? null : target;
+}
 export function localOnly(request: Request, mode: string | undefined): boolean {
   const host = new URL(request.url).hostname;
   return (

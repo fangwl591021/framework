@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   assertSafePayload,
+  canonicalPath,
   digestToken,
   localOnly,
   randomToken,
@@ -10,6 +11,18 @@ import {
 } from "../src/local-demo/security";
 
 describe("Local demo security and browser boundary", () => {
+  it("builds a canonical URL only when it differs and preserves query", () => {
+    const source = new URL("http://localhost/local/workbench?role=owner_a");
+    expect(canonicalPath(source, "/local/workbench/")?.href).toBe(
+      "http://localhost/local/workbench/?role=owner_a",
+    );
+    expect(
+      canonicalPath(
+        new URL("http://localhost/local/workbench/?role=owner_a"),
+        "/local/workbench/",
+      ),
+    ).toBeNull();
+  });
   it.each([
     ["http://localhost/local/status", true],
     ["http://127.0.0.1/local/status", true],
