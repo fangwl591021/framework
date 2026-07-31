@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 const migrations = env.TEST_MIGRATIONS as readonly D1Migration[];
 
 const expectedTables = [
+  "ai_budget_leases",
+  "ai_budgets",
+  "ai_cache_entries",
+  "ai_model_catalog",
+  "ai_provider_catalog",
+  "ai_request_records",
+  "ai_route_policies",
+  "ai_task_registry",
+  "ai_usage_records",
   "alert_delivery_records",
   "alert_policies",
   "application_configuration",
@@ -65,6 +74,19 @@ const expectedTables = [
 ];
 
 const expectedIndexes = [
+  "idx_ai_budget_leases_expiry",
+  "idx_ai_budgets_window",
+  "idx_ai_cache_expiry",
+  "idx_ai_cache_lookup",
+  "idx_ai_models_route",
+  "idx_ai_requests_status",
+  "idx_ai_routes_selection",
+  "idx_ai_tasks_active",
+  "idx_ai_usage_application_task",
+  "idx_ai_usage_tenant_time",
+  "uq_ai_route_application_active",
+  "uq_ai_route_platform_active",
+  "uq_ai_route_tenant_active",
   "idx_alert_delivery_incident_time",
   "idx_alert_delivery_retry",
   "idx_alert_policy_selection",
@@ -181,6 +203,26 @@ const expectedIndexes = [
 ];
 
 const expectedTriggers = [
+  "trg_ai_budget_no_delete",
+  "trg_ai_budget_version_guard",
+  "trg_ai_cache_no_delete",
+  "trg_ai_cache_update_guard",
+  "trg_ai_lease_insert_guard",
+  "trg_ai_lease_release_budget",
+  "trg_ai_lease_no_delete",
+  "trg_ai_lease_update_guard",
+  "trg_ai_model_no_delete",
+  "trg_ai_model_version_guard",
+  "trg_ai_provider_no_delete",
+  "trg_ai_provider_version_guard",
+  "trg_ai_request_no_delete",
+  "trg_ai_request_update_guard",
+  "trg_ai_route_no_delete",
+  "trg_ai_route_version_guard",
+  "trg_ai_task_identity_guard",
+  "trg_ai_task_no_delete",
+  "trg_ai_usage_no_delete",
+  "trg_ai_usage_no_update",
   "trg_alert_delivery_attempt_guard",
   "trg_alert_delivery_lifecycle_guard",
   "trg_alert_delivery_no_delete",
@@ -358,7 +400,7 @@ describe("Phase 1 local D1 migration", () => {
       env.DB.prepare("SELECT count(*) AS count FROM d1_migrations").first<{ count: number }>(),
     ]);
 
-    expect(counts.map((row) => row?.count)).toEqual([50, 3, 7]);
+    expect(counts.map((row) => row?.count)).toEqual([62, 3, 8]);
   });
 
   it("keeps Core Roles, Core grants, and the Permission vocabulary immutable", async () => {

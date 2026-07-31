@@ -1,0 +1,12 @@
+import { describe,expect,it,vi } from "vitest";
+import { AiGatewayWorkbenchIntentResolver } from "../src/ai-gateway/workbench-integration";
+import type { AiGatewayService } from "../src/ai-gateway/application";
+import type { IntentResolverPort } from "../src/conversational-workbench/resolver";
+
+const context={source:"trusted_runtime_context" as const,tenantId:"tenant",applicationId:"application",actorMembershipId:"member",correlationId:"correlation",permissionGranted:true,moduleEnabled:true,trafficAdmitted:true};
+describe("Workbench AI Gateway integration",()=>{
+  it("does not invoke AI for exact deterministic intent",async()=>{const execute=vi.fn();const deterministic:IntentResolverPort={resolve:async()=>({status:"resolved",intentKey:"event.list",confidence:1,choices:[],reasonCode:"INTENT_RESOLVED"})};const resolver=new AiGatewayWorkbenchIntentResolver(deterministic,{execute} as unknown as AiGatewayService,context,"gateway_shadow");expect((await resolver.resolve("活動列表")).intentKey).toBe("event.list");expect(execute).not.toHaveBeenCalled();});
+  it("keeps deterministic ambiguity authoritative after shadow comparison",async()=>{const execute=vi.fn().mockResolvedValue({output:{intentKey:"event.create",confidence:.9},requiresClarification:false});const formal={status:"ambiguous" as const,intentKey:null,confidence:.6,choices:["event.list","event.create"],reasonCode:"INTENT_AMBIGUOUS"};const resolver=new AiGatewayWorkbenchIntentResolver({resolve:async()=>formal},{execute} as unknown as AiGatewayService,context,"gateway_shadow");expect(await resolver.resolve("活動")).toEqual(formal);expect(execute).toHaveBeenCalledOnce();});
+  it("isolates AI failure and keeps confirmation authority unchanged",async()=>{const formal={status:"unsupported" as const,intentKey:null,confidence:0,choices:[],reasonCode:"INTENT_UNSUPPORTED"};const resolver=new AiGatewayWorkbenchIntentResolver({resolve:async()=>formal},{execute:vi.fn().mockRejectedValue(new Error("provider"))} as unknown as AiGatewayService,context,"gateway_shadow");expect(await resolver.resolve("unknown")).toEqual(formal);});
+  it("keeps future gateway mode disabled",async()=>{const execute=vi.fn();const formal={status:"unsupported" as const,intentKey:null,confidence:0,choices:[],reasonCode:"INTENT_UNSUPPORTED"};const resolver=new AiGatewayWorkbenchIntentResolver({resolve:async()=>formal},{execute} as unknown as AiGatewayService,context,"gateway_enabled_future");expect(await resolver.resolve("x")).toEqual(formal);expect(execute).not.toHaveBeenCalled();});
+});

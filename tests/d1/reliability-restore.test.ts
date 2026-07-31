@@ -67,7 +67,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
     const tenants = await env.DB.prepare(
       "SELECT count(*) AS count FROM tenants",
     ).first<{ count: number }>();
-    expect(ledger?.count).toBe(7);
+    expect(ledger?.count).toBe(8);
     expect(tenants?.count).toBe(0);
   }
 
@@ -99,7 +99,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
          FROM audit_records WHERE id IN (?1, ?2) ORDER BY id`,
       ).bind(auditA, auditB).all<AuditBackupRow>(),
     ]);
-    return encodeSnapshot("0007", 100, 4, {
+    return encodeSnapshot("0008", 100, 4, {
       tenants: tenants.results,
       audits: audits.results,
     } satisfies D1BackupData);
@@ -203,7 +203,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
       tenantIsolationValid: tenantACount?.count === 1 && tenantBCount?.count === 1,
       auditEvidencePresent: audits?.count === 2,
       criticalRecordCount: 4,
-      integrityErrors: tables?.count === 57 ? [] : ["TABLE_COUNT_MISMATCH"],
+      integrityErrors: tables?.count === 66 ? [] : ["TABLE_COUNT_MISMATCH"],
     };
   }
 
@@ -269,11 +269,11 @@ describe("Platform Reliability Local D1 Restore Drill", () => {
       },
     );
     expect(report).toMatchObject({
-      databaseVersion: "0007",
+      databaseVersion: "0008",
       backupOpenable: true,
       restoredRecordCount: 4,
       integrityErrorCount: 0,
-      migrationLedgerCount: 7,
+      migrationLedgerCount: 8,
       tenantIsolationValid: true,
       auditEvidencePresent: true,
       checksumVerified: true,
