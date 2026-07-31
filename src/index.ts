@@ -2,6 +2,7 @@ import { createCompositionRoot } from "./runtime/composition-root";
 
 export * from "./platform-traffic";
 export * from "./application-assembly";
+export * from "./conversational-workbench";
 
 const runtime = createCompositionRoot();
 

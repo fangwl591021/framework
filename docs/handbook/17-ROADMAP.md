@@ -52,3 +52,7 @@ Promotion 必須依 [Environment Promotion Policy](../migration-package/09-ENVIR
 ## Application Assembly MVP
 
 Application Assembly & Module Enablement 已完成 Local MVP：8-table Migration、Event/Business Network 安裝、無副作用 Eligibility Projection、Traffic-first Module Invocation、版本化 Access Fence、Navigation/Dashboard、Tenant isolation 與 Local D1 verification。狀態為 Platform Service Candidate、Contract Approved by Tony、Architecture Review Approved、Security Review Approved、Locally Implemented、Locally Verified、Not Deployed、Production Use Not Allowed；Remote D1、Production migration 與 deployment 均未執行。
+
+## Conversational Workbench MVP
+
+已完成 deterministic intent、Slot revision、Operation Plan／Confirmation、allowlisted Router、Event／Network／Assembly／Diagnostics adapters 與 Local D1 0007 verification。狀態為 Experience Platform Service Candidate／Contract Approved by Tony／Architecture and Security Approved／Locally Implemented／Verified／Not Deployed；AI Provider、Remote D1 與 Production Deployment 仍為 NO-GO。

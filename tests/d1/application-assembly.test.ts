@@ -200,7 +200,7 @@ describe("Application Assembly migration", () => {
       ),
       await q("index", "AND name NOT LIKE 'sqlite_autoindex_%'"),
       await q("trigger"),
-    ]).toEqual([50, 101, 74]);
+    ]).toEqual([57, 113, 89]);
   });
   it("keeps foreign keys clean", async () =>
     expect(
@@ -223,7 +223,7 @@ describe("Application Assembly migration", () => {
   it("forces 0006 failure to roll back permission registration", async () => {
     await reset();
     const prior = migrations.filter(
-      (m) => !m.name.includes("0006_application_assembly"),
+      (m) => m.name < "0006_application_assembly",
     );
     await applyD1Migrations(env.DB, [...prior]);
     const migration = migrations.find((m) =>

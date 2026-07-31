@@ -227,6 +227,8 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 - [0003 Business Network Engine](migrations/0003_business_network_engine.sql) creates exactly ten Business Network Domain Module tables and is verified only through isolated Local D1 tests.
 - [0004 Platform Observability](migrations/0004_platform_observability.sql) creates six bounded Platform Service evidence tables and registers six reviewed Permissions; it is verified only through isolated Local D1 tests.
 - [0005 Platform Traffic Protection](migrations/0005_platform_traffic_protection.sql) creates six bounded Platform Service protection tables and registers seven reviewed Permissions; it is verified only through isolated Local D1 tests.
+- [0006 Application Assembly](migrations/0006_application_assembly.sql) creates eight Platform Service assembly tables and is verified only through isolated Local D1 tests.
+- [0007 Conversational Workbench](migrations/0007_conversational_workbench.sql) creates seven Experience Platform Service tables, registers eight reviewed Permissions, and seeds twelve versioned Intents; it is verified only through isolated Local D1 tests.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -245,6 +247,7 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 | [platform-observability-diagnostics](docs/registry/platform-observability-diagnostics.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed |
 | [platform-traffic-protection](docs/registry/platform-traffic-protection.md) | Platform Service Candidate / Contract Approved by Tony / Locally Implemented / Locally Verified / Not Deployed |
 | [application-assembly](docs/registry/application-assembly.md) | Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed |
+| [conversational-workbench](docs/registry/conversational-workbench.md) | Experience Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed |
 | [point-engine](docs/registry/point-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [referral-engine](docs/registry/referral-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
 | [attribution-engine](docs/registry/attribution-engine.md) | Candidate／Not Implemented／Production Use Not Allowed |
@@ -359,3 +362,7 @@ Framework RC1 是以 `6dd23c30dd496a4892660c71b33349c2695ecb67` 為來源的 Arc
 Application Assembly 提供 Tenant Application、Module Catalog、Entitlement、Enablement、Dependency、後端 Module Gate 與動態 Navigation/Dashboard manifest。Event Engine 與 Business Network Engine 是第一批可選 Domain Module；Platform Core services 不可被購買或停用。詳見 [Application Assembly](docs/application-assembly/README.md)。
 
 目前狀態為 Platform Service Candidate／Contract Approved by Tony／Architecture Review Approved／Security Review Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。Navigation 與 Dashboard 僅執行無副作用 eligibility projection；所有 Module invocation 必須經過 Traffic Admission、版本化 Module Access Fence 與 Domain callback 前重驗證。
+
+## Conversational Workbench
+
+Conversational Workbench 將可信 Application Context、versioned Intent、Slot revision、explicit confirmation 與既有 Application Service 組成 channel-neutral 操作流程。所有 Tool 均受 allowlist、Traffic、Permission、Module Access Fence、Audit 與 Idempotency 約束；Deterministic Resolver only，AI／LINE／Provider Adapter 均未建立。詳見 [Conversational Workbench](docs/conversational-workbench/README.md)。

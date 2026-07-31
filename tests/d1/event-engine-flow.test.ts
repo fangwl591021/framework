@@ -12,7 +12,54 @@ import {
 
 beforeEach(resetEventDatabase);
 
-describe("Event Engine MVP flows", () => {  it("runs the complete adapter-neutral event registration and attendance flow", async () => {
+describe("Event Engine MVP flows", () => {
+  it("creates an Event and its first session atomically with idempotent replay", async () => {
+    const { app, clock } = harness();
+    const { tenant, ownerMembership } = await setupTenant(app, "Atomic Event Tenant");
+    const mutation = context("atomic-event-create");
+    const input = {
+      title: "Atomic Event",
+      description: "",
+      registrationOpensAt: clock.current(),
+      registrationClosesAt: clock.current() + 1_000_000,
+      paymentMode: "free" as const,
+    };
+    const session = {
+      title: "Atomic Session",
+      startsAt: clock.current() + 2_000_000,
+      endsAt: clock.current() + 2_100_000,
+      capacity: 10,
+      waitlistCapacity: 0,
+    };
+    const first = await app.createEventWithSession(
+      tenant.id,
+      ownerMembership.id,
+      input,
+      session,
+      mutation,
+    );
+    const replay = await app.createEventWithSession(
+      tenant.id,
+      ownerMembership.id,
+      input,
+      session,
+      mutation,
+    );
+    expect(replay).toEqual(first);
+    expect(await app.eventRepository.listSessions(tenant.id, first.event.id)).toEqual([
+      first.session,
+    ]);
+    expect(
+      (
+        await env.DB.prepare(
+          "SELECT count(*) count FROM events WHERE tenant_id=?1 AND id=?2",
+        )
+          .bind(tenant.id, first.event.id)
+          .first<{ count: number }>()
+      )?.count,
+    ).toBe(1);
+  });
+  it("runs the complete adapter-neutral event registration and attendance flow", async () => {
     const { app, clock } = harness();
     const { tenant, ownerMembership } = await setupTenant(app, "Event Tenant");
     const draft = await app.createEvent(

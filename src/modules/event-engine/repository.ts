@@ -225,7 +225,21 @@ export class EventEngineRepository {
     return row ? eventFromRow(row) : null;
   }
 
-  async getSession(
+  async listEvents(
+    tenantId: string,
+    limit = 50,
+  ): Promise<readonly EventRecord[]> {
+    const bounded = Math.max(1, Math.min(50, Math.trunc(limit)));
+    const result = await this.db
+      .prepare(
+        `SELECT ${EVENT_COLUMNS}
+         FROM events WHERE tenant_id = ?1
+         ORDER BY created_at DESC, id DESC LIMIT ?2`,
+      )
+      .bind(tenantId, bounded)
+      .all<EventRow>();
+    return result.results.map(eventFromRow);
+  }  async getSession(
     tenantId: string,
     eventId: string,
     sessionId: string,
