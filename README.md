@@ -382,3 +382,9 @@ Conversational Workbench 將可信 Application Context、versioned Intent、Slot
 [Channel Adapter Foundation](docs/channel-adapter-foundation/README.md) defines the channel-neutral inbound integration boundary: authenticity verification, bounded normalization, replay-safe delivery, trusted identity resolution, Traffic Protection, the Conversational Workbench bridge, capability-safe rendering, and immutable delivery evidence.
 
 Its status is Platform Integration Service Candidate, Contract Approved by Tony after self-review, Architecture and Security Review Approved, Locally Implemented, Locally Verified, Real Channel Adapters Disabled, Not Deployed, and Production Use Not Allowed. Only `local_web_adapter` is enabled in the Local Demo. LINE, Telegram, and generic webhook adapters remain disabled; there is no provider SDK, remote call, secret, Binding, Remote D1, or deployment.
+
+## LINE Adapter Enablement Readiness
+
+[LINE Adapter Enablement Readiness](docs/line-adapter-enablement-readiness/README.md) defines pure LINE webhook, signature, replay, reply-token, capability, degradation, retry, outage, privacy, credential-reference, evidence, rollback, and approval contracts. It is Readiness Candidate documentation and deterministic local verification only.
+
+The real LINE adapter remains Disabled, credentials are Not Provisioned, Remote D1 is Not Used, deployment is Not Performed, and Production Use is Not Allowed. See the [Platform Capability Registry](docs/platform-capability-registry.md) and [Implementation Backlog](docs/platform-implementation-backlog.md).
