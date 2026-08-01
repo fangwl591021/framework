@@ -2,9 +2,11 @@
 
 ## LINE Adapter
 
-Current phase: **Isolated Verification Candidate**, real adapter **Disabled**, provider transport **Fake Only**, credentials **Not Provisioned**, production **NO-GO**.
+Current phase: **Execution Readiness Candidate**, real adapter **Disabled**, Provider Execution **Not Authorized**, credentials **Not Provisioned**, public webhook **Not Created**, egress **Policy Only**, production **NO-GO**.
 
 The [isolated verification package](line-adapter-isolated-verification/README.md) now covers the published empty-events signature vector, byte-preserving verification, bounded webhook normalization, event-ID replay behavior, reply-token lease semantics, fake transport failure classes, and production isolation. This is local deterministic evidence only and does not prove provider connectivity or acceptance.
+
+The [execution-readiness package](line-provider-execution-readiness/README.md) adds an approval matrix, provider ownership separation, credential-reference lifecycle, exact egress policy, environment isolation, hard quota controls, canary policy, kill switch, rollback, incident, and privacy evidence. Its evaluator remains explicit NO-GO and cannot authorize network execution.
 
 Future work requires a separate PR and cannot be inferred from readiness completion:
 
