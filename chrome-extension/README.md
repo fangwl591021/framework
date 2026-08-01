@@ -34,14 +34,16 @@ Dashboard 由 Session、User、Membership、Workspace、Application、LINE Integ
 - 基本資料：Workspace、LINE OA 顯示名稱、LINE Bot `@` account、sandbox／production environment、選填備註。
 - LINE Login：Channel ID、Channel Secret、Callback endpoint capability 與 verification status。
 - Messaging API：Channel ID、Channel Secret、Channel Access Token、Webhook endpoint capability、Messaging 與 Webhook status。
-- 狀態摘要：Credential、LINE Login、Messaging API、Webhook 與 Overall status，使用 `configured`、`verified`、`pending`、`failed`、`not_configured`。
+- 狀態摘要明確分離 `draftStatus`、`sensitiveInputStatus`、`credentialStorageStatus`、LINE Login、Messaging、Webhook 與 Overall。畫面只顯示「尚未建立／尚未儲存／後端尚未開放／等待驗證／驗證成功／驗證失敗」等中文狀態。
 
-`儲存草稿` 只保存公開 metadata；Secret 與 Token 會立即清除。`儲存並驗證全部` 只驗證本機輸入、產生 opaque local reference，並評估平台能力；它不會把缺少的後端端點判定為成功。已輸入的 secret/token 欄位永遠保持空白，可使用「更新憑證」與「重新驗證」重新評估。
+`儲存草稿` 只保存 Workspace reference、OA 顯示名稱、Bot account、environment、note 與兩個 Channel ID。Secret 與 Access Token 只保留在當次表單記憶體，不進入 `chrome.storage`；嘗試本機格式驗證前會警告，驗證後立即清除，重新開啟頁面時密碼欄位必為空白。
+
+因 `credentialRegistration` capability 目前為 `false`，正式按鈕固定顯示「安全儲存尚未開放」並停用。本機「驗證欄位格式」不會產生安全 credential reference，也不會宣稱 configured、verified 或 active。只有配置完成的安全後端回傳真實 opaque `credentialReference`，`credentialStorageStatus` 才能成為 `securely_stored`。
 
 平台能力設定只承認現有 live origin `https://platform-core-line-sandbox-live.fangwl591021.workers.dev` 的 `/health` 與 `/webhook/oa-primary`。目前沒有 LINE Login callback、dynamic webhook provisioning 或 credential registration endpoint。因此：
 
-- Callback URL 為 `null`，畫面顯示「尚未建立」與 `CALLBACK_ENDPOINT_NOT_CONFIGURED`，Copy disabled。
-- 新使用者的 Webhook URL 為 `null`，顯示 `DYNAMIC_BINDING_PROVISIONING_NOT_CONFIGURED`，Copy disabled。
+- Callback URL 為 `null`，畫面顯示「尚未建立」，Copy disabled；`CALLBACK_ENDPOINT_NOT_CONFIGURED` 只放在可展開的技術細節。
+- 新使用者的 Webhook URL 為 `null`，畫面顯示「尚未建立」，Copy disabled；`DYNAMIC_BINDING_PROVISIONING_NOT_CONFIGURED` 只放在可展開的技術細節。
 - Seeded `oa-primary` 只保留已實際驗證的 live webhook；它沒有 Callback URL。
 - Local credential receipt 不足以讓 Overall status 變成 `active`。
 - `.invalid`、localhost、loopback、private network、non-HTTPS 與 arbitrary production origin 都 fail closed。localhost 只可在明確 local test mode 使用，且永遠不是可複製的 LINE production URL。
@@ -55,7 +57,7 @@ Dashboard 由 Session、User、Membership、Workspace、Application、LINE Integ
 - 所有 Workspace projection 都要求目前 User 的 active Membership；跨 Workspace 與跨 Binding access fail closed。
 - `chrome.storage` 只接受 allowlisted UI/context/health keys 與 bounded safe platform snapshot。
 - 遞迴檢查拒絕 password、secret、token、authorization、cookie、replyToken、userId、rawBody、rawPayload、channelAccessToken、channelSecret、loginChannelSecret 與 credentialValue。
-- Credential adapter 只回傳 status、opaque references、generated URLs 與 verification states。
+- Local credential adapter 只回傳 bounded format-validation evidence；它不會產生可冒充安全後端儲存的 credential reference。
 - 所有 Extension executable code 為本機檔案；沒有 CDN、remote script、`eval` 或 `new Function`。
 - Content scripts 只送出 allowlisted host、page type 與 path category，不讀聊天內容、客戶名稱、LINE identifiers、Cookie 或 host storage。
 - Live LINE Worker、Remote D1、production Binding、Secret 與 Deployment 均未修改。

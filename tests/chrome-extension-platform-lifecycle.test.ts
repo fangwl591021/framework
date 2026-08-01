@@ -17,6 +17,8 @@ import { validateStorageEntries } from "../chrome-extension/shared/storage.js";
 import { createLocalDemoSnapshot, localDemoPlatformData } from "../chrome-extension/shared/product-data.js";
 // @ts-expect-error Chrome extension modules are intentionally plain JavaScript.
 import { LocalIntegrationVerificationAdapter } from "../chrome-extension/shared/verification-adapter.js";
+// @ts-expect-error Chrome extension modules are intentionally plain JavaScript.
+import { CredentialStorageStatus, DraftStatus, SensitiveInputStatus, localizedIntegrationStatus, resolveCredentialStorageStatus } from "../chrome-extension/shared/integration-status.js";
 
 const TEST_NOW = Date.now() + 60_000;
 const registration = { displayName: "  Tony   User  ", email: "TONY@EXAMPLE.COM", password: "LocalPass123", confirmPassword: "LocalPass123", termsAccepted: true };
@@ -33,7 +35,8 @@ async function pendingBindingSnapshot() {
   const view = projectAuthenticatedPlatform(snapshot);
   const adapter = new LocalLineIntegrationAdapter(new LocalCredentialRegistrationAdapter());
   const result = await adapter.configure({ ...publicIntegration, workspaceRef: view.workspace.workspaceRef, applicationRef: view.applications[0].applicationRef }, credentials);
-  return { snapshot: configureLineIntegration(snapshot, result.receipt, result.metadata, TEST_NOW), receipt: result.receipt };
+  const secureReceipt = { ...result.receipt, credentialStorageStatus: "securely_stored", credentialReference: "cred-secure-backend-reference", messagingVerification: "configured" };
+  return { snapshot: configureLineIntegration(snapshot, secureReceipt, result.metadata, TEST_NOW), receipt: result.receipt };
 }
 
 describe("Chrome extension platform lifecycle", () => {
@@ -95,7 +98,11 @@ describe("Chrome extension platform lifecycle", () => {
     const metadata = normalizeIntegrationInput({ ...publicIntegration, workspaceRef: view.workspace.workspaceRef, applicationRef: view.applications[0].applicationRef });
     const draft = saveLineIntegrationDraft(snapshot, metadata, TEST_NOW);
     const projected = projectAuthenticatedPlatform(draft);
-    expect(projected.integration).toMatchObject({ displayName: "Tony OA", status: "draft" });
+    expect(projected.integration).toMatchObject({ displayName: "Tony OA", status: "draft", draftStatus: "saved" });
+    expect(projected.loginChannel).toMatchObject({ channelId: "123456789", verificationStatus: "not_configured" });
+    expect(projected.messagingChannel).toMatchObject({ channelId: "987654321", messagingVerification: "not_configured" });
+    const reopened = projectAuthenticatedPlatform(createPlatformSnapshot(serializePlatformState(draft)));
+    expect(reopened.loginChannel.channelId).toBe("123456789"); expect(reopened.messagingChannel.channelId).toBe("987654321");
     expect(JSON.stringify(draft)).not.toMatch(/login-secret-local-value|messaging-secret-local-value|local-access-token/);
     expect(evaluatePlatformLifecycle(draft)).toBe(PlatformLifecycle.AUTHENTICATED_WITHOUT_BINDING);
   });
@@ -105,8 +112,8 @@ describe("Chrome extension platform lifecycle", () => {
     const snapshot = await workspaceSnapshot(); const view = projectAuthenticatedPlatform(snapshot);
     const receipt = await new LocalCredentialRegistrationAdapter().register({ ...credentials, ...publicIntegration, workspaceRef: view.workspace.workspaceRef, applicationRef: view.applications[0].applicationRef });
     expect(assertCredentialReceiptSafe(receipt)).toBe(true);
-    expect(receipt).toMatchObject({ credentialStatus: "not_configured", callbackUrl: null, webhookUrl: null, loginVerification: "not_configured", messagingVerification: "configured", webhookVerification: "not_configured", reasonCode: "CALLBACK_ENDPOINT_NOT_CONFIGURED" });
-    expect(Object.keys(receipt).sort()).toEqual(["bindingKey", "callbackUrl", "credentialReference", "credentialStatus", "loginVerification", "messagingVerification", "reasonCode", "reasonCodes", "webhookUrl", "webhookVerification"].sort());
+    expect(receipt).toMatchObject({ credentialStorageStatus: "backend_unavailable", credentialReference: null, callbackUrl: null, webhookUrl: null, loginVerification: "not_configured", messagingVerification: "not_configured", webhookVerification: "not_configured", overallStatus: "not_configured", reasonCode: "CALLBACK_ENDPOINT_NOT_CONFIGURED" });
+    expect(Object.keys(receipt).sort()).toEqual(["bindingKey", "callbackUrl", "credentialReference", "credentialStorageStatus", "localValidationReference", "loginVerification", "messagingVerification", "overallStatus", "reasonCode", "reasonCodes", "webhookUrl", "webhookVerification"].sort());
     expect(JSON.stringify(receipt)).not.toMatch(/login-secret-local-value|messaging-secret-local-value|local-access-token/);
   });
 
@@ -127,23 +134,23 @@ describe("Chrome extension platform lifecycle", () => {
   });
 
   it("does not activate integration from local credential receipt alone", async () => {
-    const { snapshot, receipt } = await pendingBindingSnapshot();
-    expect(evaluatePlatformLifecycle(snapshot)).toBe(PlatformLifecycle.BINDING_PENDING_VERIFICATION);
+    const snapshot = await workspaceSnapshot(); const view = projectAuthenticatedPlatform(snapshot);
+    const adapter = new LocalLineIntegrationAdapter(new LocalCredentialRegistrationAdapter());
+    const result = await adapter.configure({ ...publicIntegration, workspaceRef: view.workspace.workspaceRef, applicationRef: view.applications[0].applicationRef }, credentials);
+    const receipt = result.receipt;
     expect(receipt.callbackUrl).toBeNull(); expect(receipt.webhookUrl).toBeNull();
-    const result = await new LocalIntegrationVerificationAdapter({ now: () => TEST_NOW }).verify({ credentialReference: receipt.credentialReference, bindingKey: receipt.bindingKey, callbackUrl: receipt.callbackUrl, webhookUrl: receipt.webhookUrl });
-    const verified = applyIntegrationVerification(snapshot, snapshot.currentBindingRef, result, TEST_NOW);
-    expect(result).toMatchObject({ loginVerification: "not_configured", messagingVerification: "configured", webhookVerification: "not_configured", overallStatus: "not_configured", reasonCode: "CALLBACK_ENDPOINT_NOT_CONFIGURED" });
-    expect(evaluatePlatformLifecycle(verified)).toBe(PlatformLifecycle.BINDING_PENDING_VERIFICATION);
-    expect(projectAuthenticatedPlatform(verified).currentBinding).toMatchObject({ status: "pending", overallStatus: "not_configured" });
+    expect(receipt).toMatchObject({ credentialStorageStatus: "backend_unavailable", credentialReference: null, messagingVerification: "not_configured", overallStatus: "not_configured" });
+    expect(() => configureLineIntegration(snapshot, receipt, result.metadata, TEST_NOW)).toThrowError(expect.objectContaining({ reasonCode: "CREDENTIAL_STORAGE_NOT_CONFIGURED" }));
+    await expect(new LocalIntegrationVerificationAdapter({ now: () => TEST_NOW }).verify({ credentialStorageStatus: receipt.credentialStorageStatus, credentialReference: receipt.credentialReference, bindingKey: receipt.bindingKey, callbackUrl: receipt.callbackUrl, webhookUrl: receipt.webhookUrl })).rejects.toMatchObject({ reasonCode: "VERIFICATION_REFERENCE_INVALID" });
+    expect(evaluatePlatformLifecycle(snapshot)).toBe(PlatformLifecycle.AUTHENTICATED_WITHOUT_BINDING);
   });
-
   it("removes superseded public draft records when credentials are configured", async () => {
     const base = await workspaceSnapshot(); const view = projectAuthenticatedPlatform(base);
     const metadata = normalizeIntegrationInput({ ...publicIntegration, workspaceRef: view.workspace.workspaceRef, applicationRef: view.applications[0].applicationRef });
     const draft = saveLineIntegrationDraft(base, metadata, TEST_NOW);
     const adapter = new LocalLineIntegrationAdapter(new LocalCredentialRegistrationAdapter());
     const result = await adapter.configure(metadata, credentials);
-    const configured = configureLineIntegration(draft, result.receipt, result.metadata, TEST_NOW);
+    const configured = configureLineIntegration(draft, { ...result.receipt, credentialStorageStatus: "securely_stored", credentialReference: "cred-secure-backend-reference", messagingVerification: "configured" }, result.metadata, TEST_NOW);
     expect(configured.lineIntegrations.filter((entry: { status: string }) => entry.status === "draft")).toHaveLength(0);
     expect(configured.loginChannels.some((entry: { integrationRef: string }) => entry.integrationRef.startsWith("integration-draft-"))).toBe(false);
   });
@@ -168,6 +175,14 @@ describe("Chrome extension platform lifecycle", () => {
     expect(JSON.stringify(safe)).not.toMatch(/LocalPass123|channelSecret|channelAccessToken/);
   });
 
+  it("keeps draft, sensitive input, and credential storage semantics distinct", async () => {
+    const draft = saveLineIntegrationDraft(await workspaceSnapshot(), normalizeIntegrationInput({ ...publicIntegration, workspaceRef: "workspace-001", applicationRef: "application-001" }), TEST_NOW);
+    expect(projectAuthenticatedPlatform(draft).integration).toMatchObject({ draftStatus: DraftStatus.SAVED, status: "draft" });
+    expect(resolveCredentialStorageStatus(null, false)).toBe(CredentialStorageStatus.BACKEND_UNAVAILABLE);
+    expect(resolveCredentialStorageStatus({ credentialStorageStatus: "securely_stored", credentialReference: null }, true)).toBe(CredentialStorageStatus.NOT_CONFIGURED);
+    expect(localizedIntegrationStatus(SensitiveInputStatus.ENTERED_IN_CURRENT_SESSION)).toBe("本次工作階段已輸入");
+    expect(localizedIntegrationStatus("verified")).toBe("驗證成功");
+  });
   it.each(["password", "confirmPassword", "secret", "token", "authorization", "cookie", "replyToken", "userId", "rawBody", "rawPayload", "channelAccessToken", "channelSecret", "loginChannelSecret", "credentialValue"])("recursively rejects sensitive storage field %s", (key) => {
     expect(() => validateStorageEntries({ platformState: { users: [{ profile: { [key]: "blocked" } }] } })).toThrow("SENSITIVE_FIELD_REJECTED");
   });

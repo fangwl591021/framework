@@ -1,10 +1,12 @@
 import { ADMIN_NAVIGATION, normalizeAdminPreferences, resolveAdminRoute, toggleCollapsedGroup } from "../shared/admin-navigation.js";
 import { LocalDevelopmentAuthAdapter, forgotPasswordPlaceholder } from "../shared/auth-adapter.js";
-import { LocalCredentialRegistrationAdapter, assertCredentialReceiptSafe } from "../shared/credential-adapter.js";
+import { LocalCredentialRegistrationAdapter, validateCredentialInput } from "../shared/credential-adapter.js";
 import { LocalLineIntegrationAdapter, normalizeIntegrationInput } from "../shared/integration-adapter.js";
 import { bindRuntimeActions, refreshContext, refreshHealth } from "../shared/console-runtime.js";
 import { el } from "../shared/console-ui.js";
 import { MessageType } from "../shared/messages.js";
+import { PlatformEndpointReasonCode } from "../shared/platform-endpoints.js";
+import { CredentialStorageStatus, DraftStatus, SensitiveInputStatus, localizedIntegrationStatus, resolveCredentialStorageStatus } from "../shared/integration-status.js";
 import { PlatformLifecycle, applyIntegrationVerification, configureLineIntegration, createPlatformSnapshot, createWorkspaceForOwner, evaluatePlatformLifecycle, projectAuthenticatedPlatform, saveLineIntegrationDraft, selectBinding, selectWorkspace, withoutSession } from "../shared/platform-model.js";
 import { loadPlatformState, savePlatformState } from "../shared/platform-store.js";
 import { createLocalDemoSnapshot } from "../shared/product-data.js";
@@ -17,6 +19,7 @@ const integrationAdapter = new LocalLineIntegrationAdapter(credentialAdapter);
 const verificationAdapter = new LocalIntegrationVerificationAdapter();
 let snapshot = createPlatformSnapshot();
 let uiPreferences = normalizeAdminPreferences({});
+let sensitiveInputStatus = SensitiveInputStatus.EMPTY;
 
 function text(selector, value) { const node = document.querySelector(selector); if (node) node.textContent = String(value ?? ""); }
 function clear(target) { target?.replaceChildren(); }
@@ -25,6 +28,12 @@ function setFormBusy(form, busy) { form.setAttribute("aria-busy", String(busy));
 function setInputValue(form, name, value) { const control = form.elements.namedItem(name); if (control) control.value = String(value ?? ""); }
 function clearCredentialControls(form) { for (const name of ["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"]) setInputValue(form, name, ""); }
 function renderEndpointState(fieldSelector, buttonSelector, noteSelector, url) { const field = document.querySelector(fieldSelector); const button = document.querySelector(buttonSelector); const note = document.querySelector(noteSelector); field.value = url ?? "尚未建立"; button.disabled = !url; note.hidden = Boolean(url); note.textContent = url ? "" : "平台後端尚未提供此端點"; }
+function renderSensitiveInputStatus() { text("#sensitive-input-status", localizedIntegrationStatus(sensitiveInputStatus)); }
+function updateSensitiveInputStatus(form) {
+  const hasSensitiveValue = ["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"].some((name) => String(form.elements.namedItem(name)?.value ?? "").length > 0);
+  sensitiveInputStatus = hasSensitiveValue ? SensitiveInputStatus.ENTERED_IN_CURRENT_SESSION : SensitiveInputStatus.EMPTY;
+  renderSensitiveInputStatus();
+}
 
 async function persistPreferences(patch) {
   const stored = await getSafeStorage(["uiPreferences"]);
@@ -105,30 +114,43 @@ function renderBindingSwitcher(view) {
 }
 function renderIntegration(view) {
   const form = document.querySelector("#line-integration-form"); renderWorkspaceOptions(view); renderBindingSwitcher(view);
-  const configured = Boolean(view.currentBinding && view.integration); text("#integration-configured-badge", configured ? "本機資料已設定" : "尚未設定");
+  const draftStatus = view.integration?.draftStatus ?? DraftStatus.EMPTY;
+  const credentialStorageStatus = resolveCredentialStorageStatus(view.credentialReference, credentialAdapter.descriptor.credentialRegistrationCapability);
+  const overallStatus = view.currentBinding?.overallStatus ?? "not_configured";
+  text("#integration-configured-badge", localizedIntegrationStatus(overallStatus));
+  text("#draft-status", localizedIntegrationStatus(draftStatus));
+  renderSensitiveInputStatus();
   if (view.integration) {
     setInputValue(form, "displayName", view.integration.displayName); setInputValue(form, "lineBotAccount", view.integration.lineBotAccount); setInputValue(form, "environment", view.integration.environment); setInputValue(form, "note", view.integration.note);
     setInputValue(form, "lineLoginChannelId", view.loginChannel?.channelId); setInputValue(form, "messagingChannelId", view.messagingChannel?.channelId);
   }
   clearCredentialControls(form);
+  sensitiveInputStatus = SensitiveInputStatus.EMPTY;
+  renderSensitiveInputStatus();
   renderEndpointState("#callback-url", "#copy-callback", "#callback-endpoint-note", view.loginChannel?.callbackUrl ?? null);
   renderEndpointState("#webhook-url", "#copy-webhook", "#webhook-endpoint-note", view.messagingChannel?.webhookUrl ?? null);
   const verification = view.verificationResults.find((entry) => entry.integrationRef === view.integration?.integrationRef);
   const loginStatus = view.loginChannel?.verificationStatus ?? "not_configured";
-  const messagingStatus = view.messagingChannel?.messagingVerification ?? "not_configured";
+  const messagingStatus = credentialStorageStatus === CredentialStorageStatus.SECURELY_STORED ? (view.messagingChannel?.messagingVerification ?? "not_configured") : "not_configured";
   const webhookStatus = view.messagingChannel?.webhookVerification ?? "not_configured";
-  const overallStatus = view.currentBinding?.overallStatus ?? "not_configured";
-  for (const selector of ["#login-status", "#summary-login-status"]) text(selector, loginStatus);
-  for (const selector of ["#messaging-status", "#summary-messaging-status"]) text(selector, messagingStatus);
-  for (const selector of ["#webhook-status", "#summary-webhook-status"]) text(selector, webhookStatus);
-  text("#credential-status", view.credentialReference?.credentialStatus ?? "尚未設定");
-  text("#credential-updated", view.credentialReference ? `Local reference only · Updated ${new Date(view.credentialReference.updatedAt).toISOString()}` : "只保存 opaque reference");
-  text("#overall-integration-status", verification?.overallStatus ?? overallStatus);
-  text("#submit-integration", configured ? "更新憑證" : "儲存並驗證全部");
-  document.querySelector("#reverify-integration").hidden = !configured;
+  for (const selector of ["#login-status", "#summary-login-status"]) text(selector, localizedIntegrationStatus(loginStatus));
+  for (const selector of ["#messaging-status", "#summary-messaging-status"]) text(selector, localizedIntegrationStatus(messagingStatus));
+  for (const selector of ["#webhook-status", "#summary-webhook-status"]) text(selector, localizedIntegrationStatus(webhookStatus));
+  text("#credential-status", localizedIntegrationStatus(credentialStorageStatus));
+  text("#credential-updated", credentialStorageStatus === CredentialStorageStatus.SECURELY_STORED ? "平台已回傳安全的 opaque credential reference" : "擴充功能不保存 Secret 或 Access Token");
+  text("#overall-integration-status", localizedIntegrationStatus(verification?.overallStatus ?? overallStatus));
+  const secureStorageButton = document.querySelector("#submit-integration");
+  secureStorageButton.textContent = credentialAdapter.descriptor.credentialRegistrationCapability ? "安全儲存憑證" : "安全儲存尚未開放";
+  secureStorageButton.disabled = !credentialAdapter.descriptor.credentialRegistrationCapability;
+  document.querySelector("#credential-storage-explanation").hidden = credentialAdapter.descriptor.credentialRegistrationCapability;
+  document.querySelector("#reverify-integration").hidden = credentialStorageStatus !== CredentialStorageStatus.SECURELY_STORED;
   document.querySelector("#complete-integration").hidden = overallStatus !== "active";
-}
-function renderAdmin(view) {
+  document.querySelector("#seeded-proof-note").hidden = view.currentBinding?.bindingKey !== "oa-primary";
+  const reasonCodes = [PlatformEndpointReasonCode.CALLBACK_ENDPOINT_NOT_CONFIGURED, PlatformEndpointReasonCode.CREDENTIAL_REGISTRATION_NOT_CONFIGURED];
+  if (view.currentBinding?.bindingKey !== "oa-primary") reasonCodes.push(PlatformEndpointReasonCode.DYNAMIC_BINDING_PROVISIONING_NOT_CONFIGURED);
+  const reasonList = document.querySelector("#integration-reason-codes"); clear(reasonList); for (const code of reasonCodes) reasonList.append(el("li", "", code));
+  text("#integration-platform-message", overallStatus === "active" ? "正式串接已完成。" : "平台後端尚未完成 Callback、憑證儲存與動態 Webhook 建立，因此目前無法完成正式串接。");
+}function renderAdmin(view) {
   text("#summary-workspace", view.workspace.name); text("#summary-role", view.membership.role); text("#summary-binding", view.integration?.displayName ?? "Not configured"); text("#summary-verification", view.currentBinding?.overallStatus ?? "Not configured");
   text("#settings-name", view.user.displayName); text("#settings-email", view.user.email); text("#settings-role", view.membership.role);
   const accounts = document.querySelector("#account-table"); clear(accounts);
@@ -173,28 +195,38 @@ document.querySelector("#sign-in-form").addEventListener("submit", async (event)
 async function signOut() { await authAdapter.signOut(); await persistSnapshot(withoutSession(snapshot)); }
 document.querySelector("#sign-out").addEventListener("click", signOut); document.querySelector("#logout-route-action").addEventListener("click", signOut);
 document.querySelector("#workspace-form").addEventListener("submit", async (event) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const next = createWorkspaceForOwner(snapshot, { name: data.get("name"), businessDisplayName: data.get("businessDisplayName") }); form.reset(); await persistSnapshot(next); });
+document.querySelector("#line-integration-form").addEventListener("input", (event) => {
+  if (["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"].includes(event.target?.name)) updateSensitiveInputStatus(event.currentTarget);
+});
 document.querySelector("#save-integration-metadata").addEventListener("click", async () => {
   const form = document.querySelector("#line-integration-form"); const data = new FormData(form); const view = projectAuthenticatedPlatform(snapshot);
+  const sensitiveValues = Object.fromEntries(["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"].map((name) => [name, form.elements.namedItem(name)?.value ?? ""]));
   try {
     const metadata = normalizeIntegrationInput({ workspaceRef: data.get("workspaceRef"), applicationRef: view.applications[0]?.applicationRef, displayName: data.get("displayName"), lineBotAccount: data.get("lineBotAccount"), environment: data.get("environment"), note: data.get("note"), lineLoginChannelId: data.get("lineLoginChannelId"), messagingChannelId: data.get("messagingChannelId") });
-    clearCredentialControls(form); await persistSnapshot(saveLineIntegrationDraft(snapshot, metadata)); text("#integration-message", "草稿已保存；未保存任何 Secret 或 Access Token。");
-  } catch (error) { clearCredentialControls(form); text("#integration-message", error.reasonCodes?.join(" · ") ?? error.message); }
+    snapshot = await savePlatformState(saveLineIntegrationDraft(snapshot, metadata)); renderPlatform();
+    for (const [name, value] of Object.entries(sensitiveValues)) setInputValue(form, name, value);
+    updateSensitiveInputStatus(form);
+    text("#integration-message", "草稿已儲存。基於安全考量，Secret 與 Access Token 不會保存在擴充功能中。");
+  } catch (error) { text("#integration-message", error.reasonCodes?.join(" · ") ?? error.message); }
 });
-document.querySelector("#line-integration-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); setFormBusy(form, true);
-  try {
-    const scoped = projectAuthenticatedPlatform(snapshot, String(data.get("workspaceRef") ?? ""));
-    const result = await integrationAdapter.configure({ workspaceRef: scoped.workspace.workspaceRef, applicationRef: scoped.applications[0]?.applicationRef, displayName: data.get("displayName"), lineBotAccount: data.get("lineBotAccount"), environment: data.get("environment"), note: data.get("note"), lineLoginChannelId: data.get("lineLoginChannelId"), messagingChannelId: data.get("messagingChannelId") }, { lineLoginChannelSecret: data.get("lineLoginChannelSecret"), messagingChannelSecret: data.get("messagingChannelSecret"), channelAccessToken: data.get("channelAccessToken") });
-    assertCredentialReceiptSafe(result.receipt); snapshot = configureLineIntegration(selectWorkspace(snapshot, scoped.workspace.workspaceRef), result.receipt, result.metadata); const verification = await verificationAdapter.verify({ credentialReference: result.receipt.credentialReference, bindingKey: result.receipt.bindingKey, callbackUrl: result.receipt.callbackUrl, webhookUrl: result.receipt.webhookUrl }); snapshot = applyIntegrationVerification(snapshot, snapshot.currentBindingRef, verification); await savePlatformState(snapshot); clearCredentialControls(form); renderPlatform(); activateRoute("line-integration"); text("#integration-message", `本機輸入已驗證，但平台端點尚未完成：${verification.reasonCodes.join(" · ")}`);
-  } catch (error) { clearCredentialControls(form); text("#integration-message", error.reasonCodes?.join(" · ") ?? error.reasonCode ?? error.message); }
-  finally { setFormBusy(form, false); }
+document.querySelector("#validate-credential-format").addEventListener("click", () => {
+  const form = document.querySelector("#line-integration-form");
+  const confirmed = window.confirm("欄位格式驗證後，Secret 與 Access Token 將立即從表單清除且不會保存。是否繼續？");
+  if (!confirmed) return;
+  const data = new FormData(form);
+  const validation = validateCredentialInput({ lineLoginChannelSecret: data.get("lineLoginChannelSecret"), messagingChannelSecret: data.get("messagingChannelSecret"), channelAccessToken: data.get("channelAccessToken") });
+  clearCredentialControls(form); sensitiveInputStatus = SensitiveInputStatus.CLEARED_AFTER_SUBMISSION; renderSensitiveInputStatus();
+  text("#integration-message", validation.ok ? "欄位格式已通過本機檢查；未儲存憑證，也未完成串接。" : "欄位格式未通過本機檢查；敏感欄位已清除且未保存。");
+});
+document.querySelector("#line-integration-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  text("#integration-message", "平台後端尚未完成 Callback、憑證儲存與動態 Webhook 建立，因此目前無法完成正式串接。");
 });
 document.querySelector("#reverify-integration").addEventListener("click", async () => {
   const view = projectAuthenticatedPlatform(snapshot);
-  try { const result = await verificationAdapter.verify({ credentialReference: view.credentialReference?.credentialReference, bindingKey: view.currentBinding?.bindingKey, callbackUrl: view.loginChannel?.callbackUrl, webhookUrl: view.messagingChannel?.webhookUrl }); await persistSnapshot(applyIntegrationVerification(snapshot, view.currentBinding.bindingRef, result)); text("#integration-message", result.overallStatus === "active" ? "Integration verified." : `尚未完成：${result.reasonCodes.join(" · ")}`); }
-  catch (error) { text("#integration-message", error.reasonCode ?? error.message); }
-});
-document.querySelector("#complete-integration").addEventListener("click", () => activateRoute("overview"));
+  try { const result = await verificationAdapter.verify({ credentialStorageStatus: view.credentialReference?.credentialStorageStatus, credentialReference: view.credentialReference?.credentialReference, bindingKey: view.currentBinding?.bindingKey, callbackUrl: view.loginChannel?.callbackUrl, webhookUrl: view.messagingChannel?.webhookUrl }); await persistSnapshot(applyIntegrationVerification(snapshot, view.currentBinding.bindingRef, result)); text("#integration-message", result.overallStatus === "active" ? "正式串接驗證成功。" : "平台後端尚未完成 Callback、憑證儲存與動態 Webhook 建立，因此目前無法完成正式串接。"); }
+  catch { text("#integration-message", "平台後端尚未完成 Callback、憑證儲存與動態 Webhook 建立，因此目前無法完成正式串接。"); }
+});document.querySelector("#complete-integration").addEventListener("click", () => activateRoute("overview"));
 document.querySelector("#workspace-switcher").addEventListener("change", async (event) => { await persistSnapshot(selectWorkspace(snapshot, event.currentTarget.value)); });
 document.querySelector("#integration-workspace-select").addEventListener("change", async (event) => { await persistSnapshot(selectWorkspace(snapshot, event.currentTarget.value)); });
 document.querySelector("#binding-switcher").addEventListener("change", async (event) => { if (event.currentTarget.value) await persistSnapshot(selectBinding(snapshot, event.currentTarget.value)); });

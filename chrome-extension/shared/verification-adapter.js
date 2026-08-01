@@ -23,12 +23,12 @@ export class LocalIntegrationVerificationAdapter {
   }
 
   async verify(input) {
-    if (!input?.credentialReference?.startsWith("cred-") || !/^(?:line-[a-z0-9]{6,24}|oa-primary)$/.test(input?.bindingKey ?? "")) throw new VerificationAdapterError("VERIFICATION_REFERENCE_INVALID");
+    if (input?.credentialStorageStatus !== "securely_stored" || !input?.credentialReference?.startsWith("cred-") || !/^(?:line-[a-z0-9]{6,24}|oa-primary)$/.test(input?.bindingKey ?? "")) throw new VerificationAdapterError("VERIFICATION_REFERENCE_INVALID");
     const endpoints = resolvePlatformEndpoints(input.bindingKey, this.endpointConfiguration);
     assertExpectedEndpoint(input.callbackUrl, endpoints.callback.url);
     assertExpectedEndpoint(input.webhookUrl, endpoints.webhook.url);
     const loginVerification = endpoints.callback.status;
-    const messagingVerification = input.bindingKey === "oa-primary" ? "verified" : "configured";
+    const messagingVerification = input.bindingKey === "oa-primary" ? "verified" : "not_configured";
     const webhookVerification = endpoints.webhook.status;
     const overallStatus = [loginVerification, messagingVerification, webhookVerification].every((status) => status === "verified") ? "active" : "not_configured";
     const reasonCodes = [endpoints.callback.reasonCode, endpoints.webhook.reasonCode].filter(Boolean);
