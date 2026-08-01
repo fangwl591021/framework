@@ -20,6 +20,10 @@ const localEnv = {
         return new Response("<!doctype html><title>Setup</title>", {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
+      if (pathname === "/local/line-dashboard/")
+        return new Response("<!doctype html><title>LINE Platform</title>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
       if (
         pathname === "/local/ai-lab/" ||
         pathname === "/local/ai-lab/requests/" ||
@@ -143,6 +147,14 @@ describe("Local Conversational Workbench integration", () => {
     const response = await worker.fetch(request("/local/setup/"), localEnv);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("text/html");
+  });
+  it("serves and canonicalizes the LINE Platform dashboard", async () => {
+    const direct = await worker.fetch(request("/local/line-dashboard/"), localEnv);
+    expect(direct.status).toBe(200);
+    expect(await direct.text()).toContain("LINE Platform");
+    const redirect = await worker.fetch(request("/local/line-dashboard?view=delivery"), localEnv);
+    expect(redirect.status).toBe(307);
+    expect(redirect.headers.get("Location")).toBe("http://localhost/local/line-dashboard/?view=delivery");
   });
   it("does not canonicalize local API routes as HTML", async () => {
     const response = await worker.fetch(request("/local/api/session"), localEnv);

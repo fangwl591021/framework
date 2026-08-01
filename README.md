@@ -383,6 +383,12 @@ Conversational Workbench 將可信 Application Context、versioned Intent、Slot
 
 Its status is Platform Integration Service Candidate, Contract Approved by Tony after self-review, Architecture and Security Review Approved, Locally Implemented, Locally Verified, Real Channel Adapters Disabled, Not Deployed, and Production Use Not Allowed. Only `local_web_adapter` is enabled in the Local Demo. LINE, Telegram, and generic webhook adapters remain disabled; there is no provider SDK, remote call, secret, Binding, Remote D1, or deployment.
 
+## Local LINE Platform Dashboard
+
+The delivery-facing, read-only LINE Platform dashboard is available after starting the Local Demo at `http://localhost:8787/local/line-dashboard/`. It uses deterministic local data and never calls the live LINE Worker from the browser.
+
+Demo steps: open the dashboard, review the Tenant → Application → Channel Binding → LINE OA hierarchy, copy the displayed webhook URL when needed, then open the configured LINE OA, send a text message, and confirm the reply `收到：<message>`. The page shows one verified first-OA binding; arbitrary OA onboarding, a multi-binding registry, self-service credential setup, and Production rollout remain incomplete.
+
 ## LINE Adapter Enablement Readiness
 
 [LINE Adapter Enablement Readiness](docs/line-adapter-enablement-readiness/README.md) defines pure LINE webhook, signature, replay, reply-token, capability, degradation, retry, outage, privacy, credential-reference, evidence, rollback, and approval contracts. It is Readiness Candidate documentation and deterministic local verification only.

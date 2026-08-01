@@ -202,6 +202,12 @@ export default {
     const channelLabPage = /^\/local\/channel-lab(?:\/(events|deliveries))?\/*$/.exec(
       url.pathname,
     );
+    const lineDashboardPage = /^\/local\/line-dashboard\/*$/.test(url.pathname);
+    if (request.method === "GET" && !isApiRoute && lineDashboardPage) {
+      const target = canonicalPath(url, "/local/line-dashboard/");
+      if (target) return Response.redirect(target.href, 307);
+      return env.ASSETS.fetch(request);
+    }
     if (request.method === "GET" && !isApiRoute && channelLabPage) {
       const section = channelLabPage[1];
       const canonical = section
@@ -239,7 +245,8 @@ export default {
       !isApiRoute &&
       (url.pathname.startsWith("/local/workbench/") ||
         url.pathname.startsWith("/local/ai-lab/") ||
-        url.pathname.startsWith("/local/channel-lab/"))
+        url.pathname.startsWith("/local/channel-lab/") ||
+        url.pathname.startsWith("/local/line-dashboard/"))
     )
       return env.ASSETS.fetch(request);
     if (request.method === "GET" && url.pathname === "/local/status") {
@@ -250,7 +257,7 @@ export default {
           mode: "local",
           database: "isolated-local-d1",
           seeded: Boolean(fixture),
-          routes: ["/local/setup", "/local/workbench", "/local/ai-lab", "/local/ai-lab/readiness", "/local/ai-lab/drills", "/local/channel-lab", "/local/channel-lab/events", "/local/channel-lab/deliveries"],
+          routes: ["/local/setup", "/local/workbench", "/local/ai-lab", "/local/ai-lab/readiness", "/local/ai-lab/drills", "/local/channel-lab", "/local/channel-lab/events", "/local/channel-lab/deliveries", "/local/line-dashboard"],
         });
       } catch {
         return json({
