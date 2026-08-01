@@ -383,11 +383,11 @@ Conversational Workbench 將可信 Application Context、versioned Intent、Slot
 
 Its status is Platform Integration Service Candidate, Contract Approved by Tony after self-review, Architecture and Security Review Approved, Locally Implemented, Locally Verified, Real Channel Adapters Disabled, Not Deployed, and Production Use Not Allowed. Only `local_web_adapter` is enabled in the Local Demo. LINE, Telegram, and generic webhook adapters remain disabled; there is no provider SDK, remote call, secret, Binding, Remote D1, or deployment.
 
-## Local LINE Platform Dashboard
+## LINE OA Platform Console
 
-The delivery-facing, read-only LINE Platform dashboard is available after starting the Local Demo at `http://localhost:8787/local/line-dashboard/`. It uses deterministic local data and never calls the live LINE Worker from the browser.
+The [LINE OA Platform Console](chrome-extension/README.md) is a Chrome Manifest V3 side-panel product UI for viewing the first verified LINE OA binding beside LINE Official Account Manager and LINE Chat. Build it with `npm.cmd run build:chrome-extension`, then load `dist/line-oa-platform-console` as an unpacked extension.
 
-Demo steps: open the dashboard, review the Tenant → Application → Channel Binding → LINE OA hierarchy, copy the displayed webhook URL when needed, then open the configured LINE OA, send a text message, and confirm the reply `收到：<message>`. The page shows one verified first-OA binding; arbitrary OA onboarding, a multi-binding registry, self-service credential setup, and Production rollout remain incomplete.
+The extension stores only allowlisted non-sensitive UI and bounded page-context metadata. It does not contain LINE credentials, scrape private LINE page data, call authenticated Messaging APIs, modify the live sandbox Worker, or claim arbitrary OA onboarding support.
 
 ## LINE Adapter Enablement Readiness
 

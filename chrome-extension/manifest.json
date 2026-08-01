@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "LINE OA Platform Console",
+  "version": "0.1.0",
+  "description": "A side-panel console for the Platform Core LINE integration.",
+  "permissions": ["sidePanel", "storage", "tabs", "activeTab"],
+  "host_permissions": [
+    "https://api-data.line.me/*",
+    "https://api.line.me/*",
+    "https://chat.line.biz/*",
+    "https://line-oa.fangwl591021.workers.dev/*",
+    "https://manager.line.biz/*",
+    "https://platform-core-line-sandbox-live.fangwl591021.workers.dev/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "action": {
+    "default_title": "Open LINE OA Platform Console",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://manager.line.biz/*"],
+      "js": ["content/line-oa-manager.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chat.line.biz/*"],
+      "js": ["content/line-chat.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
