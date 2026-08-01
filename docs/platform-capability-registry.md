@@ -10,6 +10,7 @@ This index separates architecture contracts, local implementation, verification,
 | LINE Provider Execution Readiness | Execution Readiness Candidate | Pure governance controls and deterministic evaluator only | Locally Verified | NO-GO; Not Authorized |
 | LINE Canary Enablement Readiness | Canary Enablement Readiness Candidate | Immutable metadata, deterministic controls, and fake-only drills | Locally Verified | NO-GO; Canary Not Authorized |
 | LINE Enablement Consolidation Review | Consolidation Review Candidate | Immutable projection, overlap detection, and evidence-gap classification only | Locally Verified | NO-GO; Sandbox, Provider, and Canary Not Authorized |
+| LINE Provider Sandbox Integration Plan | Provider Sandbox Integration Plan Candidate | Pure contracts, deterministic validators, and synthetic plan evidence only | Locally Verified | NO-GO; Sandbox Connectivity Not Implemented |
 
 The LINE readiness entry does not change `disabled_line_adapter`, create a provider connection, or grant Workbench/Domain authority. See [LINE Adapter Enablement Readiness](line-adapter-enablement-readiness/README.md).
 
@@ -20,3 +21,5 @@ The execution-readiness entry adds reviewable governance controls without provid
 The Canary readiness entry adds bounded permit and drill evidence without executable authority. It keeps Provider and Canary execution unauthorized, transport Fake Only, credentials unprovisioned, and Production isolated. See [LINE Canary Enablement Readiness](line-canary-enablement-readiness/README.md).
 
 The consolidation entry is the deterministic review surface for all four LINE phases. It does not supersede source evidence or authorize sandbox entry; it preserves the disabled adapter and Workbench-only authority. See [LINE Enablement Consolidation Review](line-enablement-consolidation-review/README.md).
+
+The sandbox integration plan removes interface ambiguity without adding connectivity. Credential references, webhook ingress, and egress remain Contract Only; api.line.me access and all execution remain prohibited. See [LINE Provider Sandbox Integration Plan](line-provider-sandbox-integration-plan/README.md).

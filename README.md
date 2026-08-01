@@ -412,3 +412,9 @@ Its lifecycle is Canary Enablement Readiness Candidate and its evaluator remains
 [LINE Enablement Consolidation Review](docs/line-enablement-consolidation-review/README.md) projects the four LINE readiness phases into one immutable deterministic state, detects contradictory or duplicated control claims, separates local evidence from real-world prerequisites, and issues an explicit sandbox-entry decision.
 
 Its lifecycle is Consolidation Review Candidate and its decision remains **NO-GO**. Real LINE Adapter is Disabled; Provider Execution, Canary Execution, and Provider Sandbox Entry are Not Authorized; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, deployment, or Production use exists. Workbench remains the sole intent, confirmation, permission, and mutation authority.
+
+## LINE Provider Sandbox Integration Plan
+
+[LINE Provider Sandbox Integration Plan](docs/line-provider-sandbox-integration-plan/README.md) defines the non-executable transport, credential-reference, webhook-ingress, exact egress-allowlist, provider-error, test-evidence, and approval-gate contracts that a future sandbox proposal must satisfy.
+
+Its lifecycle is Provider Sandbox Integration Plan Candidate and its decision remains **NO-GO**. Provider Sandbox Connectivity is Not Implemented; Provider Sandbox Entry, Provider Execution, and Canary Execution are Not Authorized; api.line.me Access is Prohibited; the adapter remains Disabled and Workbench remains the sole authority.
