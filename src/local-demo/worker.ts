@@ -2,6 +2,7 @@ import { createLocalWorkbench } from "./composition";
 import { UuidV7Generator } from "../core/uuidv7";
 import { LocalProviderReadinessService, localProviderGovernanceContext } from "./provider-readiness-service";
 import { LocalAiLabService } from "./ai-lab-service";
+import { LocalChannelLabService, channelLabScenarios } from "./channel-lab-service";
 import {
   aiLabContext,
   parseAiLabSimulation,
@@ -198,6 +199,18 @@ export default {
     const aiLabPage = /^\/local\/ai-lab(?:\/(requests|usage|readiness|drills))?\/*$/.exec(
       url.pathname,
     );
+    const channelLabPage = /^\/local\/channel-lab(?:\/(events|deliveries))?\/*$/.exec(
+      url.pathname,
+    );
+    if (request.method === "GET" && !isApiRoute && channelLabPage) {
+      const section = channelLabPage[1];
+      const canonical = section
+        ? `/local/channel-lab/${section}/`
+        : "/local/channel-lab/";
+      const target = canonicalPath(url, canonical);
+      if (target) return Response.redirect(target.href, 307);
+      return env.ASSETS.fetch(request);
+    }
     if (request.method === "GET" && !isApiRoute && aiLabPage) {
       const section = aiLabPage[1];
       const canonical = section
@@ -225,7 +238,8 @@ export default {
       request.method === "GET" &&
       !isApiRoute &&
       (url.pathname.startsWith("/local/workbench/") ||
-        url.pathname.startsWith("/local/ai-lab/"))
+        url.pathname.startsWith("/local/ai-lab/") ||
+        url.pathname.startsWith("/local/channel-lab/"))
     )
       return env.ASSETS.fetch(request);
     if (request.method === "GET" && url.pathname === "/local/status") {
@@ -236,7 +250,7 @@ export default {
           mode: "local",
           database: "isolated-local-d1",
           seeded: Boolean(fixture),
-          routes: ["/local/setup", "/local/workbench", "/local/ai-lab", "/local/ai-lab/readiness", "/local/ai-lab/drills"],
+          routes: ["/local/setup", "/local/workbench", "/local/ai-lab", "/local/ai-lab/readiness", "/local/ai-lab/drills", "/local/channel-lab", "/local/channel-lab/events", "/local/channel-lab/deliveries"],
         });
       } catch {
         return json({
@@ -313,6 +327,30 @@ export default {
     }
     if (
       request.method === "GET" &&
+      url.pathname.startsWith("/local/api/channel-lab/")
+    ) {
+      try {
+        const current = await session(request, env.LOCAL_DEMO_DB);
+        if (!current) return safeError("SESSION_REQUIRED", 403);
+        if (current.row.fixture_key === "member_a") return safeError("CHANNEL_LAB_DENIED", 403);
+        const fixture = await readFixture(env.LOCAL_DEMO_DB);
+        if (!fixture) return safeError("SETUP_REQUIRED", 409);
+        const lab = new LocalChannelLabService(env.LOCAL_DEMO_DB, fixture);
+        if (url.pathname === "/local/api/channel-lab/catalog") return json({ ok: true, catalog: await lab.catalog(), scenarios: lab.listScenarios(), banner: "NO REAL CHANNEL CONNECTION" });
+        if (url.pathname === "/local/api/channel-lab/events") return json({ ok: true, events: await lab.events() });
+        if (url.pathname === "/local/api/channel-lab/deliveries") return json({ ok: true, deliveries: await lab.deliveries() });
+        const detail = /^\/local\/api\/channel-lab\/events\/([0-9a-f-]{36})$/i.exec(url.pathname);
+        if (detail) {
+          const event = await lab.event(detail[1] ?? "");
+          return event ? json({ ok: true, event }) : safeError("CHANNEL_EVENT_NOT_FOUND", 404);
+        }
+        return new Response("Not Found", { status: 404 });
+      } catch (error) {
+        return safeError(error instanceof Error ? error.message : "CHANNEL_LAB_FAILED", 400);
+      }
+    }
+    if (
+      request.method === "GET" &&
       url.pathname.startsWith("/local/api/ai-lab/")
     ) {
       try {
@@ -377,6 +415,35 @@ export default {
           error instanceof Error ? error.message : "AI_LAB_READ_FAILED",
           400,
         );
+      }
+    }
+    if (
+      request.method === "POST" &&
+      (url.pathname === "/local/api/channel-lab/simulate" ||
+        url.pathname === "/local/api/channel-lab/replay" ||
+        url.pathname === "/local/api/channel-lab/reset")
+    ) {
+      try {
+        const current = await requireMutation(request, env.LOCAL_DEMO_DB);
+        if (current.row.fixture_key === "member_a") return safeError("CHANNEL_LAB_DENIED", 403);
+        const fixture = await readFixture(env.LOCAL_DEMO_DB);
+        if (!fixture) return safeError("SETUP_REQUIRED", 409);
+        const lab = new LocalChannelLabService(env.LOCAL_DEMO_DB, fixture);
+        const data = await body(request);
+        if (url.pathname.endsWith("/simulate")) {
+          const scenario = typeof data.scenario === "string" ? data.scenario : "";
+          if (!(channelLabScenarios as readonly string[]).includes(scenario)) return safeError("CHANNEL_SCENARIO_NOT_ALLOWED", 400);
+          return json({ ok: true, result: await lab.simulate(scenario as (typeof channelLabScenarios)[number]) });
+        }
+        if (url.pathname.endsWith("/replay")) {
+          const externalEventId = typeof data.externalEventId === "string" ? data.externalEventId : "";
+          const result = await lab.replay(externalEventId);
+          return result ? json({ ok: true, replay: result }) : safeError("CHANNEL_REPLAY_NOT_FOUND", 404);
+        }
+        return json({ ok: true, result: await lab.reset() });
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "CHANNEL_LAB_FAILED";
+        return safeError(code, ["ORIGIN_REJECTED", "SESSION_REQUIRED", "CSRF_REJECTED", "CHANNEL_LAB_DENIED"].includes(code) ? 403 : 400);
       }
     }
     if (

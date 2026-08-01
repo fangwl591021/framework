@@ -21,7 +21,7 @@ describe("Migration 0009 safety", () => {
 
   it("reapplies safely only through the migration ledger", async () => {
     await reset(); await applyD1Migrations(env.DB, [...migrations]); await applyD1Migrations(env.DB, [...migrations]);
-    expect((await env.DB.prepare("SELECT count(*) count FROM d1_migrations").first<{ count: number }>())?.count).toBe(9);
+    expect((await env.DB.prepare("SELECT count(*) count FROM d1_migrations").first<{ count: number }>())?.count).toBe(10);
     expect((await env.DB.prepare("SELECT count(*) count FROM permissions WHERE id LIKE '019f0000-0000-7000-8000-0000000009%'").first<{ count: number }>())?.count).toBe(13);
   });
 });

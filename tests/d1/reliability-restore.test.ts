@@ -67,7 +67,7 @@ implements BackupProviderPort, BackupStoragePort, RestoreProviderPort, RestoreDr
     const tenants = await env.DB.prepare(
       "SELECT count(*) AS count FROM tenants",
     ).first<{ count: number }>();
-    expect(ledger?.count).toBe(9);
+    expect(ledger?.count).toBe(10);
     expect(tenants?.count).toBe(0);
   }
 

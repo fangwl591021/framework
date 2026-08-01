@@ -376,3 +376,9 @@ Conversational Workbench 將可信 Application Context、versioned Intent、Slot
 [AI Gateway MVP](docs/ai-gateway/README.md) 提供 provider-neutral Task Registry、Policy Routing、Budget／Quota、Cache、Output Validation 與 immutable Usage Evidence。它不擁有 Domain 決策或授權；外部 Provider Adapter 皆 Disabled，只有 deterministic local adapter 經隔離 Local D1 驗證。狀態為 Platform Service Candidate／Contract Approved by Tony after self-review／Architecture and Security Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。
 
 真實 Provider 啟用前治理請閱讀 [AI Provider Enablement Readiness](docs/ai-provider-enablement-readiness/README.md)。此 Platform Governance Service Candidate 只核准至 `approved_for_shadow`；Secret 仍為 planned reference，External Provider、real Shadow、Canary、Production AI、Remote D1 與部署仍為 Disabled／Not Allowed。
+
+## Channel Adapter Foundation
+
+[Channel Adapter Foundation](docs/channel-adapter-foundation/README.md) defines the channel-neutral inbound integration boundary: authenticity verification, bounded normalization, replay-safe delivery, trusted identity resolution, Traffic Protection, the Conversational Workbench bridge, capability-safe rendering, and immutable delivery evidence.
+
+Its status is Platform Integration Service Candidate, Contract Approved by Tony after self-review, Architecture and Security Review Approved, Locally Implemented, Locally Verified, Real Channel Adapters Disabled, Not Deployed, and Production Use Not Allowed. Only `local_web_adapter` is enabled in the Local Demo. LINE, Telegram, and generic webhook adapters remain disabled; there is no provider SDK, remote call, secret, Binding, Remote D1, or deployment.
