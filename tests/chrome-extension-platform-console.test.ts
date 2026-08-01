@@ -11,6 +11,8 @@ import { ALLOWED_STORAGE_KEYS, validateStorageEntries } from "../chrome-extensio
 import { FULL_PAGE_DASHBOARD_PATH, openFullPageDashboard } from "../chrome-extension/shared/extension-navigation.js";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
 import { ADMIN_ROUTE_IDS, normalizeAdminPreferences, resolveAdminRoute, toggleCollapsedGroup } from "../chrome-extension/shared/admin-navigation.js";
+// @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
+import { renderEndpointStateSafely } from "../chrome-extension/shared/endpoint-ui.js";
 
 const root = "chrome-extension";
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -27,6 +29,7 @@ const integrationAdapter = read("shared/integration-adapter.js");
 const platformEndpoints = read("shared/platform-endpoints.js");
 const verificationAdapter = read("shared/verification-adapter.js");
 const integrationStatus = read("shared/integration-status.js");
+const endpointUi = read("shared/endpoint-ui.js");
 const platformStore = read("shared/platform-store.js");
 const navigation = read("shared/extension-navigation.js");
 const background = read("background/service-worker.js");
@@ -118,10 +121,43 @@ describe("LINE OA multi-tenant platform extension", () => {
     expect(dashboardHtml).toContain('id="copy-callback" type="button" disabled');
     expect(dashboardHtml).toContain('id="copy-webhook" type="button" disabled');
     expect(dashboardHtml).toContain("平台後端尚未提供此端點");
-    expect(dashboardApp).toContain('field.value = url ?? "尚未建立"');
-    expect(dashboardApp).toContain("button.disabled = !url");
+    expect(endpointUi).toContain('if (field) field.value = url ?? "尚未建立"');
+    expect(endpointUi).toContain("if (button) button.disabled = !url");
   });
 
+  it("renders endpoint state safely when optional nodes are absent", () => {
+    const warn = vi.fn();
+    const root = { querySelector: vi.fn(() => null) };
+    expect(() => renderEndpointStateSafely(root, "#callback-url", "#copy-callback", "#callback-endpoint-note", null, warn)).not.toThrow();
+    expect(warn).toHaveBeenCalledWith("Missing endpoint UI element", { fieldSelector: "#callback-url", buttonSelector: "#copy-callback", noteSelector: "#callback-endpoint-note" });
+    expect(JSON.stringify(warn.mock.calls)).not.toMatch(/secret|token|credential|userId/i);
+    const field = { value: "" }; const note = { hidden: false, textContent: "" };
+    const partialRoot = { querySelector: vi.fn((selector) => selector === "#callback-url" ? field : selector === "#callback-endpoint-note" ? note : null) };
+    renderEndpointStateSafely(partialRoot, "#callback-url", "#copy-callback", "#callback-endpoint-note", null, vi.fn());
+    expect(field.value).toBe("尚未建立"); expect(note).toEqual({ hidden: false, textContent: "平台後端尚未提供此端點" });
+  });
+
+  it("keeps endpoint selectors and all static ID references aligned with the dashboard HTML", () => {
+    for (const id of ["callback-url", "copy-callback", "callback-endpoint-note", "webhook-url", "copy-webhook", "webhook-endpoint-note"]) expect(dashboardHtml).toContain(`id="${id}"`);
+    const referencedIds = [...dashboardApp.matchAll(/querySelector\("#([A-Za-z0-9_-]+)"\)/g)].map((match) => match[1]);
+    for (const id of new Set(referencedIds)) expect(dashboardHtml, `missing dashboard element #${id}`).toContain(`id="${id}"`);
+  });
+
+  it("uses a LINE Bot account pattern compatible with modern RegExp v-mode", () => {
+    const pattern = dashboardHtml.match(/name="lineBotAccount" pattern="([^"]+)"/)?.[1];
+    expect(pattern).toBe("@[A-Za-z0-9._\\-]{3,32}");
+    expect(() => new RegExp(`^(?:${pattern})$`, "v")).not.toThrow();
+    expect(new RegExp(`^(?:${pattern})$`, "v").test("@demo-oa")).toBe(true);
+  });
+
+  it("contains a bounded initialization failure boundary", () => {
+    expect(dashboardHtml).toContain('id="dashboard-initialization-error"');
+    expect(dashboardApp).toContain("async function initializeDashboard()");
+    expect(dashboardApp).toContain("管理平台初始化失敗，請重新載入擴充功能。");
+    expect(dashboardApp).toContain('console.warn("Dashboard initialization failed")');
+    expect(dashboardApp).toContain("void initializeDashboard();");
+    expect(dashboardApp).not.toContain("void (async () =>");
+  });
   it("localizes status labels and hides reason codes in technical details", () => {
     for (const label of ["尚未建立", "尚未儲存", "後端尚未開放", "等待驗證", "驗證成功", "驗證失敗"]) expect(dashboardHtml + integrationStatus).toContain(label);
     expect(dashboardHtml).toContain('<details id="integration-technical-details"');

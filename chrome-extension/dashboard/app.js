@@ -4,6 +4,7 @@ import { LocalCredentialRegistrationAdapter, validateCredentialInput } from "../
 import { LocalLineIntegrationAdapter, normalizeIntegrationInput } from "../shared/integration-adapter.js";
 import { bindRuntimeActions, refreshContext, refreshHealth } from "../shared/console-runtime.js";
 import { el } from "../shared/console-ui.js";
+import { renderEndpointStateSafely } from "../shared/endpoint-ui.js";
 import { MessageType } from "../shared/messages.js";
 import { PlatformEndpointReasonCode } from "../shared/platform-endpoints.js";
 import { CredentialStorageStatus, DraftStatus, SensitiveInputStatus, localizedIntegrationStatus, resolveCredentialStorageStatus } from "../shared/integration-status.js";
@@ -27,7 +28,9 @@ function appendRow(target, values) { const row = document.createElement("tr"); f
 function setFormBusy(form, busy) { form.setAttribute("aria-busy", String(busy)); form.querySelectorAll("button").forEach((button) => { button.disabled = busy; }); }
 function setInputValue(form, name, value) { const control = form.elements.namedItem(name); if (control) control.value = String(value ?? ""); }
 function clearCredentialControls(form) { for (const name of ["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"]) setInputValue(form, name, ""); }
-function renderEndpointState(fieldSelector, buttonSelector, noteSelector, url) { const field = document.querySelector(fieldSelector); const button = document.querySelector(buttonSelector); const note = document.querySelector(noteSelector); field.value = url ?? "尚未建立"; button.disabled = !url; note.hidden = Boolean(url); note.textContent = url ? "" : "平台後端尚未提供此端點"; }
+function renderEndpointState(fieldSelector, buttonSelector, noteSelector, url) {
+  return renderEndpointStateSafely(document, fieldSelector, buttonSelector, noteSelector, url);
+}
 function renderSensitiveInputStatus() { text("#sensitive-input-status", localizedIntegrationStatus(sensitiveInputStatus)); }
 function updateSensitiveInputStatus(form) {
   const hasSensitiveValue = ["lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"].some((name) => String(form.elements.namedItem(name)?.value ?? "").length > 0);
@@ -237,4 +240,25 @@ document.querySelector("#sidebar-toggle").addEventListener("click", () => { cons
 document.querySelector("#mobile-menu").addEventListener("click", (event) => { const open = !document.body.classList.contains("nav-open"); document.body.classList.toggle("nav-open", open); event.currentTarget.setAttribute("aria-expanded", String(open)); });
 
 bindRuntimeActions(document);
-void (async () => { const stored = await getSafeStorage(["uiPreferences"]); uiPreferences = Object.freeze({ ...normalizeAdminPreferences(stored.uiPreferences), selectedAdminRoute: stored.uiPreferences?.selectedAdminRoute }); snapshot = await loadPlatformState(); const expiredOnLoad = evaluatePlatformLifecycle(snapshot) === PlatformLifecycle.SESSION_EXPIRED; if (expiredOnLoad) { snapshot = createPlatformSnapshot(); await savePlatformState(snapshot); } renderPlatform(); if (expiredOnLoad) text("#auth-message", "SESSION_EXPIRED · 請重新登入"); await refreshContext(document); await refreshHealth(document); })();
+async function initializeDashboard() {
+  try {
+    const stored = await getSafeStorage(["uiPreferences"]);
+    uiPreferences = Object.freeze({ ...normalizeAdminPreferences(stored.uiPreferences), selectedAdminRoute: stored.uiPreferences?.selectedAdminRoute });
+    snapshot = await loadPlatformState();
+    const expiredOnLoad = evaluatePlatformLifecycle(snapshot) === PlatformLifecycle.SESSION_EXPIRED;
+    if (expiredOnLoad) { snapshot = createPlatformSnapshot(); await savePlatformState(snapshot); }
+    renderPlatform();
+    if (expiredOnLoad) text("#auth-message", "SESSION_EXPIRED · 請重新登入");
+    await refreshContext(document);
+    await refreshHealth(document);
+  } catch {
+    const errorNode = document.querySelector("#dashboard-initialization-error");
+    if (errorNode) {
+      errorNode.textContent = "管理平台初始化失敗，請重新載入擴充功能。";
+      errorNode.hidden = false;
+    }
+    console.warn("Dashboard initialization failed");
+  }
+}
+
+void initializeDashboard();
