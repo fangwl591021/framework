@@ -20,6 +20,8 @@ import {
 } from "../platform-observability";
 import { LocalIdentityKeys, LocalQrKeys } from "./keys";
 import { seedLocalProviderGovernance } from "./provider-readiness-service";
+import { channelPermissions } from "../channel-adapter";
+import { digestIdentitySubject } from "../persistence/crypto";
 
 export interface DemoFixtureState {
   tenantA: string;
@@ -33,6 +35,7 @@ export interface DemoFixtureState {
   operatorMembership: string;
   eventReference: string;
   supportCode: string;
+  channelAccountKey: string;
 }
 const actor = `digest:${"a".repeat(64)}`;
 const ctx = (key: string): MutationContext => ({
@@ -154,6 +157,13 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
   const owner = await core.createPlatformUser(ctx("owner-user"));
   const member = await core.createPlatformUser(ctx("member-user"));
   const operator = await core.createPlatformUser(ctx("operator-user"));
+  const ownerIdentity = await core.linkExternalIdentity(
+    owner.id,
+    "web",
+    "local-account-a",
+    "local-user-a",
+    ctx("owner-channel-identity"),
+  );
   const tenant = await core.createTenant(
     "Local Demo Tenant A",
     ctx("tenant-a"),
@@ -199,6 +209,7 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
       ...Object.values(eventPermissionPolicy),
       ...Object.values(businessNetworkPermissions),
       ...Object.values(observabilityPermissions),
+      ...Object.values(channelPermissions),
     ]),
   ];
   await core.createTenantRole(
@@ -260,6 +271,50 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
     },
     ctx("app-b"),
   );
+  const suspendedChannelDigest = await digestIdentitySubject(
+    keys.current(),
+    "web",
+    "local-account-a",
+    "suspended_identity",
+  );
+  await db.batch([
+    db.prepare(
+      `INSERT INTO channel_accounts (
+        channel_account_key,channel_type,tenant_id,application_id,adapter_key,status,
+        signature_policy_version,response_policy_version,secret_reference,version,created_at,updated_at
+      ) VALUES ('local-account-a','web',?1,?2,'local_web_adapter','enabled_local_only',1,1,NULL,1,?3,?3)`,
+    ).bind(tenant.id, appA.id, Date.now()),
+    db.prepare(
+      `INSERT INTO channel_accounts (
+        channel_account_key,channel_type,tenant_id,application_id,adapter_key,status,
+        signature_policy_version,response_policy_version,secret_reference,version,created_at,updated_at
+      ) VALUES ('line-account-local-disabled','line',?1,?2,'disabled_line_adapter','disabled',1,1,NULL,1,?3,?3)`,
+    ).bind(tenant.id, appA.id, Date.now()),
+    db.prepare(
+      `INSERT INTO channel_accounts (
+        channel_account_key,channel_type,tenant_id,application_id,adapter_key,status,
+        signature_policy_version,response_policy_version,secret_reference,version,created_at,updated_at
+      ) VALUES ('telegram-account-local-disabled','telegram',?1,?2,'disabled_telegram_adapter','disabled',1,1,NULL,1,?3,?3)`,
+    ).bind(tenant.id, appA.id, Date.now()),
+    db.prepare(
+      `INSERT INTO channel_identity_links (
+        id,tenant_id,application_id,channel_account_key,channel_type,external_user_reference_digest,
+        identity_id,membership_id,status,verified_at,version,created_at,updated_at
+      ) VALUES (?1,?2,?3,'local-account-a','web',?4,?5,?6,'linked',?7,1,?7,?7)`,
+    ).bind(uuid.generate(), tenant.id, appA.id, `v${ownerIdentity.digestKeyVersion}:${ownerIdentity.subjectDigest}`, ownerIdentity.id, ownerMembership.id, Date.now()),
+    db.prepare(
+      `INSERT INTO channel_identity_links (
+        id,tenant_id,application_id,channel_account_key,channel_type,external_user_reference_digest,
+        identity_id,membership_id,status,verified_at,version,created_at,updated_at
+      ) VALUES (?1,?2,?3,'local-account-a','web',?4,?5,?6,'suspended',NULL,1,?7,?7)`,
+    ).bind(uuid.generate(), tenant.id, appA.id, `v${keys.current().version}:${suspendedChannelDigest}`, ownerIdentity.id, ownerMembership.id, Date.now()),
+    db.prepare(
+      `INSERT INTO channel_response_policies (
+        id,tenant_id,application_id,channel_account_key,policy_version,max_text_length,max_messages,
+        supports_buttons,supports_cards,locale_allowlist_json,status,created_at
+      ) VALUES (?1,?2,?3,'local-account-a',1,1000,4,1,1,'["zh-TW","en"]','active',?4)`,
+    ).bind(uuid.generate(), tenant.id, appA.id, Date.now()),
+  ]);
   const tenantB = await core.createTenant(
     "Local Demo Tenant B",
     ctx("tenant-b"),
@@ -512,6 +567,7 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
     operatorMembership: operatorMembership.id,
     eventReference: seeded.event.id,
     supportCode: diagnostic.supportCode,
+    channelAccountKey: "local-account-a",
   };
   await db
     .prepare(

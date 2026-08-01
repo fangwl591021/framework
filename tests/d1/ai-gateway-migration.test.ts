@@ -14,5 +14,5 @@ describe("Migration 0008 safety",()=>{
     expect((await env.DB.prepare("SELECT count(*) count FROM sqlite_master WHERE type='trigger' AND name='trg_permissions_immutable_insert'").first<{count:number}>())?.count).toBe(1);
     await expect(env.DB.prepare("INSERT INTO permissions(id,permission_key,description,status,created_at,updated_at) VALUES('019f0000-0000-7000-8000-999999999997','ai:bad','bad','active',1,1)").run()).rejects.toThrow(/permission_vocabulary_immutable/);
   });
-  it("reapplies only through the migration ledger",async()=>{await reset();await applyD1Migrations(env.DB,[...migrations]);await applyD1Migrations(env.DB,[...migrations]);expect((await env.DB.prepare("SELECT count(*) count FROM d1_migrations").first<{count:number}>())?.count).toBe(9);expect((await env.DB.prepare("SELECT count(*) count FROM permissions WHERE permission_key LIKE 'ai_%'").first<{count:number}>())?.count).toBe(25);});
+  it("reapplies only through the migration ledger",async()=>{await reset();await applyD1Migrations(env.DB,[...migrations]);await applyD1Migrations(env.DB,[...migrations]);expect((await env.DB.prepare("SELECT count(*) count FROM d1_migrations").first<{count:number}>())?.count).toBe(10);expect((await env.DB.prepare("SELECT count(*) count FROM permissions WHERE permission_key LIKE 'ai_%'").first<{count:number}>())?.count).toBe(25);});
 });

@@ -206,3 +206,9 @@ Application 組裝與可選模組治理請從 [Application Assembly](docs/applic
 AI 任務治理請從 [AI Gateway MVP](docs/ai-gateway/README.md) 開始，再閱讀 [Contract](docs/ai-gateway/01-CONTRACT.md)、[Routing Policy](docs/ai-gateway/04-ROUTING-POLICY.md)、[Budget／Quota](docs/ai-gateway/05-BUDGET-QUOTA.md) 與 [Security Boundary](docs/ai-gateway/11-SECURITY-BOUNDARY.md)。Production Workbench 仍使用 deterministic resolver；gateway shadow 僅限 Local Test，外部 Provider、Remote D1、Binding、Secret 與 Deployment 均未啟用。
 
 Provider 實際啟用前必須再通過 [AI Provider Enablement Readiness](docs/ai-provider-enablement-readiness/README.md) 的 Lifecycle、Compliance、Data Policy、Secret Reference、Exact Matrix、Kill Switch、Hard Ceiling、Rollback 與 separated Approval gates。本輪最高為 `approved_for_shadow`，且不具有 real Shadow、Canary 或 Production authority。
+
+## Channel Adapter Reading Path
+
+Begin with [Channel Adapter Foundation](docs/channel-adapter-foundation/README.md), then read the [Contract](docs/channel-adapter-foundation/01-CHANNEL-ADAPTER-CONTRACT.md), [Authenticity Verification](docs/channel-adapter-foundation/03-AUTHENTICITY-VERIFICATION.md), [Replay and Deduplication](docs/channel-adapter-foundation/04-REPLAY-DEDUP.md), [Identity Resolution](docs/channel-adapter-foundation/05-IDENTITY-RESOLUTION.md), [Workbench Bridge](docs/channel-adapter-foundation/07-WORKBENCH-BRIDGE.md), and [Security Boundary](docs/channel-adapter-foundation/13-SECURITY-BOUNDARY.md).
+
+The Channel Adapter is a Platform Integration Service Candidate. It never owns Tenant, Identity, Permission, intent, or Domain authority. Only the Local Web adapter is executable and only through the local composition. LINE, Telegram, generic webhook delivery, Remote D1, secrets, production bindings, and deployment remain disabled and prohibited.
