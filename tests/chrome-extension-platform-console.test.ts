@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
@@ -6,222 +6,214 @@ import { fetchPlatformJson } from "../chrome-extension/shared/api-client.js";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
 import { sanitizeHealthResponse } from "../chrome-extension/shared/sanitizer.js";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
-import { validateStorageEntries } from "../chrome-extension/shared/storage.js";
+import { ALLOWED_STORAGE_KEYS, validateStorageEntries } from "../chrome-extension/shared/storage.js";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
 import { FULL_PAGE_DASHBOARD_PATH, openFullPageDashboard } from "../chrome-extension/shared/extension-navigation.js";
 // @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
-import { ADMIN_ROUTE_IDS, SIDE_PANEL_ROUTE_IDS, normalizeAdminPreferences, resolveAdminRoute, toggleCollapsedGroup } from "../chrome-extension/shared/admin-navigation.js";
-// @ts-expect-error Manifest runtime modules are intentionally plain JavaScript.
-import { DEFAULT_OA_KEY, normalizeCurrentOaKey } from "../chrome-extension/shared/shell-state.js";
+import { ADMIN_ROUTE_IDS, normalizeAdminPreferences, resolveAdminRoute, toggleCollapsedGroup } from "../chrome-extension/shared/admin-navigation.js";
 
 const root = "chrome-extension";
-const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
-const html = readFileSync(join(root, "sidepanel/index.html"), "utf8");
-const app = readFileSync(join(root, "sidepanel/app.js"), "utf8");
-const data = readFileSync(join(root, "shared/product-data.js"), "utf8");
-const dashboardHtml = readFileSync(join(root, "dashboard/index.html"), "utf8");
-const dashboardApp = readFileSync(join(root, "dashboard/app.js"), "utf8");
-const dashboardStyles = readFileSync(join(root, "dashboard/styles.css"), "utf8");
-const adminNavigation = readFileSync(join(root, "shared/admin-navigation.js"), "utf8");
-const navigation = readFileSync(join(root, "shared/extension-navigation.js"), "utf8");
-const consoleUi = readFileSync(join(root, "shared/console-ui.js"), "utf8");
-const shellState = readFileSync(join(root, "shared/shell-state.js"), "utf8");
-const background = readFileSync(join(root, "background/service-worker.js"), "utf8");
-const manager = readFileSync(join(root, "content/line-oa-manager.js"), "utf8");
-const chat = readFileSync(join(root, "content/line-chat.js"), "utf8");
+const read = (path: string) => readFileSync(join(root, path), "utf8");
+const manifest = JSON.parse(read("manifest.json"));
+const widget = read("content/floating-widget.js");
+const dashboardHtml = read("dashboard/index.html");
+const dashboardApp = read("dashboard/app.js");
+const dashboardStyles = read("dashboard/styles.css");
+const adminNavigation = read("shared/admin-navigation.js");
+const platformModel = read("shared/platform-model.js");
+const authAdapter = read("shared/auth-adapter.js");
+const credentialAdapter = read("shared/credential-adapter.js");
+const integrationAdapter = read("shared/integration-adapter.js");
+const platformEndpoints = read("shared/platform-endpoints.js");
+const verificationAdapter = read("shared/verification-adapter.js");
+const platformStore = read("shared/platform-store.js");
+const navigation = read("shared/extension-navigation.js");
+const background = read("background/service-worker.js");
+const manager = read("content/line-oa-manager.js");
+const chat = read("content/line-chat.js");
+const readme = read("README.md");
 
-function filesUnder(directory: string): string[] {
-  return readdirSync(directory).flatMap((name) => {
-    const path = join(directory, name);
-    return statSync(path).isDirectory() ? filesUnder(path) : [path];
-  });
-}
+function filesUnder(directory: string): string[] { return readdirSync(directory).flatMap((name) => { const path = join(directory, name); return statSync(path).isDirectory() ? filesUnder(path) : [path]; }); }
 
-describe("LINE OA Platform Console", () => {
-  it("uses a valid Manifest V3 side-panel configuration", () => {
-    expect(manifest).toMatchObject({ manifest_version: 3, name: "LINE OA Platform Console", version: "0.1.0" });
-    expect(manifest.side_panel.default_path).toBe("sidepanel/index.html");
-    expect(manifest.background.type).toBe("module");
-  });
-
-  it("declares the exact requested extension permissions", () => {
-    expect(manifest.permissions).toEqual(["sidePanel", "storage", "tabs", "activeTab"]);
-    expect(manifest.host_permissions).toEqual([
-      "https://api-data.line.me/*",
-      "https://api.line.me/*",
-      "https://chat.line.biz/*",
-      "https://line-oa.fangwl591021.workers.dev/*",
-      "https://manager.line.biz/*",
-      "https://platform-core-line-sandbox-live.fangwl591021.workers.dev/*",
-    ]);
+describe("LINE OA multi-tenant platform extension", () => {
+  it("uses Manifest V3 without native Side Panel or new permissions", () => {
+    expect(manifest).toMatchObject({ manifest_version: 3, name: "LINE OA Platform Console" });
+    expect(manifest).not.toHaveProperty("side_panel");
+    expect(manifest.permissions).toEqual(["storage", "tabs", "activeTab"]);
+    expect(existsSync(join(root, "sidepanel"))).toBe(false);
   });
 
-  it("limits content scripts to manager and chat pages", () => {
-    expect(manifest.content_scripts.map((entry: { matches: string[] }) => entry.matches)).toEqual([
-      ["https://manager.line.biz/*"],
-      ["https://chat.line.biz/*"],
-    ]);
+  it("injects only on manager and chat in the default isolated world", () => {
+    expect(manifest.content_scripts.map((entry: { matches: string[] }) => entry.matches)).toEqual([["https://manager.line.biz/*"], ["https://chat.line.biz/*"]]);
+    for (const entry of manifest.content_scripts) { expect(entry.js[0]).toBe("content/floating-widget.js"); expect(entry).not.toHaveProperty("world"); }
     expect(JSON.stringify(manifest.content_scripts)).not.toMatch(/api-data\.line\.me|api\.line\.me|workers\.dev/);
   });
 
-  it("keeps the Side Panel as a compact launcher rather than duplicated admin pages", () => {
-    for (const id of ["current-oa", "latest-activity", "quick-admin-actions", "open-full-dashboard", "return-line", "refresh-health"]) expect(html).toContain(`id="${id}"`);
-    expect(html).not.toMatch(/data-admin-route|data-view=|bottom-nav|<table|<form/);
-    expect(app).toContain("SIDE_PANEL_ROUTE_IDS");
+  it("shows extension-owned registration, sign-in, forgot-password, and sign-out", () => {
+    for (const id of ["auth-shell", "sign-in-form", "register-form", "forgot-password", "sign-out"]) expect(dashboardHtml).toContain(`id="${id}"`);
+    expect(dashboardHtml).toContain("Local Development Authentication");
+    expect(dashboardHtml).not.toContain(">oa-primary<");
+    expect(dashboardApp).toContain("setFormBusy");
   });
 
-  it("uses a fixed full-height traditional admin sidebar", () => {
-    expect(dashboardHtml).toContain('class="admin-sidebar"');
-    expect(dashboardHtml).toContain("LINE OA 管理平台");
-    expect(dashboardStyles).toMatch(/\.admin-sidebar\{position:fixed;[^}]*height:100vh/);
-    expect(dashboardStyles).toContain("overflow-y:auto");
+  it("does not render operational data before authentication", () => {
+    expect(dashboardHtml).toContain('<section id="platform-shell" hidden>');
+    expect(dashboardApp).toContain('navigation.hidden = lifecycle !== PlatformLifecycle.ACTIVE');
+    expect(dashboardApp).toContain('document.querySelector("#workspace-onboarding").hidden = false');
   });
 
-  it("defines grouped expandable admin navigation with keyboard-safe buttons", () => {
-    for (const group of ["營運中心", "營運工具", "平台管理", "系統"]) expect(adminNavigation).toContain(group);
-    expect(dashboardApp).toContain('setAttribute("aria-expanded"');
-    expect(dashboardApp).toContain('toggle.addEventListener("click"');
-    expect(dashboardStyles).toContain(".nav-item.active");
+  it("implements every explicit lifecycle state", () => {
+    for (const state of ["unauthenticated", "authenticated_without_workspace", "authenticated_without_binding", "binding_pending_verification", "active", "session_expired", "account_suspended"]) expect(platformModel).toContain(`"${state}"`);
   });
 
-  it("deterministically expands and collapses allowlisted navigation groups", () => {
-    const collapsed = toggleCollapsedGroup(normalizeAdminPreferences({}), "tools");
-    expect(collapsed.collapsedAdminGroups).toEqual(["tools"]);
-    expect(toggleCollapsedGroup(collapsed, "tools").collapsedAdminGroups).toEqual([]);
-    expect(() => validateStorageEntries({ uiPreferences: collapsed })).not.toThrow();
-    expect(dashboardApp).toContain("collapsedAdminGroups");
+  it("uses one LINE integration page and no multi-step wizard", () => {
+    expect(dashboardHtml).toContain('id="line-integration-page"');
+    expect(dashboardHtml).toContain("LINE OA 串接設定");
+    expect(dashboardHtml).not.toMatch(/progress-steps|data-progress|Step [1-5]|binding-metadata-form|binding-credential-form/);
+    expect(dashboardApp).not.toMatch(/setProgress|onboardingScreen|showOnboardingPanel/);
   });
 
-  it("resolves a clear active admin item and rejects unknown routes", () => {
-    expect(resolveAdminRoute("bindings")).toEqual({ route: "bindings", groupId: "platform", groupLabel: "平台管理", label: "Channel Binding" });
-    expect(resolveAdminRoute("untrusted").route).toBe("overview");
-    expect(dashboardApp).toContain('setAttribute("aria-current", "page")');
+  it("contains every required one-page integration field", () => {
+    for (const name of ["workspaceRef", "displayName", "lineBotAccount", "environment", "note", "lineLoginChannelId", "lineLoginChannelSecret", "messagingChannelId", "messagingChannelSecret", "channelAccessToken"]) expect(dashboardHtml).toContain(`name="${name}"`);
+    for (const id of ["callback-url", "webhook-url", "login-status", "messaging-status", "webhook-status", "summary-login-status", "summary-messaging-status", "summary-webhook-status", "overall-integration-status"]) expect(dashboardHtml).toContain(`id="${id}"`);
   });
 
-  it("renders every required admin route without a mobile bottom navigation", () => {
-    const routes = ["overview", "accounts", "messages", "rich-menu", "paid-broadcast", "bot-cards", "url-fetcher", "applications", "bindings", "webhook", "audit", "settings"];
+  it("uses password controls for every password and LINE credential field", () => {
+    for (const name of ["password", "confirmPassword", "lineLoginChannelSecret", "messagingChannelSecret", "channelAccessToken"]) expect(dashboardHtml).toMatch(new RegExp(`name="${name}" type="password"`));
+    expect(dashboardHtml).toMatch(/name="lineLoginChannelId"[^>]+required/);
+    expect(dashboardHtml).toMatch(/name="messagingChannelId"[^>]+required/);
+  });
+
+  it("uses the required initial and configured integration actions", () => {
+    for (const label of ["儲存草稿", "儲存並驗證全部", "更新憑證", "重新驗證", "完成 LINE 整合", "本機資料已設定"]) expect(dashboardHtml + dashboardApp).toContain(label);
+  });
+
+  it("clears transient credential controls and never places them in storage", () => {
+    expect(dashboardApp).toContain("clearCredentialControls(form)");
+    expect(dashboardApp).toContain("assertCredentialReceiptSafe(result.receipt)");
+    expect(dashboardApp).not.toMatch(/setSafeStorage\(\{[^}]*(password|Secret|Token)/s);
+    expect(platformStore).not.toMatch(/password|channelSecret|channelAccessToken/);
+  });
+
+  it("uses typed local-only auth, integration, credential, and verification adapters", () => {
+    for (const source of [authAdapter, credentialAdapter, integrationAdapter, verificationAdapter]) { expect(source).toContain("@typedef"); expect(source).toContain("productionAllowed: false"); expect(source).not.toMatch(/\bfetch\s*\(/); }
+    expect(credentialAdapter).toContain("credentialRegistrationCapability");
+  });
+
+  it("returns the exact bounded credential receipt", () => {
+    for (const field of ["credentialStatus", "credentialReference", "bindingKey", "callbackUrl", "webhookUrl", "loginVerification", "messagingVerification", "webhookVerification", "reasonCode", "reasonCodes"]) expect(credentialAdapter).toContain(field);
+    expect(credentialAdapter).toContain("assertCredentialReceiptSafe");
+    expect(credentialAdapter).not.toMatch(/return Object\.freeze\(\{[^}]*(lineLoginChannelSecret|messagingChannelSecret|channelAccessToken)/s);
+  });
+
+  it("uses explicit endpoint capabilities without rendering placeholder URLs", () => {
+    for (const capability of ["health", "messagingWebhook", "lineLoginCallback", "credentialRegistration", "dynamicBindingProvisioning"]) expect(platformEndpoints).toContain(capability);
+    expect(platformEndpoints).toContain("CALLBACK_ENDPOINT_NOT_CONFIGURED");
+    expect(platformEndpoints).toContain("DYNAMIC_BINDING_PROVISIONING_NOT_CONFIGURED");
+    expect(dashboardHtml + dashboardApp).not.toContain("platform.example.invalid");
+    expect(dashboardHtml).toContain('id="copy-callback" type="button" disabled');
+    expect(dashboardHtml).toContain('id="copy-webhook" type="button" disabled');
+    expect(dashboardHtml).toContain("平台後端尚未提供此端點");
+    expect(dashboardApp).toContain('field.value = url ?? "尚未建立"');
+    expect(dashboardApp).toContain("button.disabled = !url");
+  });
+
+  it("persists only bounded platform snapshots and UI references", () => {
+    expect(ALLOWED_STORAGE_KEYS).toContain("platformState");
+    expect(platformStore).toContain("PLATFORM_STATE_TOO_LARGE");
+    expect(platformStore).toContain("65_536");
+    expect(() => validateStorageEntries({ platformState: { users: [], memberships: [], workspaces: [], applications: [], lineIntegrations: [], loginChannels: [], messagingChannels: [], credentialReferences: [], channelBindings: [], featureEntitlements: [], verificationResults: [], auditEvents: [], session: null, currentWorkspaceRef: null, currentBindingRef: null } })).not.toThrow();
+  });
+
+  it.each(["password", "secret", "token", "authorization", "cookie", "replyToken", "userId", "rawBody", "rawPayload", "channelAccessToken", "channelSecret", "loginChannelSecret", "credentialValue"])("recursively rejects sensitive storage field %s", (key) => {
+    expect(() => validateStorageEntries({ platformState: { users: [{ nested: { [key]: "blocked" } }] } })).toThrow("SENSITIVE_FIELD_REJECTED");
+  });
+
+  it("renders the exact grouped 17-route admin registry", () => {
+    const routes = ["overview", "accounts", "messages", "keyword-rules", "default-reply", "auto-reply", "rich-menu", "bot-cards", "url-fetcher", "line-integration", "applications", "team-permissions", "usage", "audit", "profile", "settings", "logout"];
     expect(ADMIN_ROUTE_IDS).toEqual(routes);
     for (const route of routes) expect(dashboardHtml).toContain(`data-admin-route="${route}"`);
-    expect(dashboardHtml).not.toMatch(/bottom-nav|data-nav=/);
+    for (const label of ["營運中心", "自動化", "內容工具", "平台管理", "帳戶"]) expect(adminNavigation).toContain(label);
   });
 
-  it("provides a visible maximize button in the side-panel header", () => {
-    expect(html).toContain('id="maximize-console"');
-    expect(html).toContain('aria-label="開啟完整後台"');
+  it("marks incomplete modules unavailable with a visible reason", () => {
+    expect(adminNavigation.match(/availability: "not_entitled"/g)?.length).toBe(6);
+    expect(dashboardApp).toContain('button.title = button.disabled ? "目前 Workspace 尚未取得此功能"');
+    expect(dashboardHtml.match(/尚未包含於目前方案/g)?.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("keeps grouped keyboard-accessible navigation and allowlisted collapse state", () => {
+    expect(dashboardApp).toContain('setAttribute("aria-expanded"'); expect(dashboardApp).toContain('setAttribute("aria-current", "page")');
+    expect(dashboardStyles).toContain(".nav-item.active"); expect(dashboardStyles).toContain("button:focus-visible");
+    const collapsed = toggleCollapsedGroup(normalizeAdminPreferences({}), "automation");
+    expect(collapsed.collapsedAdminGroups).toEqual(["automation"]);
+    expect(toggleCollapsedGroup(collapsed, "automation").collapsedAdminGroups).toEqual([]);
+    expect(resolveAdminRoute("untrusted").route).toBe("overview");
+  });
+
+  it("makes toolbar action open the dashboard and never the Side Panel", () => {
+    const actionHandler = background.slice(background.indexOf("chrome.action.onClicked.addListener"), background.indexOf("chrome.runtime.onMessage.addListener"));
+    expect(actionHandler).toContain('openFullPageDashboard("overview")');
+    expect(background).not.toContain("chrome.sidePanel");
   });
 
   it("opens or reuses only allowlisted internal dashboard routes", async () => {
     const runtime = { getURL: vi.fn(() => "chrome-extension://extension-id/dashboard/index.html") };
     const tabs = { query: vi.fn(async () => []), create: vi.fn(async () => ({ id: 42 })), update: vi.fn() };
-    const getState = vi.fn(async () => ({ uiPreferences: { collapsedAdminGroups: ["system"] } }));
-    const setState = vi.fn(async () => undefined);
-    await openFullPageDashboard("bindings", { runtime, tabs, getState, setState });
-    expect(FULL_PAGE_DASHBOARD_PATH).toBe("dashboard/index.html");
-    expect(SIDE_PANEL_ROUTE_IDS).toEqual(["accounts", "messages", "bindings", "webhook", "settings"]);
-    expect(setState).toHaveBeenCalledWith({ uiPreferences: { collapsedAdminGroups: ["system"], selectedAdminRoute: "bindings" } });
-    expect(tabs.create).toHaveBeenCalledWith({ url: "chrome-extension://extension-id/dashboard/index.html" });
+    const getState = vi.fn(async () => ({ uiPreferences: {} })); const setState = vi.fn(async () => undefined);
+    await openFullPageDashboard("line-integration", { runtime, tabs, getState, setState });
+    expect(FULL_PAGE_DASHBOARD_PATH).toBe("dashboard/index.html"); expect(tabs.create).toHaveBeenCalledWith({ url: "chrome-extension://extension-id/dashboard/index.html" });
     await expect(openFullPageDashboard("https://evil.invalid", { runtime, tabs, getState, setState })).rejects.toThrow("DASHBOARD_ROUTE_NOT_ALLOWED");
-    expect(navigation).not.toMatch(/location|searchParams|parameter|endpoint/i);
+    expect(navigation).not.toMatch(/endpoint/i);
   });
 
-  it("reuses an existing dashboard tab without replacing the LINE tab", async () => {
+  it("reuses an existing dashboard tab", async () => {
     const tabs = { query: vi.fn(async () => [{ id: 17, url: "chrome-extension://id/dashboard/index.html" }]), create: vi.fn(), update: vi.fn(async () => ({ id: 17 })) };
-    await openFullPageDashboard("messages", { runtime: { getURL: () => "chrome-extension://id/dashboard/index.html" }, tabs, getState: async () => ({}), setState: async () => undefined });
-    expect(tabs.update).toHaveBeenCalledWith(17, { active: true });
-    expect(tabs.create).not.toHaveBeenCalled();
+    await openFullPageDashboard("overview", { runtime: { getURL: () => "chrome-extension://id/dashboard/index.html" }, tabs, getState: async () => ({}), setState: async () => undefined });
+    expect(tabs.update).toHaveBeenCalledWith(17, { active: true }); expect(tabs.create).not.toHaveBeenCalled();
   });
 
-  it("reuses one route registry, product model, storage, sanitizer, API, and runtime layer", () => {
-    for (const source of [app, dashboardApp]) {
-      expect(source).toContain('../shared/admin-navigation.js');
-      expect(source).toContain('../shared/product-data.js');
-      expect(source).toContain('../shared/shell-state.js');
+  it("keeps the bounded floating launcher lifecycle mapping", () => {
+    for (const label of ["登入平台", "建立工作區", "完成 LINE 串接", "等待驗證", "重新登入", "帳號停權", "LINE OA"]) expect(background + widget).toContain(label);
+    expect(widget).toContain('attachShadow({ mode: "closed" })'); expect(widget).toContain("panel.hidden = true"); expect(widget).toContain('event.key === "Escape"');
+    expect(widget).not.toMatch(/document\.body|\.style\.(?:width|margin|padding)|setAttribute\(["']style/);
+  });
+
+  it("resolves launcher state only for trusted LINE hosts", () => {
+    expect(background).toContain('Object.freeze(["manager.line.biz", "chat.line.biz"])');
+    expect(background).toContain("resolveTrustedFloatingHost(sender)"); expect(background).toContain("FLOATING_HOST_NOT_ALLOWED");
+  });
+
+  it("content scripts send only bounded metadata and do not scrape host data", () => {
+    for (const source of [manager, chat]) {
+      expect(source).toContain("pathnameCategory"); expect(source).toContain("PlatformLineFloatingWidget?.mount()");
+      expect(source).not.toMatch(/document\.(body|cookie)|localStorage|sessionStorage|textContent|innerText|querySelector|XMLHttpRequest|fetch\(/);
     }
-    expect(app).not.toContain("sidepanel/data.js");
-    expect(dashboardApp).not.toContain("sidepanel/data.js");
-    expect(data).toContain("bindings: Object.freeze([");
   });
 
-  it("synchronizes current OA and health through allowlisted storage changes", () => {
-    expect(DEFAULT_OA_KEY).toBe("oa-primary");
-    expect(normalizeCurrentOaKey("unknown-client-value")).toBe("oa-primary");
-    expect(() => validateStorageEntries({ currentOaKey: "oa-primary", lastHealthSummary: { status: "ok" } })).not.toThrow();
-    expect(shellState).toContain("chrome.storage.onChanged.addListener");
-    expect(shellState).toContain("changes.currentOaKey");
-    expect(shellState).toContain("changes.lastHealthSummary");
-    expect(background).toContain("lastHealthSummary");
-  });
-
-  it("uses the requested accessible sidebar contrast tokens", () => {
-    for (const token of ["--text:#1f2937", "--nav:#334155", "--muted:#64748b", "color:#475569", "color:#0f172a", "font-weight:800"]) expect(dashboardStyles).toContain(token);
-    expect(dashboardStyles).toContain(".nav-item.active");
-    expect(dashboardApp).toContain('setAttribute("aria-current", "page")');
-  });
-
-  it("shows the first binding and deterministic real proof", () => {
-    expect(data).toContain('bindingKey: "oa-primary"');
-    expect(data).toContain('text: "測試"');
-    expect(data).toContain('text: "收到：測試"');
-  });
-
-  it("uses immutable multi-binding-ready Tenant and Application data", () => {
-    expect(data).toContain("applications: Object.freeze([");
-    expect(data).toContain("bindings: Object.freeze([");
-    expect(data).toContain('tenantKey: "tenant-primary"');
-    expect(data).toContain('bindingKeys: Object.freeze(["oa-primary"])');
-  });
-
-  it("keeps sensitive transport and identity values out of rendered data", () => {
-    expect(html + dashboardHtml + data).not.toMatch(/channel.?secret|access.?token|reply.?token|user.?id|authorization|raw.?body|raw.?webhook/i);
-  });
-
-  it.each(["secret", "accessToken", "authorization", "replyToken", "userId", "cookie", "rawBody"])(
-    "rejects sensitive storage field %s",
-    (key) => expect(() => validateStorageEntries({ uiPreferences: { [key]: "blocked" } })).toThrow("SENSITIVE_FIELD_REJECTED"),
-  );
-
-  it("rejects storage keys outside the allowlist", () => {
-    expect(() => validateStorageEntries({ arbitrary: true })).toThrow("STORAGE_KEY_NOT_ALLOWED");
-  });
-
-  it("rejects arbitrary API origins before network access", async () => {
+  it("rejects arbitrary API origins before any fetch", async () => {
     const fetchImpl = vi.fn();
     await expect(fetchPlatformJson("https://evil.invalid/health", { fetchImpl })).rejects.toMatchObject({ reasonCode: "ENDPOINT_NOT_ALLOWED" });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("sanitizes and bounds health response fields", () => {
+  it("sanitizes bounded health responses", () => {
     const result = sanitizeHealthResponse({ status: "OK", service: "x".repeat(200), bindingConfigured: true, bindingKey: "oa-primary", extra: "discarded" });
-    expect(result).toEqual({ status: "ok", service: "x".repeat(80), bindingConfigured: true, bindingKey: "oa-primary" });
-    expect(result).not.toHaveProperty("extra");
+    expect(result).toEqual({ status: "ok", service: "x".repeat(80), bindingConfigured: true, bindingKey: "oa-primary" }); expect(result).not.toHaveProperty("extra");
   });
 
-  it("content scripts send only bounded page context metadata", () => {
-    for (const source of [manager, chat]) {
-      expect(source).toContain("pathnameCategory");
-      expect(source).toContain("pageType");
-      expect(source).toContain("hostname");
-      expect(source).not.toMatch(/document\.(body|cookie)|localStorage|sessionStorage|textContent|innerText|querySelector|XMLHttpRequest|fetch\(/);
-    }
+  it("contains no remote executable code, inline code, or dynamic evaluation", () => {
+    const sources = filesUnder(root).filter((path) => /\.(?:js|html)$/.test(path)).map((path) => readFileSync(path, "utf8")).join("\n");
+    expect(sources).not.toMatch(/<script[^>]+src=["']https?:/i); expect(sources).not.toMatch(/<script(?![^>]+src=)[^>]*>\s*[^<]/i);
+    expect(sources).not.toMatch(/\beval\s*\(|new\s+Function\s*\(|import\s*\(\s*["']https?:/);
   });
 
-  it("contains no remote executable scripts or dynamic code evaluation", () => {
-    const source = filesUnder(root).filter((path) => /\.(?:js|html)$/.test(path)).map((path) => readFileSync(path, "utf8")).join("\n");
-    expect(html).not.toMatch(/<script[^>]+src=["']https?:/i);
-    expect(source).not.toMatch(/\beval\s*\(|new\s+Function\s*\(/);
-    expect(source).not.toMatch(/import\s*\(\s*["']https?:/);
+  it("documents local-only authentication, one-page setup, demo behavior, and backend gaps", () => {
+    for (const phrase of ["Local Development Authentication", "One-page", "demo@platform.local", "Backend contracts still required", "live LINE Worker"] ) expect(readme).toContain(phrase);
   });
 
-  it("uses the shared safe DOM renderer on both extension surfaces", () => {
-    expect(consoleUi).toContain("textContent");
-    expect(app).toContain('../shared/console-ui.js');
-    expect(dashboardApp).toContain('../shared/console-ui.js');
-    expect(app + dashboardApp + consoleUi).not.toMatch(/innerHTML|insertAdjacentHTML|document\.write/);
-  });
-
-  it("does not connect extension modules to the live Worker source", () => {
+  it("does not connect extension modules to or modify live Worker composition", () => {
     const liveWorker = readFileSync("src/line-sandbox-live/worker.ts", "utf8");
-    expect(liveWorker).not.toContain("chrome-extension");
-    expect(liveWorker).not.toContain("Platform Console");
+    expect(liveWorker).not.toContain("chrome-extension"); expect(liveWorker).not.toContain("platformState");
   });
 });

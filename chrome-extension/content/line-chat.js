@@ -7,4 +7,5 @@
     type: "platform.page_context",
     context: { hostname: "chat.line.biz", pathnameCategory: category, pageType: "line_chat" },
   }).catch(() => {});
+  globalThis.PlatformLineFloatingWidget?.mount();
 })();

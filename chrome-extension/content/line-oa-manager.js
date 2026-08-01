@@ -8,4 +8,5 @@
     type: "platform.page_context",
     context: { hostname: "manager.line.biz", pathnameCategory: category, pageType: "line_oa_manager" },
   }).catch(() => {});
+  globalThis.PlatformLineFloatingWidget?.mount();
 })();

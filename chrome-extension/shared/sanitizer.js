@@ -1,6 +1,6 @@
 import { PAGE_TYPES, PATH_CATEGORIES } from "./constants.js";
 
-const SENSITIVE_KEY = /(secret|token|authorization|reply.?token|user.?id|cookie|raw.?body|raw.?webhook|channel.?secret|access.?token)/i;
+const SENSITIVE_KEY = /(password|secret|token|authorization|reply.?token|user.?id|customer.?id|cookie|raw.?body|raw.?payload|raw.?webhook|channel.?secret|access.?token|credential.?value)/i;
 const SAFE_HEALTH_STATUS = new Set(["ok", "online", "degraded", "offline", "unknown"]);
 const SAFE_HOSTS = new Set(["manager.line.biz", "chat.line.biz"]);
 
