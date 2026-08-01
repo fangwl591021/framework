@@ -1,10 +1,11 @@
 import { assertNoSensitiveFields } from "./sanitizer.js";
 
 export const ALLOWED_STORAGE_KEYS = Object.freeze([
-  "selectedView",
   "uiPreferences",
   "lastHealthSummary",
   "lastPageContext",
+  "originatingTab",
+  "currentOaKey",
 ]);
 
 export function validateStorageEntries(entries) {

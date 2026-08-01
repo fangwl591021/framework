@@ -1,81 +1,14 @@
 <!doctype html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="color-scheme" content="light" />
-    <title>LINE OA Platform Console</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="app-header">
-      <div class="brand"><span class="brand-mark">P</span><div><strong>Platform Console</strong><span>LINE OA</span></div></div>
-      <button id="refresh-health" class="icon-button" type="button" aria-label="Refresh platform status">↻</button>
-    </header>
-
-    <main>
-      <section class="view active" data-view="home" aria-labelledby="home-title">
-        <article class="welcome-card">
-          <div><p class="kicker">PLATFORM CORE</p><h1 id="home-title">歡迎回來</h1><p>你的 LINE 官方帳號整合已準備好。</p></div>
-          <span class="live-pill"><i></i> Live</span>
-        </article>
-        <article class="context-card card">
-          <div class="section-head"><div><p class="kicker">CURRENT PAGE</p><h2>目前頁面</h2></div><span id="context-badge" class="soft-pill">Other page</span></div>
-          <p id="context-detail" class="muted">Open LINE OA Manager or LINE Chat to see bounded page context.</p>
-        </article>
-        <div class="mini-grid">
-          <article class="metric card"><span>已連線 OA</span><strong>1</strong><small>oa-primary</small></article>
-          <article class="metric card"><span>整合狀態</span><strong id="health-value">Online</strong><small id="health-note">Last verified locally</small></article>
-        </div>
-        <article class="notice-card"><span>01</span><p><strong>第一個 OA Binding 已啟用</strong><br />目前為明確綁定的 Sandbox Live proof，不代表任意 OA 可自行加入。</p></article>
-        <section><div class="section-title"><h2>快速操作</h2></div><div id="quick-actions" class="action-grid"></div></section>
-        <section><div class="section-title"><h2>近期活動</h2><button class="text-button" data-go="messages">查看全部</button></div><div id="home-activity" class="activity-list card"></div></section>
-      </section>
-
-      <section class="view" data-view="accounts" aria-labelledby="accounts-title">
-        <div class="page-title"><p class="kicker">OFFICIAL ACCOUNTS</p><h1 id="accounts-title">官方帳號</h1><p>檢視目前由 Platform Core 管理的 LINE binding。</p></div>
-        <div id="account-list"></div>
-        <article id="binding-detail" class="card detail-card" hidden>
-          <div class="section-head"><div><p class="kicker">BINDING DETAIL</p><h2>oa-primary</h2></div><span class="success-pill">已連線</span></div>
-          <dl id="binding-fields"></dl>
-          <label class="field-label" for="webhook-url">Webhook URL</label>
-          <div class="copy-row"><input id="webhook-url" readonly /><button id="copy-webhook" type="button">複製</button></div>
-          <a id="health-link" class="link-row" target="_blank" rel="noreferrer">開啟 Health Endpoint <span>↗</span></a>
-          <div class="security-list"><h3>安全控制</h3><ul id="binding-security"></ul></div>
-        </article>
-      </section>
-
-      <section class="view" data-view="messages" aria-labelledby="messages-title">
-        <div class="page-title"><p class="kicker">DELIVERY PROOF</p><h1 id="messages-title">訊息</h1><p>只顯示 deterministic demo activity，不包含私人頁面或傳輸資料。</p></div>
-        <article class="conversation card">
-          <div class="conversation-head"><span class="avatar">OA</span><div><strong>oa-primary</strong><small>Sandbox Live · Delivery passed</small></div><span class="success-dot"></span></div>
-          <div id="message-proof" class="message-proof"></div>
-        </article>
-        <article class="result-card card"><span class="result-icon">✓</span><div><strong>Delivery result</strong><p>Webhook accepted · Real reply delivered · No retry</p></div></article>
-      </section>
-
-      <section class="view" data-view="applications" aria-labelledby="applications-title">
-        <div class="page-title"><p class="kicker">PLATFORM ASSEMBLY</p><h1 id="applications-title">應用</h1><p>從 Tenant 到 LINE OA 的可治理產品結構。</p></div>
-        <div id="application-list"></div>
-        <article class="card hierarchy-card"><p class="kicker">AUTHORITY CHAIN</p><div id="hierarchy"></div><p class="muted">Workbench remains the intent, confirmation, permission, and mutation authority.</p></article>
-      </section>
-
-      <section class="view" data-view="settings" aria-labelledby="settings-title">
-        <div class="page-title"><p class="kicker">CONSOLE SETTINGS</p><h1 id="settings-title">設定</h1><p>本機偏好、安全邊界與平台診斷。</p></div>
-        <article class="card settings-card"><h2>Extension status</h2><div class="setting-row"><span>Version</span><strong>0.1.0</strong></div><div class="setting-row"><span>Mode</span><strong>Side Panel</strong></div><div class="setting-row"><span>Allowed pages</span><strong>Manager · Chat</strong></div><div class="setting-row"><span>Platform backend</span><strong id="settings-health">Online</strong></div></article>
-        <article class="card settings-card"><h2>Security summary</h2><ul><li>Credential values are never stored or displayed</li><li>Only allowlisted health endpoint access</li><li>Bounded page-category metadata only</li><li>No chat or customer data scraping</li></ul></article>
-        <article class="card settings-card"><h2>Current limitations</h2><ul id="limitations"></ul></article>
-        <article class="card settings-card"><h2>Secondary tools</h2><div class="tool-links"><button data-tool="workbench">Workbench</button><button data-tool="aiLab">AI Lab</button><button data-tool="channelLab">Channel Lab</button></div></article>
-      </section>
-    </main>
-
-    <nav class="bottom-nav" aria-label="Primary navigation">
-      <button class="active" data-nav="home"><span>⌂</span>首頁</button>
-      <button data-nav="accounts"><span>◎</span>官方帳號</button>
-      <button data-nav="messages"><span>◌</span>訊息</button>
-      <button data-nav="applications"><span>▦</span>應用</button>
-      <button data-nav="settings"><span>⚙</span>設定</button>
-    </nav>
-    <script type="module" src="app.js"></script>
-  </body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>LINE OA 管理平台</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header class="panel-header"><div class="brand"><span class="brand-mark">L</span><div><strong>LINE OA 管理平台</strong><small>Quick Control</small></div></div><div class="header-actions"><button id="maximize-console" class="icon-button" type="button" aria-label="開啟完整後台" title="開啟完整後台">⛶</button><button id="refresh-health" class="icon-button" type="button" aria-label="更新平台狀態">↻</button></div></header>
+<main>
+<section class="oa-control"><label for="current-oa">目前 OA</label><select id="current-oa" data-current-oa-select aria-label="目前官方帳號"></select><div class="connection-line"><span class="status-dot"></span><strong>已連線</strong><small>Sandbox Live</small></div></section>
+<section class="compact-section" aria-labelledby="status-title"><div class="section-heading"><h1 id="status-title">狀態</h1><span id="context-badge">Other page</span></div><p id="context-detail" class="context-detail">Open LINE OA Manager or LINE Chat to see bounded page context.</p><dl class="status-list"><div><dt>平台連線</dt><dd data-health-state>Online</dd></div><div><dt>Webhook 驗證</dt><dd class="good">已通過</dd></div><div><dt>目前 Binding</dt><dd data-current-oa>oa-primary</dd></div></dl><p id="health-note" class="health-note">Last verified locally</p></section>
+<section class="compact-section" aria-labelledby="activity-title"><div class="section-heading"><h2 id="activity-title">最新訊息活動</h2><button type="button" data-admin-launch="messages">全部</button></div><div id="latest-activity" class="activity-list"></div></section>
+<section class="compact-section" aria-labelledby="actions-title"><div class="section-heading"><h2 id="actions-title">快速操作</h2></div><div id="quick-admin-actions" class="quick-actions"></div></section>
+</main>
+<footer class="panel-footer"><button id="open-full-dashboard" class="primary-action" type="button">開啟完整後台</button><button id="return-line" class="secondary-action" type="button" disabled>返回 LINE OA</button></footer>
+<script type="module" src="app.js"></script>
+</body></html>

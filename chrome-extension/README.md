@@ -4,7 +4,7 @@ LINE OA Platform Console is a Chrome Manifest V3 side-panel extension for viewin
 
 ## Architecture
 
-- The side panel owns the five product views: Home, Official Accounts, Messages, Applications, and Settings.
+- The full-page dashboard is the primary admin console, with grouped operations, platform, and system navigation. The Side Panel is a compact status and quick-control companion. Both shells share the same immutable product model, route registry, current OA, bounded health state, storage, API client, sanitizer, and runtime messages; storage changes synchronize without a reload.
 - Content scripts run only on `manager.line.biz` and `chat.line.biz`. They send a bounded page type and allowlisted path category; they never scrape messages, people, identifiers, browser storage, cookies, or private page content.
 - The background service worker opens the side panel, validates page context, stores allowlisted non-sensitive preferences, and performs an unauthenticated bounded health check against the existing sandbox Worker.
 - The API client accepts only the exact Platform health endpoint. It rejects arbitrary URLs, omits credentials, enforces timeout and response-size limits, and normalizes failure reason codes.
@@ -30,6 +30,16 @@ Host permissions include the requested LINE and Platform domains for explicit fu
 5. Choose `dist/line-oa-platform-console`.
 
 Click the extension action to open the side panel. If the browser does not open it automatically, select the extension and choose **Open side panel**.
+
+The maximize button (`⛶`) is in the upper-right side-panel header, immediately left of the refresh button. It opens `dashboard/index.html` in a new Chrome tab through `chrome.runtime.getURL()` and `chrome.tabs.create()`; it never navigates or replaces the active LINE tab.
+
+## Reload after a local change
+
+1. Run `npm.cmd run build:chrome-extension` from the repository root.
+2. Open `chrome://extensions`.
+3. Find **LINE OA Platform Console** and click **Reload**.
+4. Refresh any open `manager.line.biz` or `chat.line.biz` tab so its content script is current.
+5. Open the extension side panel and click the `⛶` button in the header to verify the full-page dashboard.
 
 ## Test on LINE pages
 

@@ -20,12 +20,18 @@ async function handleMessage(message, sender) {
   if (message.type === MessageType.PAGE_CONTEXT) {
     const context = sanitizePageContext(message.context);
     if (sender.tab?.id !== message.tabId && message.tabId !== undefined) return { ok: false, reasonCode: "PAGE_CONTEXT_TAB_MISMATCH" };
-    await setSafeStorage({ lastPageContext: context });
+    const entries = { lastPageContext: context };
+    if (typeof sender.tab?.id === "number") entries.originatingTab = { tabId: sender.tab.id, pageType: context.pageType };
+    await setSafeStorage(entries);
     return { ok: true };
   }
   if (message.type === MessageType.GET_CONTEXT) {
-    const stored = await getSafeStorage(["lastPageContext"]);
-    return { ok: true, context: sanitizePageContext(stored.lastPageContext) };
+    const stored = await getSafeStorage(["lastPageContext", "originatingTab"]);
+    return {
+      ok: true,
+      context: sanitizePageContext(stored.lastPageContext),
+      originatingLineTabAvailable: Number.isInteger(stored.originatingTab?.tabId),
+    };
   }
   if (message.type === MessageType.CHECK_HEALTH) {
     try {
@@ -33,12 +39,29 @@ async function handleMessage(message, sender) {
       await setSafeStorage({ lastHealthSummary: health });
       return { ok: true, health };
     } catch (error) {
-      return { ok: false, reasonCode: error?.reasonCode ?? "HEALTH_OFFLINE" };
+      const health = Object.freeze({ status: "offline", service: "line-sandbox-live", bindingConfigured: false, bindingKey: null });
+      await setSafeStorage({ lastHealthSummary: health });
+      return { ok: false, reasonCode: error?.reasonCode ?? "HEALTH_OFFLINE", health };
+    }
+  }
+  if (message.type === MessageType.RETURN_TO_LINE) {
+    const stored = await getSafeStorage(["originatingTab"]);
+    const tabId = stored.originatingTab?.tabId;
+    if (!Number.isInteger(tabId)) return { ok: false, reasonCode: "LINE_TAB_NOT_AVAILABLE" };
+    try {
+      await chrome.tabs.update(tabId, { active: true });
+      return { ok: true };
+    } catch {
+      return { ok: false, reasonCode: "LINE_TAB_NOT_AVAILABLE" };
     }
   }
   if (message.type === MessageType.OPEN_PANEL && typeof sender.tab?.id === "number") {
-    await chrome.sidePanel.open({ tabId: sender.tab.id });
-    return { ok: true };
+    try {
+      await chrome.sidePanel.open({ tabId: sender.tab.id });
+      return { ok: true };
+    } catch {
+      return { ok: false, reasonCode: "SIDE_PANEL_NOT_AVAILABLE" };
+    }
   }
   return { ok: false, reasonCode: "MESSAGE_NOT_ALLOWED" };
 }
