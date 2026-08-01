@@ -19,6 +19,7 @@ import {
   PlatformObservabilityApplication,
 } from "../platform-observability";
 import { LocalIdentityKeys, LocalQrKeys } from "./keys";
+import { seedLocalProviderGovernance } from "./provider-readiness-service";
 
 export interface DemoFixtureState {
   tenantA: string;
@@ -305,6 +306,7 @@ export async function seedFixture(db: D1Database): Promise<DemoFixtureState> {
     appB: appB.id,
     tenantBApp: tenantBApp.id,
   });
+  await seedLocalProviderGovernance(db, uuid);
   for (const module of [
     { moduleKey: "event_engine", displayName: "Event Engine" },
     {

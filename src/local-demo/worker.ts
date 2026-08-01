@@ -1,4 +1,6 @@
 import { createLocalWorkbench } from "./composition";
+import { UuidV7Generator } from "../core/uuidv7";
+import { LocalProviderReadinessService, localProviderGovernanceContext } from "./provider-readiness-service";
 import { LocalAiLabService } from "./ai-lab-service";
 import {
   aiLabContext,
@@ -193,7 +195,7 @@ export default {
     if (!localOnly(request, env.LOCAL_DEMO_MODE))
       return new Response("Not Found", { status: 404 });
     const isApiRoute = url.pathname.startsWith("/local/api/");
-    const aiLabPage = /^\/local\/ai-lab(?:\/(requests|usage))?\/*$/.exec(
+    const aiLabPage = /^\/local\/ai-lab(?:\/(requests|usage|readiness|drills))?\/*$/.exec(
       url.pathname,
     );
     if (request.method === "GET" && !isApiRoute && aiLabPage) {
@@ -234,7 +236,7 @@ export default {
           mode: "local",
           database: "isolated-local-d1",
           seeded: Boolean(fixture),
-          routes: ["/local/setup", "/local/workbench", "/local/ai-lab"],
+          routes: ["/local/setup", "/local/workbench", "/local/ai-lab", "/local/ai-lab/readiness", "/local/ai-lab/drills"],
         });
       } catch {
         return json({
@@ -330,6 +332,14 @@ export default {
           return json({ ok: true, policies: await lab.policies(context) });
         if (url.pathname === "/local/api/ai-lab/budgets")
           return json({ ok: true, budgets: await lab.budgets(context) });
+        if (url.pathname === "/local/api/ai-lab/readiness" || url.pathname === "/local/api/ai-lab/drills") {
+          if (current.row.fixture_key !== "operator_a") return safeError("AI_PROVIDER_GOVERNANCE_DENIED", 403);
+          const governance = new LocalProviderReadinessService(env.LOCAL_DEMO_DB, new UuidV7Generator());
+          const governanceContext = localProviderGovernanceContext("local-platform-operator");
+          return url.pathname.endsWith("/readiness")
+            ? json({ ok: true, readiness: await governance.summary(governanceContext) })
+            : json({ ok: true, drills: governance.listDrills(governanceContext), banner: "NOT PRODUCTION APPROVAL" });
+        }
         if (url.pathname === "/local/api/ai-lab/requests") {
           const beforeValue = Number(url.searchParams.get("before") ?? Date.now() + 1);
           const limitValue = Number(url.searchParams.get("limit") ?? 25);
@@ -372,7 +382,8 @@ export default {
     if (
       request.method === "POST" &&
       (url.pathname === "/local/api/ai-lab/simulate" ||
-        url.pathname === "/local/api/ai-lab/reset")
+        url.pathname === "/local/api/ai-lab/reset" ||
+        url.pathname === "/local/api/ai-lab/drills/run")
     ) {
       try {
         const current = await requireMutation(request, env.LOCAL_DEMO_DB);
@@ -382,6 +393,13 @@ export default {
         if (!context.permissionGranted)
           return safeError("AI_PERMISSION_DENIED", 403);
         const lab = new LocalAiLabService(env.LOCAL_DEMO_DB, fixture);
+        if (url.pathname === "/local/api/ai-lab/drills/run") {
+          if (current.row.fixture_key !== "operator_a") return safeError("AI_PROVIDER_GOVERNANCE_DENIED", 403);
+          const data = await body(request);
+          const drill = typeof data.drill === "string" ? data.drill : "";
+          const governance = new LocalProviderReadinessService(env.LOCAL_DEMO_DB, new UuidV7Generator());
+          return json({ ok: true, result: await governance.runDrill(localProviderGovernanceContext("local-platform-operator"), drill) });
+        }
         if (url.pathname === "/local/api/ai-lab/reset") {
           await lab.reset(context);
           return json({

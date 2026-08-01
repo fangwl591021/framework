@@ -200,7 +200,7 @@ describe("Application Assembly migration", () => {
       ),
       await q("index", "AND name NOT LIKE 'sqlite_autoindex_%'"),
       await q("trigger"),
-    ]).toEqual([66, 126, 109]);
+    ]).toEqual([79, 139, 137]);
   });
   it("keeps foreign keys clean", async () =>
     expect(

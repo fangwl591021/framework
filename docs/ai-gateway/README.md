@@ -5,3 +5,5 @@ Provider-neutral Platform Service，集中管理已核准 AI Task、路由、預
 狀態：Platform Service Candidate；Contract Approved by Tony after self-review；Architecture／Security Review Approved；Locally Implemented／Locally Verified；Provider Adapters Disabled；Not Deployed；Production Use Not Allowed。
 
 閱讀順序：[Contract](01-CONTRACT.md) → [Task Registry](02-AI-TASK-REGISTRY.md) → [Provider Catalog](03-PROVIDER-MODEL-CATALOG.md) → [Routing](04-ROUTING-POLICY.md) → [Security](11-SECURITY-BOUNDARY.md)。
+
+真實 Provider 啟用前的 Platform governance gate 定義於 [AI Provider Enablement Readiness](../ai-provider-enablement-readiness/README.md)。Readiness evidence 不會取代 Runtime 對正式 lifecycle、policy、Secret readiness、ceiling 與 kill switch 的直接驗證。

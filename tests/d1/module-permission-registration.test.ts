@@ -77,7 +77,7 @@ describe("Module Permission Registration Gate", () => {
     const ledger = await env.DB.prepare(
       `SELECT count(*) AS count FROM d1_migrations`,
     ).first<{ count: number }>();
-    expect(ledger?.count).toBe(8);
+    expect(ledger?.count).toBe(9);
   });
 
   it("rolls back permission inserts and guard removal when registration fails", async () => {

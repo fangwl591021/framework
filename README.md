@@ -229,6 +229,8 @@ Framework 採選用階層：`Tenant → Brand → Shop`。Tenant 是必要的資
 - [0005 Platform Traffic Protection](migrations/0005_platform_traffic_protection.sql) creates six bounded Platform Service protection tables and registers seven reviewed Permissions; it is verified only through isolated Local D1 tests.
 - [0006 Application Assembly](migrations/0006_application_assembly.sql) creates eight Platform Service assembly tables and is verified only through isolated Local D1 tests.
 - [0007 Conversational Workbench](migrations/0007_conversational_workbench.sql) creates seven Experience Platform Service tables, registers eight reviewed Permissions, and seeds twelve versioned Intents; it is verified only through isolated Local D1 tests.
+- [0008 AI Gateway](migrations/0008_ai_gateway.sql) creates nine provider-neutral AI Gateway tables and registers twelve reviewed Permissions; external Provider adapters remain disabled.
+- [0009 AI Provider Enablement Readiness](migrations/0009_ai_provider_enablement_readiness.sql) creates thirteen Platform Governance tables and registers thirteen reviewed Permissions; it is verified only through isolated Local D1 tests and cannot authorize real Shadow, Canary, or Production execution.
 - No remote database identifier, Production Binding, Secret or deployment configuration is present.
 
 ### Migration Strategy
@@ -372,3 +374,5 @@ Conversational Workbench 將可信 Application Context、versioned Intent、Slot
 ## AI Gateway
 
 [AI Gateway MVP](docs/ai-gateway/README.md) 提供 provider-neutral Task Registry、Policy Routing、Budget／Quota、Cache、Output Validation 與 immutable Usage Evidence。它不擁有 Domain 決策或授權；外部 Provider Adapter 皆 Disabled，只有 deterministic local adapter 經隔離 Local D1 驗證。狀態為 Platform Service Candidate／Contract Approved by Tony after self-review／Architecture and Security Approved／Locally Implemented／Locally Verified／Not Deployed／Production Use Not Allowed。
+
+真實 Provider 啟用前治理請閱讀 [AI Provider Enablement Readiness](docs/ai-provider-enablement-readiness/README.md)。此 Platform Governance Service Candidate 只核准至 `approved_for_shadow`；Secret 仍為 planned reference，External Provider、real Shadow、Canary、Production AI、Remote D1 與部署仍為 Disabled／Not Allowed。

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI Provider Failure Drills - Local Lab</title>
+    <link rel="stylesheet" href="/local/ai-lab/styles.css" />
+  </head>
+  <body data-page="drills">
+    <header class="topbar">
+      <a class="brand" href="/local/ai-lab/"><span>PC</span> AI Gateway Lab</a>
+      <nav aria-label="AI Lab navigation">
+        <a href="/local/ai-lab/">Lab</a><a href="/local/ai-lab/requests/">Requests</a><a href="/local/ai-lab/usage/">Usage</a><a href="/local/ai-lab/readiness/">Readiness</a><a class="active" href="/local/ai-lab/drills/">Drills</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero"><div><p class="kicker">NETWORK-FREE FAILURE DRILLS</p><h1>Fail safely.<br /><em>Restore deterministic authority.</em></h1><p class="lede">Replay allowlisted local fixtures without a provider, credential, production state, or autonomous action.</p></div><div class="guardrails"><span>NOT PRODUCTION APPROVAL</span><span>DETERMINISTIC</span><span>NO NETWORK</span></div></section>
+      <section class="lab-grid">
+        <form id="drill-form" class="console panel"><div class="panel-title"><span>01</span><h2>Failure drill</h2></div><label>Allowlisted scenario<select id="drill" required></select></label><button class="primary" type="submit">Run local drill</button><p id="notice" class="notice" aria-live="polite"></p></form>
+        <section class="panel timeline-panel"><div class="panel-title"><span>02</span><h2>Safe timeline</h2></div><ol id="drill-timeline" class="timeline"><li class="empty">Run a drill to inspect the bounded evidence.</li></ol></section>
+      </section>
+      <section class="evidence-grid"><article class="panel wide"><div class="panel-title"><span>03</span><h2>Expected outcome</h2></div><div id="drill-result" class="data"></div></article></section>
+    </main>
+    <script type="module" src="/local/ai-lab/governance.js"></script>
+  </body>
+</html>
