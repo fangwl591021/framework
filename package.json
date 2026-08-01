@@ -9,6 +9,9 @@
     "typecheck": "tsc --noEmit",
     "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js",
     "build:local-demo": "esbuild src/local-demo/worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/local-demo.js",
+    "build:line-sandbox": "esbuild src/line-sandbox-live/worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/line-sandbox-live.js",
+    "deploy:line-sandbox": "wrangler deploy --config wrangler.line-sandbox.jsonc",
+    "dev:line-sandbox": "wrangler dev --config wrangler.line-sandbox.jsonc",
     "local:setup": "node scripts/local-demo-setup.mjs",
     "local:reset": "node scripts/local-demo-setup.mjs --reset",
     "local:dev": "wrangler dev --local --config wrangler.local.jsonc"

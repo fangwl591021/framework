@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "platform-core-line-sandbox-live",
+  "main": "src/line-sandbox-live/worker.ts",
+  "compatibility_date": "2026-07-31",
+  "vars": {
+    "LINE_BINDING_KEY": "oa-primary"
+  }
+}
