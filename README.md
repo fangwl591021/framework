@@ -406,3 +406,9 @@ Its lifecycle is Execution Readiness Candidate. The evaluator remains explicit *
 [LINE Canary Enablement Readiness](docs/line-canary-enablement-readiness/README.md) adds immutable approval snapshots, bounded non-executable permits, credential-reference binding, exact egress decisions, deterministic cohort and budget ceilings, evidence freshness, automatic pause, kill-switch, rollback, outage/redelivery drills, and safe audit evidence.
 
 Its lifecycle is Canary Enablement Readiness Candidate and its evaluator remains explicit **NO-GO**. Real LINE Adapter is Disabled; Provider and Canary Execution are Not Authorized; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, Binding, deployment, or Production use exists. Workbench remains the sole intent, confirmation, permission, and mutation authority.
+
+## LINE Enablement Consolidation Review
+
+[LINE Enablement Consolidation Review](docs/line-enablement-consolidation-review/README.md) projects the four LINE readiness phases into one immutable deterministic state, detects contradictory or duplicated control claims, separates local evidence from real-world prerequisites, and issues an explicit sandbox-entry decision.
+
+Its lifecycle is Consolidation Review Candidate and its decision remains **NO-GO**. Real LINE Adapter is Disabled; Provider Execution, Canary Execution, and Provider Sandbox Entry are Not Authorized; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, deployment, or Production use exists. Workbench remains the sole intent, confirmation, permission, and mutation authority.

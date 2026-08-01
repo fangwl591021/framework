@@ -2,13 +2,15 @@
 
 ## LINE Adapter
 
-Current phase: **Canary Enablement Readiness Candidate**, real adapter **Disabled**, Provider Execution **Not Authorized**, Canary Execution **Not Authorized**, provider transport **Fake Only**, credentials **Not Provisioned**, public webhook **Not Created**, egress **Policy／Decision Only**, production **NO-GO**.
+Current phase: **Consolidation Review Candidate**, real adapter **Disabled**, Provider Execution **Not Authorized**, Canary Execution **Not Authorized**, Provider Sandbox Entry **Not Authorized**, provider transport **Fake Only**, credentials **Not Provisioned**, public webhook **Not Created**, egress **Policy／Decision Only**, Remote D1 **Not Used**, deployment **Not Performed**, Production Use **Not Allowed**, authority **Workbench Only**.
 
 The [isolated verification package](line-adapter-isolated-verification/README.md) now covers the published empty-events signature vector, byte-preserving verification, bounded webhook normalization, event-ID replay behavior, reply-token lease semantics, fake transport failure classes, and production isolation. This is local deterministic evidence only and does not prove provider connectivity or acceptance.
 
 The [execution-readiness package](line-provider-execution-readiness/README.md) adds an approval matrix, provider ownership separation, credential-reference lifecycle, exact egress policy, environment isolation, hard quota controls, canary policy, kill switch, rollback, incident, and privacy evidence. Its evaluator remains explicit NO-GO and cannot authorize network execution.
 
 The [Canary readiness package](line-canary-enablement-readiness/README.md) adds immutable approval snapshots, time-bounded non-executable permits, credential/version binding, deterministic cohort and budget ceilings, evidence freshness, automatic pause, kill-switch, rollback, outage/redelivery drills, and bounded evidence. Its evaluator remains explicit NO-GO and cannot authorize Provider or Canary execution.
+
+The [consolidation review](line-enablement-consolidation-review/README.md) now provides the canonical cross-phase state, control-overlap and contradiction checks, evidence freshness inventory, and explicit Provider sandbox NO-GO. It keeps locally completed controls separate from every remaining real-world prerequisite and grants no new authority.
 
 Future work requires a separate PR and cannot be inferred from readiness completion:
 
