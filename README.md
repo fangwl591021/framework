@@ -394,3 +394,9 @@ The real LINE adapter remains Disabled, credentials are Not Provisioned, Remote 
 [LINE Adapter Isolated Provider Verification](docs/line-adapter-isolated-verification/README.md) maps the readiness contracts to published LINE Messaging API behavior through an official signature example, byte-mutation negatives, deterministic webhook fixtures, replay and reply-token models, a fake transport port, and bounded safe evidence.
 
 Its lifecycle is Isolated Verification Candidate. The real LINE adapter remains Disabled; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, deployment, or Production use is created or allowed.
+
+## LINE Provider Execution Readiness
+
+[LINE Provider Execution Readiness](docs/line-provider-execution-readiness/README.md) defines the approval matrix, secret-reference lifecycle, exact egress policy, provider-account ownership, environment separation, hard cost and quota controls, canary policy, kill switch, rollback, incident, evidence, privacy, retention, and operational gates required before any provider execution could be proposed.
+
+Its lifecycle is Execution Readiness Candidate. The evaluator remains explicit **NO-GO**: the real LINE adapter is Disabled, Provider Execution is Not Authorized, credentials are Not Provisioned, no public webhook exists, egress is Policy Only, Remote D1 is Not Used, deployment is Not Performed, and Production Use is Not Allowed. Workbench remains the sole intent, confirmation, permission, and mutation authority.
