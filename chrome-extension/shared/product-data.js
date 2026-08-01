@@ -40,11 +40,12 @@ export const consoleData = Object.freeze({
     Object.freeze({ type: "received", label: "收到訊息", text: "測試", result: "Accepted" }),
     Object.freeze({ type: "replied", label: "完成回覆", text: "收到：測試", result: "Delivered" }),
   ]),
-  quickActions: Object.freeze([
-    Object.freeze({ label: "查看官方帳號", view: "accounts" }),
-    Object.freeze({ label: "檢查訊息結果", view: "messages" }),
-    Object.freeze({ label: "查看平台應用", view: "applications" }),
+  auditEntries: Object.freeze([
+    Object.freeze({ occurredAt: "2026-08-01 09:42", action: "Webhook verification", resource: "oa-primary", actor: "Platform", result: "Passed" }),
+    Object.freeze({ occurredAt: "2026-08-01 09:41", action: "Message accepted", resource: "oa-primary", actor: "LINE Sandbox", result: "Completed" }),
+    Object.freeze({ occurredAt: "2026-08-01 09:41", action: "Reply delivered", resource: "oa-primary", actor: "LINE Sandbox", result: "Completed" }),
   ]),
+
   completed: Object.freeze([
     "Real webhook connectivity",
     "HMAC signature verification",

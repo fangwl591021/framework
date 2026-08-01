@@ -3,6 +3,7 @@ export const MessageType = Object.freeze({
   GET_CONTEXT: "platform.get_context",
   CHECK_HEALTH: "platform.check_health",
   OPEN_PANEL: "platform.open_panel",
+  RETURN_TO_LINE: "platform.return_to_line",
 });
 
 export function isKnownMessage(value) {
