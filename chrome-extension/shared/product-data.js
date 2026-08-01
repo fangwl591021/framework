@@ -6,10 +6,10 @@ export const localDemoPlatformData = Object.freeze({
   membership: Object.freeze({ membershipRef: "membership-demo", userRef: "usr-demo-local", workspaceRef: "workspace-demo", role: "owner", status: "active" }),
   workspace: Object.freeze({ workspaceRef: "workspace-demo", name: "Demo Workspace", businessDisplayName: "Platform Core Sandbox", status: "active" }),
   application: Object.freeze({ applicationRef: "application-demo", workspaceRef: "workspace-demo", name: "Demo LINE Platform", status: "active" }),
-  integration: Object.freeze({ integrationRef: "integration-demo", workspaceRef: "workspace-demo", applicationRef: "application-demo", displayName: "Demo LINE OA", lineBotAccount: "@platformdemo", environment: "sandbox", note: "Seeded local demo only", status: "pending", updatedAt: 1785542400000 }),
+  integration: Object.freeze({ integrationRef: "integration-demo", workspaceRef: "workspace-demo", applicationRef: "application-demo", displayName: "Demo LINE OA", lineBotAccount: "@platformdemo", environment: "sandbox", note: "Seeded demo/live proof only", status: "pending", draftStatus: "saved", seededProof: true, updatedAt: 1785542400000 }),
   loginChannel: Object.freeze({ loginChannelRef: "login-demo", integrationRef: "integration-demo", workspaceRef: "workspace-demo", channelId: "100000001", callbackUrl: null, verificationStatus: "not_configured" }),
   messagingChannel: Object.freeze({ messagingChannelRef: "messaging-demo", integrationRef: "integration-demo", workspaceRef: "workspace-demo", channelId: "200000001", webhookUrl: `${LIVE_PLATFORM_ORIGIN}/webhook/oa-primary`, messagingVerification: "verified", webhookVerification: "verified" }),
-  credentialReference: Object.freeze({ credentialReference: "cred-demo-reference", integrationRef: "integration-demo", workspaceRef: "workspace-demo", credentialStatus: "configured", updatedAt: 1785542400000 }),
+  credentialReference: Object.freeze({ credentialReference: null, integrationRef: "integration-demo", workspaceRef: "workspace-demo", credentialStorageStatus: "backend_unavailable", updatedAt: 1785542400000 }),
   binding: Object.freeze({ bindingRef: "binding-demo", bindingKey: "oa-primary", integrationRef: "integration-demo", workspaceRef: "workspace-demo", applicationRef: "application-demo", provider: "LINE", status: "pending", overallStatus: "not_configured" }),
 });
 export function createLocalDemoSnapshot(session, user = localDemoPlatformData.user) {

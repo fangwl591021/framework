@@ -26,6 +26,7 @@ const credentialAdapter = read("shared/credential-adapter.js");
 const integrationAdapter = read("shared/integration-adapter.js");
 const platformEndpoints = read("shared/platform-endpoints.js");
 const verificationAdapter = read("shared/verification-adapter.js");
+const integrationStatus = read("shared/integration-status.js");
 const platformStore = read("shared/platform-store.js");
 const navigation = read("shared/extension-navigation.js");
 const background = read("background/service-worker.js");
@@ -84,13 +85,16 @@ describe("LINE OA multi-tenant platform extension", () => {
     expect(dashboardHtml).toMatch(/name="messagingChannelId"[^>]+required/);
   });
 
-  it("uses the required initial and configured integration actions", () => {
-    for (const label of ["儲存草稿", "儲存並驗證全部", "更新憑證", "重新驗證", "完成 LINE 整合", "本機資料已設定"]) expect(dashboardHtml + dashboardApp).toContain(label);
+  it("uses explicit draft, local validation, and disabled secure-storage actions", () => {
+    for (const label of ["儲存草稿", "驗證欄位格式", "安全儲存尚未開放", "重新驗證", "完成 LINE 整合"]) expect(dashboardHtml + dashboardApp).toContain(label);
+    expect(dashboardHtml).toContain('id="submit-integration" class="primary-button" type="submit" disabled');
+    expect(dashboardHtml).toContain("平台後端尚未提供安全憑證儲存服務，目前只能儲存非敏感草稿。");
+    expect(dashboardHtml + dashboardApp).not.toContain("更新憑證");
   });
-
   it("clears transient credential controls and never places them in storage", () => {
     expect(dashboardApp).toContain("clearCredentialControls(form)");
-    expect(dashboardApp).toContain("assertCredentialReceiptSafe(result.receipt)");
+    expect(dashboardApp).toContain("clearCredentialControls(form); sensitiveInputStatus = SensitiveInputStatus.CLEARED_AFTER_SUBMISSION");
+    expect(dashboardApp).toContain("草稿已儲存。基於安全考量，Secret 與 Access Token 不會保存在擴充功能中。");
     expect(dashboardApp).not.toMatch(/setSafeStorage\(\{[^}]*(password|Secret|Token)/s);
     expect(platformStore).not.toMatch(/password|channelSecret|channelAccessToken/);
   });
@@ -101,7 +105,7 @@ describe("LINE OA multi-tenant platform extension", () => {
   });
 
   it("returns the exact bounded credential receipt", () => {
-    for (const field of ["credentialStatus", "credentialReference", "bindingKey", "callbackUrl", "webhookUrl", "loginVerification", "messagingVerification", "webhookVerification", "reasonCode", "reasonCodes"]) expect(credentialAdapter).toContain(field);
+    for (const field of ["credentialStorageStatus", "credentialReference", "localValidationReference", "bindingKey", "callbackUrl", "webhookUrl", "loginVerification", "messagingVerification", "webhookVerification", "overallStatus", "reasonCode", "reasonCodes"]) expect(credentialAdapter).toContain(field);
     expect(credentialAdapter).toContain("assertCredentialReceiptSafe");
     expect(credentialAdapter).not.toMatch(/return Object\.freeze\(\{[^}]*(lineLoginChannelSecret|messagingChannelSecret|channelAccessToken)/s);
   });
@@ -118,6 +122,20 @@ describe("LINE OA multi-tenant platform extension", () => {
     expect(dashboardApp).toContain("button.disabled = !url");
   });
 
+  it("localizes status labels and hides reason codes in technical details", () => {
+    for (const label of ["尚未建立", "尚未儲存", "後端尚未開放", "等待驗證", "驗證成功", "驗證失敗"]) expect(dashboardHtml + integrationStatus).toContain(label);
+    expect(dashboardHtml).toContain('<details id="integration-technical-details"');
+    expect(dashboardHtml).toContain("平台後端尚未完成 Callback、憑證儲存與動態 Webhook 建立，因此目前無法完成正式串接。");
+    expect(dashboardApp).not.toContain('`本機輸入已驗證，但平台端點尚未完成：${verification.reasonCodes.join');
+  });
+
+  it("keeps sensitive values session-only while persisting non-sensitive draft IDs", () => {
+    expect(platformModel).toContain('draftStatus: "saved"');
+    expect(dashboardApp).toContain("sensitiveValues");
+    expect(dashboardApp).toContain("lineLoginChannelId");
+    expect(dashboardApp).toContain("messagingChannelId");
+    expect(platformStore).not.toMatch(/lineLoginChannelSecret|messagingChannelSecret|channelAccessToken/);
+  });
   it("persists only bounded platform snapshots and UI references", () => {
     expect(ALLOWED_STORAGE_KEYS).toContain("platformState");
     expect(platformStore).toContain("PLATFORM_STATE_TOO_LARGE");

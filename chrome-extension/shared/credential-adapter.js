@@ -40,14 +40,16 @@ export class LocalCredentialRegistrationAdapter {
     const endpoints = resolvePlatformEndpoints(bindingKey, this.endpointConfiguration);
     const reasonCodes = [endpoints.callback.reasonCode, endpoints.webhook.reasonCode, PlatformEndpointReasonCode.CREDENTIAL_REGISTRATION_NOT_CONFIGURED].filter(Boolean);
     return Object.freeze({
-      credentialStatus: "not_configured",
-      credentialReference: stableReference("cred", publicSeed),
+      credentialStorageStatus: this.endpointConfiguration.capabilities.credentialRegistration ? "not_configured" : "backend_unavailable",
+      credentialReference: null,
+      localValidationReference: stableReference("validation", publicSeed),
       bindingKey,
       callbackUrl: endpoints.callback.url,
       webhookUrl: endpoints.webhook.url,
       loginVerification: endpoints.callback.status,
-      messagingVerification: "configured",
+      messagingVerification: "not_configured",
       webhookVerification: endpoints.webhook.status,
+      overallStatus: "not_configured",
       reasonCode: reasonCodes[0],
       reasonCodes: Object.freeze(reasonCodes),
     });
@@ -55,7 +57,7 @@ export class LocalCredentialRegistrationAdapter {
 }
 
 export function assertCredentialReceiptSafe(receipt) {
-  const allowed = ["credentialStatus", "credentialReference", "bindingKey", "callbackUrl", "webhookUrl", "loginVerification", "messagingVerification", "webhookVerification", "reasonCode", "reasonCodes"];
+  const allowed = ["credentialStorageStatus", "credentialReference", "localValidationReference", "bindingKey", "callbackUrl", "webhookUrl", "loginVerification", "messagingVerification", "webhookVerification", "overallStatus", "reasonCode", "reasonCodes"];
   if (!receipt || Object.keys(receipt).length !== allowed.length || Object.keys(receipt).some((key) => !allowed.includes(key))) throw new CredentialAdapterError("CREDENTIAL_RECEIPT_UNSAFE");
   if (!Array.isArray(receipt.reasonCodes) || receipt.reasonCodes.length > 5) throw new CredentialAdapterError("CREDENTIAL_RECEIPT_UNSAFE");
   return true;
