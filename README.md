@@ -400,3 +400,9 @@ Its lifecycle is Isolated Verification Candidate. The real LINE adapter remains 
 [LINE Provider Execution Readiness](docs/line-provider-execution-readiness/README.md) defines the approval matrix, secret-reference lifecycle, exact egress policy, provider-account ownership, environment separation, hard cost and quota controls, canary policy, kill switch, rollback, incident, evidence, privacy, retention, and operational gates required before any provider execution could be proposed.
 
 Its lifecycle is Execution Readiness Candidate. The evaluator remains explicit **NO-GO**: the real LINE adapter is Disabled, Provider Execution is Not Authorized, credentials are Not Provisioned, no public webhook exists, egress is Policy Only, Remote D1 is Not Used, deployment is Not Performed, and Production Use is Not Allowed. Workbench remains the sole intent, confirmation, permission, and mutation authority.
+
+## LINE Canary Enablement Readiness
+
+[LINE Canary Enablement Readiness](docs/line-canary-enablement-readiness/README.md) adds immutable approval snapshots, bounded non-executable permits, credential-reference binding, exact egress decisions, deterministic cohort and budget ceilings, evidence freshness, automatic pause, kill-switch, rollback, outage/redelivery drills, and safe audit evidence.
+
+Its lifecycle is Canary Enablement Readiness Candidate and its evaluator remains explicit **NO-GO**. Real LINE Adapter is Disabled; Provider and Canary Execution are Not Authorized; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, Binding, deployment, or Production use exists. Workbench remains the sole intent, confirmation, permission, and mutation authority.
