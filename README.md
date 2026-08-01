@@ -385,9 +385,9 @@ Its status is Platform Integration Service Candidate, Contract Approved by Tony 
 
 ## LINE OA Platform Console
 
-The [LINE OA Platform Console](chrome-extension/README.md) is a Chrome Manifest V3 side-panel product UI for viewing the first verified LINE OA binding beside LINE Official Account Manager and LINE Chat. Build it with `npm.cmd run build:chrome-extension`, then load `dist/line-oa-platform-console` as an unpacked extension.
+The [LINE OA Platform Console](chrome-extension/README.md) is a Chrome Manifest V3 multi-tenant platform entry. Its Extension-owned full-page Dashboard provides local development authentication, Workspace onboarding, a one-page LINE Login and Messaging API integration form, explicit seven-state lifecycle rendering, and Workspace-scoped administration. Build it with `npm.cmd run build:chrome-extension`, then load `dist/line-oa-platform-console` as an unpacked extension.
 
-The extension stores only allowlisted non-sensitive UI and bounded page-context metadata. It does not contain LINE credentials, scrape private LINE page data, call authenticated Messaging APIs, modify the live sandbox Worker, or claim arbitrary OA onboarding support.
+The extension stores only allowlisted, bounded non-sensitive state. Credentials remain transient and are represented only by opaque references. Content scripts do not scrape private LINE page data, and this phase does not modify the live sandbox Worker, call authenticated LINE APIs, provide a production authentication backend, or claim arbitrary OA onboarding backend support.
 
 ## LINE Adapter Enablement Readiness
 

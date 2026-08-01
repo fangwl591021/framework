@@ -1,62 +1,99 @@
-# LINE OA Platform Console
+# LINE OA 管理平台 Chrome Extension
 
-LINE OA Platform Console is a Chrome Manifest V3 side-panel extension for viewing the existing Platform Core LINE integration beside LINE Official Account Manager and LINE Chat. It presents one verified live OA binding as a product console without placing provider credentials in the browser.
+這個 Manifest V3 Extension 是 Platform Core 的使用者入口。Extension-owned full-page Dashboard 是主要管理介面；`manager.line.biz` 與 `chat.line.biz` 的右下角浮動工具只提供 bounded status 與返回 Dashboard 的捷徑。Chrome native Side Panel 已移除。
 
-## Architecture
+## Platform lifecycle
 
-- The full-page dashboard is the primary admin console, with grouped operations, platform, and system navigation. The Side Panel is a compact status and quick-control companion. Both shells share the same immutable product model, route registry, current OA, bounded health state, storage, API client, sanitizer, and runtime messages; storage changes synchronize without a reload.
-- Content scripts run only on `manager.line.biz` and `chat.line.biz`. They send a bounded page type and allowlisted path category; they never scrape messages, people, identifiers, browser storage, cookies, or private page content.
-- The background service worker opens the side panel, validates page context, stores allowlisted non-sensitive preferences, and performs an unauthenticated bounded health check against the existing sandbox Worker.
-- The API client accepts only the exact Platform health endpoint. It rejects arbitrary URLs, omits credentials, enforces timeout and response-size limits, and normalizes failure reason codes.
-- The live LINE Worker remains the delivery proof and is not modified or deployed by this extension.
+Dashboard 由 Session、User、Membership、Workspace、Application、LINE Integration 與 Channel Binding 投影七個互斥狀態：
+
+1. `unauthenticated`：只顯示登入／註冊。
+2. `authenticated_without_workspace`：只顯示 Workspace onboarding。
+3. `authenticated_without_binding`：LINE OA 串接設定成為主要畫面。
+4. `binding_pending_verification`：顯示待驗證狀態，營運功能保持不可用。
+5. `active`：顯示完整且 Workspace-scoped 的管理導覽。
+6. `session_expired`：回到登入，不顯示平台資料。
+7. `account_suspended`：停用操作，不投影 Workspace 或 LINE OA 資料。
+
+每個 Workspace 必須由目前使用者的 active Membership 授權。角色模型為 `owner`、`admin`、`operator`、`viewer`；建立 Workspace 的使用者會成為 owner。
+
+## Local Development Authentication
+
+目前沒有正式 Authentication API。`LocalDevelopmentAuthAdapter` 只提供確定性本機流程，畫面會明確標示 **Local Development Authentication**。
+
+- 註冊驗證顯示名稱、正規化 email、至少 10 字元且含字母與數字的密碼、確認密碼與條款。
+- 密碼與確認密碼只存在於 submit handler 的 transient `FormData`，不會寫入 storage、URL、log、diagnostics 或 adapter result。
+- Session 只含 opaque references 與期限，不含 credential。
+- 忘記密碼固定回報尚需 Backend Password Reset API。
+- `demo@platform.local` 是明確的本機 demo 帳號；可搭配任一符合本機密碼政策的值登入。只有這個明確登入動作會載入 `workspace-demo` 與 `oa-primary`。
+- Local simulation 可驗證 active、expired 與 suspended 狀態；不代表 Production authentication security。
+
+## One-page LINE integration setup
+
+`LINE OA 串接` 是單一全頁表單，不是 multi-step wizard：
+
+- 基本資料：Workspace、LINE OA 顯示名稱、LINE Bot `@` account、sandbox／production environment、選填備註。
+- LINE Login：Channel ID、Channel Secret、Callback endpoint capability 與 verification status。
+- Messaging API：Channel ID、Channel Secret、Channel Access Token、Webhook endpoint capability、Messaging 與 Webhook status。
+- 狀態摘要：Credential、LINE Login、Messaging API、Webhook 與 Overall status，使用 `configured`、`verified`、`pending`、`failed`、`not_configured`。
+
+`儲存草稿` 只保存公開 metadata；Secret 與 Token 會立即清除。`儲存並驗證全部` 只驗證本機輸入、產生 opaque local reference，並評估平台能力；它不會把缺少的後端端點判定為成功。已輸入的 secret/token 欄位永遠保持空白，可使用「更新憑證」與「重新驗證」重新評估。
+
+平台能力設定只承認現有 live origin `https://platform-core-line-sandbox-live.fangwl591021.workers.dev` 的 `/health` 與 `/webhook/oa-primary`。目前沒有 LINE Login callback、dynamic webhook provisioning 或 credential registration endpoint。因此：
+
+- Callback URL 為 `null`，畫面顯示「尚未建立」與 `CALLBACK_ENDPOINT_NOT_CONFIGURED`，Copy disabled。
+- 新使用者的 Webhook URL 為 `null`，顯示 `DYNAMIC_BINDING_PROVISIONING_NOT_CONFIGURED`，Copy disabled。
+- Seeded `oa-primary` 只保留已實際驗證的 live webhook；它沒有 Callback URL。
+- Local credential receipt 不足以讓 Overall status 變成 `active`。
+- `.invalid`、localhost、loopback、private network、non-HTTPS 與 arbitrary production origin 都 fail closed。localhost 只可在明確 local test mode 使用，且永遠不是可複製的 LINE production URL。
+
+本次不建立 callback、dynamic webhook 或 credential backend，也不修改 live LINE Worker。
+
+## Data and security boundary
+
+本機 immutable snapshot 為未來多 Workspace／多 OA 準備，包含 User、Membership、Workspace、Application、LineIntegration、LoginChannel、MessagingChannel、CredentialReference、ChannelBinding、FeatureEntitlement、Session、VerificationResult 與 AuditEvent。
+
+- 所有 Workspace projection 都要求目前 User 的 active Membership；跨 Workspace 與跨 Binding access fail closed。
+- `chrome.storage` 只接受 allowlisted UI/context/health keys 與 bounded safe platform snapshot。
+- 遞迴檢查拒絕 password、secret、token、authorization、cookie、replyToken、userId、rawBody、rawPayload、channelAccessToken、channelSecret、loginChannelSecret 與 credentialValue。
+- Credential adapter 只回傳 status、opaque references、generated URLs 與 verification states。
+- 所有 Extension executable code 為本機檔案；沒有 CDN、remote script、`eval` 或 `new Function`。
+- Content scripts 只送出 allowlisted host、page type 與 path category，不讀聊天內容、客戶名稱、LINE identifiers、Cookie 或 host storage。
+- Live LINE Worker、Remote D1、production Binding、Secret 與 Deployment 均未修改。
+
+## Navigation
+
+Active 狀態才顯示完整導覽：營運中心、自動化、內容工具、平台管理與帳戶。尚未完成或尚未取得 entitlement 的功能會保持 disabled 並顯示原因，不會宣稱已可用。
+
+浮動工具會將七種 lifecycle 映射為：登入平台、建立工作區、完成 LINE 串接、等待驗證、目前 OA、重新登入、帳號停權。它仍使用 closed Shadow DOM、固定定位與 bounded runtime messaging。
+
+## Backend contracts still required
+
+正式使用前仍須另行設計、審查與實作：
+
+- Authentication API：registration、sign-in、session refresh/revocation、password reset、account suspension。
+- Workspace API：Workspace CRUD、Membership invitation、role assignment、current Workspace synchronization。
+- Credential Registration API：在受治理 Secret provider 安全寫入 credential，只回傳 opaque reference；目前尚未實作。
+- LINE Login Callback API：建立真實 HTTPS callback route 與 state/nonce validation。
+- Dynamic Messaging Webhook Provisioning API：建立並驗證 `/webhook/<binding-key>`，包含 trusted binding resolution。
+- Channel Binding／Verification API：binding lifecycle、provider verification、failure evidence。
+- Entitlement／Usage API：Workspace/Application feature grants、usage accounting 與 backend enforcement。
+- Audit／Idempotency API：所有 mutation 的 immutable evidence 與 replay protection。
+
+因此目前沒有 Production authentication、任意 OA onboarding backend、正式 credential storage、真實 LINE verification 或 production deployment。
+
+## Build and Chrome reload
+
+1. 在 repository 執行 `npm.cmd run build:chrome-extension`。
+2. 開啟 `chrome://extensions`，啟用 **Developer mode**。
+3. 第一次載入：按 **Load unpacked**，選擇 `dist/line-oa-platform-console`。
+4. 已載入：在 **LINE OA Platform Console** 卡片按 **Reload**。
+5. 重新整理已開啟的 `https://manager.line.biz/*` 與 `https://chat.line.biz/*` 分頁，讓 content script 重新注入。
+6. 點 Chrome toolbar 的 Extension icon，開啟或聚焦 full-page Dashboard。
 
 ## Permissions
 
-| Permission | Purpose |
-| --- | --- |
-| `sidePanel` | Hosts the product console beside LINE pages. |
-| `storage` | Saves selected view, UI preferences, bounded health summary, and bounded page context. |
-| `tabs` | Opens explicitly listed secondary local tools and supports current-tab context. |
-| `activeTab` | Allows the user-invoked side panel to coordinate with the active supported page. |
+- `storage`：allowlisted local state。
+- `tabs`：開啟／聚焦固定 Extension Dashboard，或返回已知 LINE tab。
+- `activeTab`：只在使用者觸發動作時協調目前支援頁面。
 
-Host permissions include the requested LINE and Platform domains for explicit future platform integration boundaries. Content scripts are restricted to `https://manager.line.biz/*` and `https://chat.line.biz/*`; API hosts never receive content-script injection. The current API client calls only the exact unauthenticated Platform health endpoint and makes no authenticated LINE API request.
-
-## Load unpacked
-
-1. Run `npm.cmd run build:chrome-extension`.
-2. Open `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Select **Load unpacked**.
-5. Choose `dist/line-oa-platform-console`.
-
-Click the extension action to open the side panel. If the browser does not open it automatically, select the extension and choose **Open side panel**.
-
-The maximize button (`⛶`) is in the upper-right side-panel header, immediately left of the refresh button. It opens `dashboard/index.html` in a new Chrome tab through `chrome.runtime.getURL()` and `chrome.tabs.create()`; it never navigates or replaces the active LINE tab.
-
-## Reload after a local change
-
-1. Run `npm.cmd run build:chrome-extension` from the repository root.
-2. Open `chrome://extensions`.
-3. Find **LINE OA Platform Console** and click **Reload**.
-4. Refresh any open `manager.line.biz` or `chat.line.biz` tab so its content script is current.
-5. Open the extension side panel and click the `⛶` button in the header to verify the full-page dashboard.
-
-## Test on LINE pages
-
-1. Open `https://manager.line.biz/` and open the side panel. Home should show **LINE OA Manager** as the bounded current-page context.
-2. Open `https://chat.line.biz/` and open the side panel. Home should show **LINE Chat**.
-3. Open **官方帳號** and inspect `oa-primary`, then open its binding detail or copy the public webhook URL.
-4. Open **訊息** to view the deterministic proof `測試` → `收到：測試`.
-
-## Security boundaries
-
-- Provider credential values are never requested, rendered, logged, or stored by the extension.
-- `chrome.storage.local` accepts only an explicit key allowlist and rejects sensitive field names recursively.
-- Content scripts send only hostname, page type, and a fixed path category.
-- No chat text, customer names, identifiers, cookies, browser storage, private page data, webhook payloads, or delivery credentials are collected.
-- No remote executable script, dynamic code evaluation, provider SDK, or authenticated Messaging API call exists.
-- Platform operations remain routed through governed Worker/API boundaries; Workbench remains the intent, confirmation, permission, and mutation authority.
-
-## Current limitations
-
-One live OA binding (`oa-primary`) is active. Arbitrary OA onboarding, a governed multi-binding registry, self-service credential setup, authenticated platform operations, Production rollout, and Chrome Web Store packaging/review are not yet available. This build is not Chrome Web Store submission-ready.
+沒有新增 permission；`sidePanel` permission 與 `side_panel.default_path` 均不存在。

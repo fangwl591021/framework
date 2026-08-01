@@ -11,7 +11,7 @@
     "build:local-demo": "esbuild src/local-demo/worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/local-demo.js",
     "build:line-sandbox": "esbuild src/line-sandbox-live/worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/line-sandbox-live.js",
     "build:chrome-extension": "node scripts/build-chrome-extension.mjs",
-    "test:chrome-extension": "vitest run tests/chrome-extension-platform-console.test.ts",
+    "test:chrome-extension": "vitest run tests/chrome-extension-platform-console.test.ts tests/chrome-extension-platform-lifecycle.test.ts",
     "package:chrome-extension": "node scripts/build-chrome-extension.mjs",
     "deploy:line-sandbox": "wrangler deploy --config wrangler.line-sandbox.jsonc",
     "dev:line-sandbox": "wrangler dev --config wrangler.line-sandbox.jsonc",

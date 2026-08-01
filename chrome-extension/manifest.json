@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "LINE OA Platform Console",
   "version": "0.1.0",
-  "description": "A side-panel console for the Platform Core LINE integration.",
-  "permissions": ["sidePanel", "storage", "tabs", "activeTab"],
+  "description": "A full-page admin console with an isolated floating LINE OA utility.",
+  "permissions": ["storage", "tabs", "activeTab"],
   "host_permissions": [
     "https://api-data.line.me/*",
     "https://api.line.me/*",
@@ -15,9 +15,6 @@
   "background": {
     "service_worker": "background/service-worker.js",
     "type": "module"
-  },
-  "side_panel": {
-    "default_path": "sidepanel/index.html"
   },
   "action": {
     "default_title": "Open LINE OA Platform Console",
@@ -37,12 +34,12 @@
   "content_scripts": [
     {
       "matches": ["https://manager.line.biz/*"],
-      "js": ["content/line-oa-manager.js"],
+      "js": ["content/floating-widget.js", "content/line-oa-manager.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://chat.line.biz/*"],
-      "js": ["content/line-chat.js"],
+      "js": ["content/floating-widget.js", "content/line-chat.js"],
       "run_at": "document_idle"
     }
   ]
