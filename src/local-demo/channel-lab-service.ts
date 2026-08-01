@@ -3,6 +3,7 @@ import { UuidV7Generator } from "../core/uuidv7";
 import { ChannelAdapterApplication, ChannelAdapterError, ChannelWorkbenchBridge, DisabledChannelObservationAdapter, DisabledGenericWebhookVerifier, DisabledLineResponseRenderer, DisabledLineSignatureVerifier, DisabledTelegramResponseRenderer, DisabledTelegramSignatureVerifier, LocalAllowChannelTraffic, LocalDeterministicSignatureVerifier, LocalWebResponseRenderer, localFixtureSignature, type ChannelNeutralResponse } from "../channel-adapter";
 import type { WorkbenchInput, WorkbenchResponse } from "../conversational-workbench";
 import type { DemoFixtureState } from "./seed";
+import { LocalIdentityKeys } from "./keys";
 
 export const channelLabScenarios=Object.freeze(["valid_text_event","invalid_signature","missing_signature","duplicate_replay","duplicate_conflict","stale_lease_completion","unknown_identity","suspended_identity","cross_tenant_identity_mismatch","unsupported_event","confirmation_required","confirmation_reply","workbench_failure","response_truncation","disabled_line_adapter","disabled_telegram_adapter"] as const);
 export type ChannelLabScenario=(typeof channelLabScenarios)[number];
@@ -17,7 +18,7 @@ class LocalChannelAuthority {
 const encoder=new TextEncoder();
 export class LocalChannelLabService {
   constructor(private readonly db:D1Database,private readonly fixture:DemoFixtureState){}
-  private application(){return new ChannelAdapterApplication(this.db,new SystemClock(),new UuidV7Generator(),new (class {private readonly key={version:1,secret:new TextEncoder().encode("local-channel-identity-fixture-key")};current(){return this.key;}previous(){return [];}})(),[new LocalDeterministicSignatureVerifier(),new DisabledLineSignatureVerifier(),new DisabledTelegramSignatureVerifier(),new DisabledGenericWebhookVerifier()],[new LocalWebResponseRenderer(),new DisabledLineResponseRenderer(),new DisabledTelegramResponseRenderer()],new LocalAllowChannelTraffic(),new ChannelWorkbenchBridge(new LocalChannelAuthority()),new DisabledChannelObservationAdapter());}
+  private application(){return new ChannelAdapterApplication(this.db,new SystemClock(),new UuidV7Generator(),new LocalIdentityKeys(),[new LocalDeterministicSignatureVerifier(),new DisabledLineSignatureVerifier(),new DisabledTelegramSignatureVerifier(),new DisabledGenericWebhookVerifier()],[new LocalWebResponseRenderer(),new DisabledLineResponseRenderer(),new DisabledTelegramResponseRenderer()],new LocalAllowChannelTraffic(),new ChannelWorkbenchBridge(new LocalChannelAuthority()),new DisabledChannelObservationAdapter());}
   listScenarios(){return channelLabScenarios.map((scenario)=>Object.freeze({scenario,network:"disabled",secret:"fixture-only",productionAuthority:false}));}
   async catalog(){return this.application().repository.listCatalog();}
   async events(limit=50){return this.application().repository.listEvents(this.fixture.tenantA,limit);}
