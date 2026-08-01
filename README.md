@@ -388,3 +388,9 @@ Its status is Platform Integration Service Candidate, Contract Approved by Tony 
 [LINE Adapter Enablement Readiness](docs/line-adapter-enablement-readiness/README.md) defines pure LINE webhook, signature, replay, reply-token, capability, degradation, retry, outage, privacy, credential-reference, evidence, rollback, and approval contracts. It is Readiness Candidate documentation and deterministic local verification only.
 
 The real LINE adapter remains Disabled, credentials are Not Provisioned, Remote D1 is Not Used, deployment is Not Performed, and Production Use is Not Allowed. See the [Platform Capability Registry](docs/platform-capability-registry.md) and [Implementation Backlog](docs/platform-implementation-backlog.md).
+
+## LINE Adapter Isolated Provider Verification
+
+[LINE Adapter Isolated Provider Verification](docs/line-adapter-isolated-verification/README.md) maps the readiness contracts to published LINE Messaging API behavior through an official signature example, byte-mutation negatives, deterministic webhook fixtures, replay and reply-token models, a fake transport port, and bounded safe evidence.
+
+Its lifecycle is Isolated Verification Candidate. The real LINE adapter remains Disabled; transport is Fake Only; credentials are Not Provisioned; no public webhook, Remote D1, deployment, or Production use is created or allowed.
